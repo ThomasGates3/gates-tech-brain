@@ -1,0 +1,18 @@
+AI BRAIN — Progress Tracker
+
+✓ F0: Scaffold (Next.js 16, TS, Tailwind, Neon+Drizzle, AI SDK v7, Auth.js) + shared contracts (lib/types.ts) — build green, typecheck clean
+◐ Deck home (page.tsx) assembled with HUD/briefing/feed/inspector/connectors on MOCK data — renders at :3007
+◐ F1: Command Deck — components built (CoreOrb, HudFrame, AgentFeed, ToolInspector, ConnectorManager) + assembled. MISSING: KnowledgePanel, ApprovalModal, BriefingCard component
+✓ F2: Orchestrator — Conductor + 4 specialists (AI SDK v7). /api/chat LIVE: streams real replies + delegates to specialists. Needs AI_GATEWAY_API_KEY to talk. Chat UI streams tokens.
+✓ Mobile: full-screen centered reactive orb (tap → chat sheet); moves on voice in/out
+✓ Briefing: structured rows (label/value/delta) + urgent callout instead of run-on text
+✓ F3: Connector Registry + 6 specs (neon/bigquery/webhook/github/vercel/aws) + Tool Router w/ risk gates
+✓ F4: Research Engine — NotebookLM CLI wrapper (notebooklm.ts)
+◐ F5: Autonomous Mode — Job helpers + DB schema built. MISSING: cron/webhook API routes wired
+✓ F6: Trust Layer — vault, approvals (+router seam), audit scrubber, zod schemas, Auth.js + middleware
+○ F7: Onboarding & UX polish (UX Agent)
+○ F7b: Jarvis Experience Layer — voice I/O, personality, reactive HUD, proactive briefings (UI + UX Agents)
+○ F8: 5 Vertical Personalities — presets from YouTube source (spec'd in PRD §9):
+     Agencies · Accounting/Bookkeeping · Law Firms · Dental/Medical · Insurance Brokerages
+
+Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, ApprovalRequest, Job, AuditEntry
