@@ -5,6 +5,7 @@ import HudFrame from "@/components/hud/HudFrame";
 import type { OrbState } from "@/components/hud/CoreOrb";
 import { BrainChat } from "@/components/deck/BrainChat";
 import { MobileConsole } from "@/components/deck/MobileConsole";
+import { AutomationsPanel } from "@/components/deck/AutomationsPanel";
 import { StatPanel, ActivityFeed, type Activity, type Stat } from "@/components/deck/Telemetry";
 import { getPreset, buildBriefing } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
@@ -128,6 +129,11 @@ export default function Home() {
             <StatPanel title="System" stats={SYSTEM_STATS} />
             <StatPanel title="Operations" stats={OPS_STATS} />
           </div>
+        </div>
+
+        {/* Automations — run any playbook from here */}
+        <div className="mt-4">
+          <AutomationsPanel />
         </div>
       </div>
 

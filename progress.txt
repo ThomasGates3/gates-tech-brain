@@ -6,9 +6,13 @@ AI BRAIN — Progress Tracker
 ✓ F2: Orchestrator — Conductor + 4 specialists (AI SDK v7). /api/chat LIVE: streams real replies + delegates to specialists. Needs AI_GATEWAY_API_KEY to talk. Chat UI streams tokens.
 ✓ Mobile: full-screen centered reactive orb (tap → chat sheet); moves on voice in/out
 ✓ Briefing: structured rows (label/value/delta) + urgent callout instead of run-on text
-✓ F3: Connector Registry + 6 specs (neon/bigquery/webhook/github/vercel/aws) + Tool Router w/ risk gates
+✓ F3: Connector Registry + 6 specs + Tool Router w/ risk gates. /api/connectors LIVE (list + test reachability)
+✓ /api/jobs LIVE (CRUD against Neon; tables created via npm run db:push)
+✓ Slack delivery wired (free Incoming Webhook, SLACK_WEBHOOK_URL); email = documented stub
+✓ Auth auto-disables until OAuth configured (AUTH_GITHUB_ID) so app is testable; AUTH_SECRET generated
+⚠ BLOCKER: AI_GATEWAY_API_KEY in .env.local is invalid (21 chars, "ai-b…"). Need real Vercel key (vck_…) for chat + automation execution
 ✓ F4: Research Engine — NotebookLM CLI wrapper (notebooklm.ts)
-◐ F5: Autonomous Mode — Job helpers + DB schema built. MISSING: cron/webhook API routes wired
+✓ F5: Autonomous Mode — native automation catalog (8 templates: real-estate/trading/content/social/ops), runner captures+audits output, /api/automations (list+run on demand), /api/cron (Vercel schedule). No n8n. Needs AI_GATEWAY_API_KEY to execute.
 ✓ F6: Trust Layer — vault, approvals (+router seam), audit scrubber, zod schemas, Auth.js + middleware
 ○ F7: Onboarding & UX polish (UX Agent)
 ○ F7b: Jarvis Experience Layer — voice I/O, personality, reactive HUD, proactive briefings (UI + UX Agents)

@@ -5,14 +5,29 @@
 import type { Job } from "@/lib/types";
 import { listJobs, updateJobStatus } from "./jobs";
 import { createConductor } from "@/lib/orchestrator/conductor";
+import audit from "@/lib/audit";
 
 export async function runJob(job: Job): Promise<void> {
   await updateJobStatus(job.id, "running");
   try {
     const conductor = createConductor();
-    await conductor.generate({ prompt: job.prompt });
+    const result = await conductor.generate({ prompt: job.prompt });
+    const output = result.text ?? "(no output)";
+    // Capture the result so it isn't discarded — audit now, deliverTo channels next.
+    audit.record({
+      action: "job_run",
+      actor: "scheduler",
+      target: job.id,
+      detail: { name: job.name, deliverTo: job.report?.deliverTo, chars: output.length },
+    });
     await updateJobStatus(job.id, "success");
-  } catch {
+  } catch (e) {
+    audit.record({
+      action: "job_run",
+      actor: "scheduler",
+      target: job.id,
+      detail: { name: job.name, error: e instanceof Error ? e.message : "unknown" },
+    });
     await updateJobStatus(job.id, "failed");
   }
 }

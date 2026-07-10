@@ -18,6 +18,10 @@ import { NextResponse } from "next/server";
 
 const PUBLIC_PATHS = new Set(["/sign-in", "/api/auth"]);
 
+// Auth turns on automatically once OAuth is configured. Until then (dev/testing)
+// the app is open. Force-enable in prod with AUTH_ENABLED=true.
+const AUTH_ENABLED = Boolean(process.env.AUTH_GITHUB_ID) || process.env.AUTH_ENABLED === "true";
+
 function isPublic(pathname: string): boolean {
   return [...PUBLIC_PATHS].some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
@@ -43,7 +47,7 @@ export default auth(async function middleware(req: NextRequest & { auth?: unknow
   // ── Auth guard ────────────────────────────────────────────────────────────
   const session = (req as { auth?: { user?: { id?: string } } }).auth;
 
-  if (!isPublic(pathname) && !session) {
+  if (AUTH_ENABLED && !isPublic(pathname) && !session) {
     if (pathname.startsWith("/api/")) {
       return new NextResponse("Unauthorized", {
         status: 401,
