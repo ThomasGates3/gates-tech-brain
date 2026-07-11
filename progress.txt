@@ -16,6 +16,9 @@ AI BRAIN — Progress Tracker
 ✓ F6: Trust Layer — vault, approvals (+router seam), audit scrubber, zod schemas, Auth.js + middleware
 ○ F7: Onboarding & UX polish (UX Agent)
 ○ F7b: Jarvis Experience Layer — voice I/O, personality, reactive HUD, proactive briefings (UI + UX Agents)
+✓ F9: Business-app connectors — Twin Trading, Twin Trading Bio, Ad System, AI Link in Bio, Gates Tech (GTV2), Speed to Lead. Registered (12 total). "operator" specialist runs them. Need per-app URL+agent-token to go live (apps use own auth today).
+✓ F10: Moby dev-agent — /api/dev-task + moby_dev_task tool spins up Claude Code on the Moby repo (branch-isolated). Gated by MOBY_DEV_ENABLED (dry-run until set true).
+
 ○ F8: 5 Vertical Personalities — presets from YouTube source (spec'd in PRD §9):
      Agencies · Accounting/Bookkeeping · Law Firms · Dental/Medical · Insurance Brokerages
 

@@ -134,7 +134,7 @@ export interface ToolResult {
 // Orchestration — Conductor + specialists (PRD §3, F2)
 // ─────────────────────────────────────────────────────────────────────────
 
-export type SpecialistId = "research" | "data" | "devops" | "comms";
+export type SpecialistId = "research" | "data" | "devops" | "comms" | "operator";
 
 /** Anything the deck streams live. Discriminated by `type`. */
 export type AgentEvent =

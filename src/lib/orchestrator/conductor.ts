@@ -22,7 +22,7 @@ const delegateTool = tool({
   description:
     "Delegate a sub-task to a specialist agent (research, data, devops, comms). Use this when the task requires specialist knowledge or connector access.",
   inputSchema: z.object({
-    specialist: z.enum(["research", "data", "devops", "comms"]).describe("Which specialist to use"),
+    specialist: z.enum(["research", "data", "devops", "comms", "operator"]).describe("Which specialist to use"),
     task: z.string().describe("Clear description of what the specialist should do"),
   }),
   execute: async ({ specialist, task }) => {

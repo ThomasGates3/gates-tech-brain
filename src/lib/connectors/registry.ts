@@ -9,8 +9,9 @@ import { webhook } from "./specs/webhook";
 import { github } from "./specs/github";
 import { vercel } from "./specs/vercel";
 import { aws } from "./specs/aws";
+import { APP_CONNECTORS } from "./specs/apps";
 
-const ALL_CONNECTORS: Connector[] = [supabase, bigquery, webhook, github, vercel, aws];
+const ALL_CONNECTORS: Connector[] = [supabase, bigquery, webhook, github, vercel, aws, ...APP_CONNECTORS];
 
 function validate(c: Connector): string[] {
   const errs: string[] = [];

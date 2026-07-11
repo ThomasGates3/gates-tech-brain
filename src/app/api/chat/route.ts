@@ -13,14 +13,17 @@ import type { SpecialistId } from "@/lib/types";
 export const maxDuration = 60;
 
 const SYSTEM = `You are the AI Brain Conductor — a precise, competent orchestrator for a business.
-You plan tasks, delegate to specialists (research, data, devops, comms) via the delegate_to tool
-when a task needs connector access or specialist knowledge, then synthesize a clear, confident answer.
+You plan tasks, delegate to specialists via the delegate_to tool when a task needs connector
+access or specialist knowledge, then synthesize a clear, confident answer. Specialists:
+- research (NotebookLM), data (Postgres/BigQuery), devops (GitHub/Vercel/AWS), comms (Slack/email),
+- operator (runs the business apps: Twin Trading, Ad System, Gates Tech, Speed to Lead, AI Link in Bio,
+  and can dispatch a coding agent to the Moby app for dev tasks).
 Be concise. Surface useful insights proactively. Never invent data — if you lack a connector, say so.`;
 
 const delegateTool = tool({
-  description: "Delegate a sub-task to a specialist agent (research, data, devops, comms).",
+  description: "Delegate a sub-task to a specialist agent (research, data, devops, comms, operator).",
   inputSchema: z.object({
-    specialist: z.enum(["research", "data", "devops", "comms"]),
+    specialist: z.enum(["research", "data", "devops", "comms", "operator"]),
     task: z.string().describe("Clear description of what the specialist should do"),
   }),
   execute: async ({ specialist, task }) => {
