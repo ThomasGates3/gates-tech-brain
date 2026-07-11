@@ -10,7 +10,7 @@ import { HAIKU } from "@/lib/models";
 import { executeToolCall } from "@/lib/tools/router";
 import { registry } from "@/lib/connectors/registry";
 import { createNotebook, addSource, askNotebook, generateBriefing } from "@/lib/notebooklm";
-import { dispatchMobyDevTask } from "@/lib/builder/moby";
+import { dispatchDevTask, DEV_TARGETS } from "@/lib/builder/dev-agent";
 
 function makeConnectorTool(connectorId: string, toolName: string) {
   const connector = registry.get(connectorId);
@@ -83,12 +83,15 @@ const notebooklmTools = {
   }),
 };
 
-/** Moby dev-agent: spins up a coding agent against the Moby repo. */
-const mobyDevTool = tool({
+/** Dev-agent: spins up a coding agent against a target repo (Moby, Ad System). */
+const devTool = tool({
   description:
-    "Dispatch a coding agent to do a development task on the Moby app (create a feature, fix a bug, refactor). Runs on a branch; returns the agent's output.",
-  inputSchema: z.object({ task: z.string().describe("Clear, self-contained dev task for the Moby repo") }),
-  execute: async ({ task }) => dispatchMobyDevTask(task),
+    "Dispatch a coding agent to do a development task on one of the business apps (create a feature, fix a bug, refactor). Runs on a branch; returns the agent's output.",
+  inputSchema: z.object({
+    repo: z.enum(DEV_TARGETS as [string, ...string[]]).describe("Which repo to work on"),
+    task: z.string().describe("Clear, self-contained dev task"),
+  }),
+  execute: async ({ repo, task }) => dispatchDevTask(repo, task),
 });
 
 function makeAgent(id: SpecialistId, system: string, tools: ToolSet) {
@@ -126,7 +129,7 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
     "You are the Operator specialist — you run the business's own apps. Use the connectors for Twin Trading (content), Twin Trading Link-in-Bio, Ad System (Veo/HeyGen video + leads), AI Link in Bio, Gates Tech (bookings/intake), and Speed to Lead (lead outreach) to perform real tasks. You can also dispatch a coding agent to the Moby app via moby_dev_task for development work. Confirm before anything destructive (sending outreach, spending).",
     {
       ...connectorTools(["twin-trading", "twin-trading-bio", "ad-system", "ai-link-bio", "gates-tech", "speed-to-lead"]),
-      moby_dev_task: mobyDevTool,
+      dev_task: devTool,
     }
   ),
 };
