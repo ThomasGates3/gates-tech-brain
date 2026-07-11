@@ -5,7 +5,7 @@
  */
 import audit from "@/lib/audit";
 
-export type DeliveryChannel = "deck" | "slack" | "email";
+export type DeliveryChannel = "deck" | "slack" | "discord" | "email";
 
 export interface DeliveryPayload {
   title: string;
@@ -13,13 +13,40 @@ export interface DeliveryPayload {
 }
 
 export async function deliver(channels: DeliveryChannel[] = [], payload: DeliveryPayload): Promise<void> {
-  await Promise.allSettled(
-    channels.map((ch) => {
-      if (ch === "slack") return deliverSlack(payload);
-      if (ch === "email") return deliverEmail(payload);
-      return Promise.resolve(); // "deck" is handled by the API response / activity feed
-    })
-  );
+  // "slack"/"discord" both mean "ping my chat" — fan out to whichever webhook(s)
+  // are configured. Each no-ops if its URL isn't set.
+  const wantsChat = channels.includes("slack") || channels.includes("discord");
+  const tasks: Promise<void>[] = [];
+  if (wantsChat) {
+    tasks.push(deliverSlack(payload));
+    tasks.push(deliverDiscord(payload));
+  }
+  if (channels.includes("email")) tasks.push(deliverEmail(payload));
+  await Promise.allSettled(tasks);
+}
+
+async function deliverDiscord({ title, body }: DeliveryPayload): Promise<void> {
+  const url = process.env.DISCORD_WEBHOOK_URL;
+  if (!url) return; // not configured — silently skip
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        embeds: [
+          {
+            title: `🧠 ${title}`.slice(0, 256),
+            description: body.slice(0, 4000), // Discord embed description limit
+            color: 0xff6a00, // deep orange
+            footer: { text: `AI Brain · ${new Date().toLocaleString()}` },
+          },
+        ],
+      }),
+    });
+    audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { ok: res.ok, status: res.status } });
+  } catch (e) {
+    audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { error: e instanceof Error ? e.message : "unknown" } });
+  }
 }
 
 async function deliverSlack({ title, body }: DeliveryPayload): Promise<void> {
