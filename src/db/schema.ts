@@ -42,6 +42,15 @@ export const auditLog = pgTable("audit_log", {
   at: text("at").notNull(),
 });
 
+export const activity = pgTable("activity", {
+  id: text("id").primaryKey(),
+  kind: text("kind").notNull(), // generated | updated | spawned | connected | sent | queried | alert
+  target: text("target").notNull(), // the thing acted on
+  because: text("because"), // rationale ("updated X because Y")
+  agent: text("agent"), // which specialist / actor
+  at: text("at").notNull(), // ISO timestamp
+});
+
 export const approvals = pgTable("approvals", {
   id: text("id").primaryKey(),
   toolCall: jsonb("tool_call").notNull(),

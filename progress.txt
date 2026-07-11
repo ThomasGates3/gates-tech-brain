@@ -1,7 +1,7 @@
 AI BRAIN — Progress Tracker
 
 ✓ F0: Scaffold (Next.js 16, TS, Tailwind, Neon+Drizzle, AI SDK v7, Auth.js) + shared contracts (lib/types.ts) — build green, typecheck clean
-◐ Deck home (page.tsx) assembled with HUD/briefing/feed/inspector/connectors on MOCK data — renders at :3007
+◐ Deck home (page.tsx) — HUD/briefing/chat/automations. Activity is now REAL + DB-backed (Neon activity table): automations + dev-agent runs record events; feed polls /api/activity every 15s (consistent across reloads)
 ◐ F1: Command Deck — components built (CoreOrb, HudFrame, AgentFeed, ToolInspector, ConnectorManager) + assembled. MISSING: KnowledgePanel, ApprovalModal, BriefingCard component
 ✓ F2: Orchestrator — Conductor + 4 specialists (AI SDK v7). /api/chat LIVE: streams real replies + delegates to specialists. Needs AI_GATEWAY_API_KEY to talk. Chat UI streams tokens.
 ✓ Mobile: full-screen centered reactive orb (tap → chat sheet); moves on voice in/out

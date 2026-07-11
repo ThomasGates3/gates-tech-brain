@@ -6,7 +6,7 @@ import type { OrbState } from "@/components/hud/CoreOrb";
 import { BrainChat } from "@/components/deck/BrainChat";
 import { MobileConsole } from "@/components/deck/MobileConsole";
 import { AutomationsPanel } from "@/components/deck/AutomationsPanel";
-import { StatPanel, ActivityFeed, type Activity, type Stat } from "@/components/deck/Telemetry";
+import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
 import { getPreset, buildBriefing } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
 
@@ -24,16 +24,6 @@ const OPS_STATS: Stat[] = [
   { label: "Tool calls", value: "47", sub: "24h" },
   { label: "Active agents", value: "3", bar: 60 },
   { label: "Approvals", value: "1", sub: "pending" },
-];
-
-const ACTIVITY: Activity[] = [
-  { id: "a1", kind: "generated", target: "Q3 client status report", agent: "Comms", at: "just now" },
-  { id: "a2", kind: "updated", target: "Meridian pricing SOP", because: "the Tuesday rate change", agent: "Research", at: "2m" },
-  { id: "a3", kind: "spawned", target: "reconcile Vercel deploys vs. signups", agent: "Conductor", at: "4m" },
-  { id: "a4", kind: "queried", target: "1,349 signups from Neon", agent: "Data", at: "6m" },
-  { id: "a5", kind: "sent", target: "renewal reminder to 12 clients", agent: "Comms", at: "11m" },
-  { id: "a6", kind: "connected", target: "GitHub · 6 tools online", agent: "DevOps", at: "18m" },
-  { id: "a7", kind: "alert", target: "1 production deploy failed", because: "a failing build step", agent: "DevOps", at: "22m" },
 ];
 
 export default function Home() {
@@ -77,9 +67,9 @@ export default function Home() {
 
         {/* 3-column JARVIS grid: activity | core+chat | stats */}
         <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_260px]">
-          {/* Left — activity */}
+          {/* Left — activity (real, DB-backed) */}
           <div className="order-3 lg:order-1">
-            <ActivityFeed items={ACTIVITY} />
+            <ActivityFeed />
           </div>
 
           {/* Center — centered orb, briefing, compact chat pinned to bottom */}

@@ -6,6 +6,7 @@
 import { createConductor } from "@/lib/orchestrator/conductor";
 import audit from "@/lib/audit";
 import { deliver } from "./deliver";
+import { recordActivity } from "@/lib/activity";
 import { getAutomation, fillPrompt, type AutomationTemplate } from "./catalog";
 
 export interface AutomationRun {
@@ -45,6 +46,7 @@ export async function runAutomation(
 
     // Push the result to its channels (Slack/email). Never blocks the run.
     await deliver(tpl.deliverTo, { title: tpl.name, body: output });
+    await recordActivity({ kind: "generated", target: tpl.name, agent: tpl.category, because: tpl.deliverTo.includes("slack") ? "delivered to chat" : undefined });
 
     return { id: tpl.id, name: tpl.name, status: "success", output, ranAt };
   } catch (e) {

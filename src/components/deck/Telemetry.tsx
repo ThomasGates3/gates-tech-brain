@@ -1,10 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 /**
  * Corner telemetry + outcome-phrased activity feed for the JARVIS deck.
  * Deep-orange on black. Activity reads like results, not internal chatter:
  *   "Generated…", "Updated… because…", "Spawned subagent to…".
  */
+
+function relAge(iso: string): string {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  if (s < 86400) return `${Math.round(s / 3600)}h`;
+  return `${Math.round(s / 86400)}d`;
+}
 
 // ── Stat panel ──────────────────────────────────────────────────────────────
 
@@ -70,7 +80,29 @@ const KIND_META: Record<ActivityKind, { verb: string; color: string; icon: strin
   alert:     { verb: "Flagged",   color: "#ff3b30",       icon: "!" },
 };
 
-export function ActivityFeed({ items, "data-testid": testId = "activity-feed" }: { items: Activity[]; "data-testid"?: string }) {
+export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "data-testid"?: string }) {
+  const [items, setItems] = useState<Activity[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/activity?limit=20");
+        const data = await res.json();
+        if (alive) {
+          setItems((data.activity ?? []).map((a: Activity) => ({ ...a, at: relAge(a.at) })));
+          setLoaded(true);
+        }
+      } catch {
+        if (alive) setLoaded(true);
+      }
+    };
+    load();
+    const t = setInterval(load, 15000); // keep it consistent/live
+    return () => { alive = false; clearInterval(t); };
+  }, []);
+
   return (
     <div
       data-testid={testId}
@@ -83,6 +115,9 @@ export function ActivityFeed({ items, "data-testid": testId = "activity-feed" }:
         </div>
         <span className="font-mono text-[10px] text-zinc-600">live</span>
       </div>
+      {loaded && items.length === 0 && (
+        <p className="py-6 text-center text-[12px] text-zinc-600">Nothing yet — run an automation or a dev task and it shows up here.</p>
+      )}
       <ul className="space-y-2.5">
         {items.map((a) => {
           const m = KIND_META[a.kind];
