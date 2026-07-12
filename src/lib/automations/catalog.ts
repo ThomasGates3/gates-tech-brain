@@ -47,7 +47,7 @@ export const AUTOMATIONS: AutomationTemplate[] = [
     category: "real-estate",
     description: "Weekly: re-engage cold seller leads with a personalized nudge so no deal rots in the CRM.",
     trigger: { kind: "cron", expression: "0 15 * * 1" }, // Mondays 15:00 UTC
-    deliverTo: ["deck", "email"],
+    deliverTo: ["deck", "slack"],
     requires: ["webhook"],
     prompt:
       "Review our cold/aged seller leads. Pick the 10 highest-potential to re-engage this week and, for each, " +
@@ -118,7 +118,7 @@ export const AUTOMATIONS: AutomationTemplate[] = [
     category: "ops",
     description: "7am: cross-system briefing — what changed overnight and what needs you first.",
     trigger: { kind: "cron", expression: "0 12 * * *" }, // 12:00 UTC ~ 7am ET
-    deliverTo: ["deck"],
+    deliverTo: ["deck", "slack"],
     requires: [],
     prompt:
       "Give me a situational briefing for the day: what changed overnight across the business, the 3 things that " +

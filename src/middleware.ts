@@ -10,7 +10,8 @@ import { GATE_COOKIE, gateEnabled, verifyToken } from "@/lib/gate";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/sign-in", "/api/auth"];
+// /api/cron is protected by CRON_SECRET (not the password gate) so Vercel Cron can reach it.
+const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
 
 export default async function middleware(req: NextRequest) {
