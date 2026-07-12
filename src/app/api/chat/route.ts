@@ -8,6 +8,7 @@ import { streamText, tool, stepCountIs, gateway } from "ai";
 import { z } from "zod";
 import { conductorModel } from "@/lib/models";
 import { resolveModelTier } from "@/lib/settings";
+import { recordUsage } from "@/lib/usage";
 import { specialists } from "@/lib/orchestrator/specialists";
 import type { SpecialistId } from "@/lib/types";
 
@@ -50,12 +51,17 @@ export async function POST(req: Request) {
   }
 
   const tier = await resolveModelTier();
+  const model = conductorModel(tier);
+  const started = Date.now();
   const result = streamText({
-    model: gateway(conductorModel(tier)),
+    model: gateway(model),
     system: SYSTEM,
     prompt: parsed.data.message,
     tools: { delegate_to: delegateTool },
     stopWhen: stepCountIs(6),
+    onFinish: ({ usage }) => {
+      void recordUsage({ model, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, latencyMs: Date.now() - started, source: "chat" });
+    },
   });
 
   return result.toTextStreamResponse();

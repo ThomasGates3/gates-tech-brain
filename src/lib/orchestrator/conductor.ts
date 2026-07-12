@@ -3,7 +3,7 @@
  */
 import { Experimental_Agent, gateway, tool, createAgentUIStream } from "ai";
 import { z } from "zod";
-import type { AgentEvent, SpecialistId } from "@/lib/types";
+import type { AgentEvent, SpecialistId, ModelTier } from "@/lib/types";
 import { conductorModel } from "@/lib/models";
 import { specialists } from "./specialists";
 
@@ -35,10 +35,10 @@ const delegateTool = tool({
   },
 });
 
-export function createConductor() {
+export function createConductor(tier?: ModelTier) {
   return new Experimental_Agent({
     id: "conductor",
-    model: gateway(conductorModel()),
+    model: gateway(conductorModel(tier)),
     instructions: CONDUCTOR_SYSTEM,
     tools: { delegate_to: delegateTool },
   });

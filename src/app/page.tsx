@@ -7,19 +7,13 @@ import { BrainChat } from "@/components/deck/BrainChat";
 import { MobileConsole } from "@/components/deck/MobileConsole";
 import { AutomationsPanel } from "@/components/deck/AutomationsPanel";
 import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
+import { SystemStatPanel } from "@/components/deck/SystemStatPanel";
 import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset, buildBriefing } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
 
 // ── Mock telemetry (wired to /api/chat + connectors in integration pass) ────
-
-const SYSTEM_STATS: Stat[] = [
-  { label: "Model", value: "Sonnet", sub: "standard" },
-  { label: "Tokens", value: "84.2k", sub: "today" },
-  { label: "Spend", value: "$1.12", sub: "today" },
-  { label: "Latency", value: "312", sub: "ms avg" },
-];
 
 const OPS_STATS: Stat[] = [
   { label: "Connectors", value: "5 / 6", bar: 83 },
@@ -120,7 +114,7 @@ export default function Home() {
 
           {/* Right — stats (clickable) */}
           <div className="order-2 space-y-4 lg:order-3">
-            <StatPanel title="System" stats={SYSTEM_STATS} onClick={() => setModal("settings")} />
+            <SystemStatPanel onClick={() => setModal("settings")} />
             <StatPanel title="Operations" stats={OPS_STATS} onClick={() => setModal("connections")} />
           </div>
         </div>

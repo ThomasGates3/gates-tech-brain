@@ -7,6 +7,9 @@ import { createConductor } from "@/lib/orchestrator/conductor";
 import audit from "@/lib/audit";
 import { deliver } from "./deliver";
 import { recordActivity } from "@/lib/activity";
+import { resolveModelTier } from "@/lib/settings";
+import { conductorModel } from "@/lib/models";
+import { recordUsage } from "@/lib/usage";
 import { getAutomation, fillPrompt, type AutomationTemplate } from "./catalog";
 
 export interface AutomationRun {
@@ -33,9 +36,12 @@ export async function runAutomation(
   const prompt = fillPrompt(tpl.prompt, vars);
 
   try {
-    const conductor = createConductor();
+    const tier = await resolveModelTier();
+    const conductor = createConductor(tier);
+    const started = Date.now();
     const result = await conductor.generate({ prompt });
     const output = result.text ?? "(no output)";
+    void recordUsage({ model: conductorModel(tier), inputTokens: result.usage?.inputTokens, outputTokens: result.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
 
     audit.record({
       action: "job_run",

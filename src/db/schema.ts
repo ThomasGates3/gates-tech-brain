@@ -3,7 +3,7 @@
  * Tables: jobs, knowledge_items (pgvector), audit_log, approvals.
  * JSON columns hold the typed shapes from @/lib/types (cast on read).
  */
-import { pgTable, text, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 
 export const jobs = pgTable("jobs", {
   id: text("id").primaryKey(),
@@ -39,6 +39,18 @@ export const auditLog = pgTable("audit_log", {
   actor: text("actor").notNull(),
   target: text("target").notNull(),
   detail: jsonb("detail"),
+  at: text("at").notNull(),
+});
+
+export const usage = pgTable("usage", {
+  id: text("id").primaryKey(),
+  model: text("model").notNull(),
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  totalTokens: integer("total_tokens").notNull().default(0),
+  costUsd: text("cost_usd").notNull().default("0"), // string for precision
+  latencyMs: integer("latency_ms").notNull().default(0),
+  source: text("source").notNull().default("chat"), // chat | automation | dev
   at: text("at").notNull(),
 });
 
