@@ -25,11 +25,12 @@ export interface Stat {
   bar?: number; // 0..100 → mini usage bar
 }
 
-export function StatPanel({ title, stats, "data-testid": testId = "stat-panel" }: { title: string; stats: Stat[]; "data-testid"?: string }) {
+export function StatPanel({ title, stats, onClick, "data-testid": testId = "stat-panel" }: { title: string; stats: Stat[]; onClick?: () => void; "data-testid"?: string }) {
   return (
     <div
       data-testid={testId}
-      className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur"
+      onClick={onClick}
+      className={`rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur ${onClick ? "cursor-pointer transition-colors hover:border-[var(--accent)]/50" : ""}`}
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />

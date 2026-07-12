@@ -42,6 +42,11 @@ export const auditLog = pgTable("audit_log", {
   at: text("at").notNull(),
 });
 
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export const activity = pgTable("activity", {
   id: text("id").primaryKey(),
   kind: text("kind").notNull(), // generated | updated | spawned | connected | sent | queried | alert

@@ -7,7 +7,7 @@ const TIER_MAP: Record<ModelTier, ModelId> = {
 
 export const HAIKU: ModelId = "anthropic/claude-haiku-4-5";
 
-export function conductorModel(): ModelId {
-  const tier = (process.env.MODEL_TIER ?? "standard") as ModelTier;
-  return TIER_MAP[tier] ?? TIER_MAP.standard;
+export function conductorModel(tier?: ModelTier): ModelId {
+  const t = tier ?? ((process.env.MODEL_TIER ?? "standard") as ModelTier);
+  return TIER_MAP[t] ?? TIER_MAP.standard;
 }

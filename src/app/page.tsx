@@ -7,6 +7,8 @@ import { BrainChat } from "@/components/deck/BrainChat";
 import { MobileConsole } from "@/components/deck/MobileConsole";
 import { AutomationsPanel } from "@/components/deck/AutomationsPanel";
 import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
+import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
+import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset, buildBriefing } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
 
@@ -29,6 +31,8 @@ const OPS_STATS: Stat[] = [
 export default function Home() {
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [voiceActive, setVoiceActive] = useState(false);
+  const [modal, setModal] = useState<"settings" | "connections" | null>(null);
+  const [briefItem, setBriefItem] = useState<BriefingHighlight | null>(null);
   const preset = getPreset("agency");
   const briefing = useMemo(() => buildBriefing(preset, getGreeting()), [preset]);
 
@@ -88,7 +92,7 @@ export default function Home() {
                 <p className="mb-3 text-sm text-zinc-200">{briefing.lead}</p>
                 <ul className="space-y-1.5">
                   {briefing.items.slice(0, 4).map((it) => (
-                    <li key={it.label} className="flex items-baseline justify-between gap-3 border-b border-white/[0.04] pb-1.5 last:border-0">
+                    <li key={it.label} onClick={() => setBriefItem(it)} data-testid={`briefing-item-${it.label}`} className="flex cursor-pointer items-baseline justify-between gap-3 rounded border-b border-white/[0.04] pb-1.5 transition-colors last:border-0 hover:bg-white/[0.03]">
                       <span className={`text-[13px] ${it.urgent ? "text-[var(--accent-soft)]" : "text-zinc-400"}`}>
                         {it.urgent && <span className="mr-1.5 text-[var(--accent)]">!</span>}
                         {it.label}
@@ -114,10 +118,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right — stats */}
+          {/* Right — stats (clickable) */}
           <div className="order-2 space-y-4 lg:order-3">
-            <StatPanel title="System" stats={SYSTEM_STATS} />
-            <StatPanel title="Operations" stats={OPS_STATS} />
+            <StatPanel title="System" stats={SYSTEM_STATS} onClick={() => setModal("settings")} />
+            <StatPanel title="Operations" stats={OPS_STATS} onClick={() => setModal("connections")} />
           </div>
         </div>
 
@@ -129,6 +133,11 @@ export default function Home() {
 
       {/* Mobile floating orb → chat sheet */}
       <MobileConsole personaName={preset.name} greeting={getGreeting()} />
+
+      {/* Interactive detail modals */}
+      {modal === "settings" && <SettingsModal onClose={() => setModal(null)} />}
+      {modal === "connections" && <ConnectionsModal onClose={() => setModal(null)} />}
+      {briefItem && <BriefingDetailModal item={briefItem} onClose={() => setBriefItem(null)} />}
     </div>
   );
 }

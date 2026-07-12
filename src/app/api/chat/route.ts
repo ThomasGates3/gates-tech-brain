@@ -7,6 +7,7 @@
 import { streamText, tool, stepCountIs, gateway } from "ai";
 import { z } from "zod";
 import { conductorModel } from "@/lib/models";
+import { resolveModelTier } from "@/lib/settings";
 import { specialists } from "@/lib/orchestrator/specialists";
 import type { SpecialistId } from "@/lib/types";
 
@@ -48,8 +49,9 @@ export async function POST(req: Request) {
     return new Response("Message is required (1–4000 chars).", { status: 400 });
   }
 
+  const tier = await resolveModelTier();
   const result = streamText({
-    model: gateway(conductorModel()),
+    model: gateway(conductorModel(tier)),
     system: SYSTEM,
     prompt: parsed.data.message,
     tools: { delegate_to: delegateTool },
