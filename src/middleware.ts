@@ -1,77 +1,52 @@
 /**
- * Next.js Edge Middleware — auth enforcement + rate limiting + security headers.
+ * Edge middleware — password gate + rate limiting + security headers.
  *
- * Routes protected:
- *   /api/**   — all API routes (unauthenticated → 401)
- *   /sign-in  — public (excluded)
- *   /         — public landing; redirects to /sign-in if no session
- *
- * Rate limiting: 60 req/min per IP (token bucket via in-memory store).
- * Note: Edge runtime has no shared memory across instances — for multi-instance
- * production rate limiting, swap to Vercel KV / Upstash Redis.
+ * The gate turns ON automatically when ACCESS_PASSWORD is set (so production is
+ * locked down as soon as you add the env var). Public paths: /sign-in, /api/auth.
+ * Unauthenticated → /sign-in (pages) or 401 (API).
  */
-
-import { auth } from "@/auth";
 import { apiRateLimiter, securityHeaders, corsHeaders } from "@/lib/security";
+import { GATE_COOKIE, gateEnabled, verifyToken } from "@/lib/gate";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = new Set(["/sign-in", "/api/auth"]);
+const PUBLIC_PATHS = ["/sign-in", "/api/auth"];
+const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
 
-// Auth turns on automatically once OAuth is configured. Until then (dev/testing)
-// the app is open. Force-enable in prod with AUTH_ENABLED=true.
-const AUTH_ENABLED = Boolean(process.env.AUTH_GITHUB_ID) || process.env.AUTH_ENABLED === "true";
-
-function isPublic(pathname: string): boolean {
-  return [...PUBLIC_PATHS].some((p) => pathname === p || pathname.startsWith(p + "/"));
-}
-
-export default auth(async function middleware(req: NextRequest & { auth?: unknown }) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const origin = req.headers.get("origin");
 
-  // ── CORS pre-flight ───────────────────────────────────────────────────────
   if (req.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
   }
 
-  // ── Rate limiting (by IP) ─────────────────────────────────────────────────
+  // Rate limit by IP.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (!apiRateLimiter.check(ip)) {
-    return new NextResponse("Too Many Requests", {
-      status: 429,
-      headers: { "Retry-After": "60", ...securityHeaders },
-    });
+    return new NextResponse("Too Many Requests", { status: 429, headers: { "Retry-After": "60", ...securityHeaders } });
   }
 
-  // ── Auth guard ────────────────────────────────────────────────────────────
-  const session = (req as { auth?: { user?: { id?: string } } }).auth;
-
-  if (AUTH_ENABLED && !isPublic(pathname) && !session) {
-    if (pathname.startsWith("/api/")) {
-      return new NextResponse("Unauthorized", {
-        status: 401,
-        headers: { ...securityHeaders, ...corsHeaders(origin) },
-      });
+  // Password gate.
+  if (gateEnabled() && !isPublic(pathname)) {
+    const ok = await verifyToken(req.cookies.get(GATE_COOKIE)?.value);
+    if (!ok) {
+      if (pathname.startsWith("/api/")) {
+        return new NextResponse("Unauthorized", { status: 401, headers: { ...securityHeaders, ...corsHeaders(origin) } });
+      }
+      const signIn = new URL("/sign-in", req.url);
+      signIn.searchParams.set("callbackUrl", req.nextUrl.pathname);
+      return NextResponse.redirect(signIn);
     }
-    const signIn = new URL("/sign-in", req.url);
-    signIn.searchParams.set("callbackUrl", req.url);
-    return NextResponse.redirect(signIn);
   }
 
-  // ── Pass through with security headers ───────────────────────────────────
   const res = NextResponse.next();
   for (const [k, v] of Object.entries({ ...securityHeaders, ...corsHeaders(origin) })) {
     if (v) res.headers.set(k, v);
   }
   return res;
-});
+}
 
 export const config = {
-  matcher: [
-    /*
-     * Match all paths except Next.js internals and static files.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
