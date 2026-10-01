@@ -7,7 +7,7 @@
  */
 import { db } from "@/db";
 import { usage } from "@/db/schema";
-import { gte } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 
 interface Price { input: number; output: number } // $ per 1M tokens
 
@@ -29,7 +29,7 @@ export interface UsageInput {
   inputTokens?: number;
   outputTokens?: number;
   latencyMs?: number;
-  source?: "chat" | "automation" | "dev";
+  source?: "chat" | "automation" | "dev" | "ace";
 }
 
 export async function recordUsage(u: UsageInput): Promise<void> {
@@ -50,6 +50,12 @@ export async function recordUsage(u: UsageInput): Promise<void> {
   } catch {
     /* best-effort */
   }
+}
+
+/** USD spent by one source since an ISO instant (e.g. Ace's Claude calls today). */
+export async function spentSince(source: NonNullable<UsageInput["source"]>, sinceIso: string): Promise<number> {
+  const rows = await db.select({ c: usage.costUsd }).from(usage).where(and(eq(usage.source, source), gte(usage.at, sinceIso)));
+  return rows.reduce((s, r) => s + Number(r.c ?? 0), 0);
 }
 
 export interface UsageSummary {
