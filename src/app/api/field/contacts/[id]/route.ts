@@ -16,8 +16,7 @@ import { lintCopy } from "@/lib/field/lint";
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, type Draft } from "@/lib/field/playbook";
 import { getContact, isSuppressed, patchContact } from "@/lib/field/store";
 import { apply, type Action } from "@/lib/field/workflow";
-import { claude, conductorModel } from "@/lib/models";
-import { resolveModelTier } from "@/lib/settings";
+import { claude, COPY } from "@/lib/models";
 import { recordUsage } from "@/lib/usage";
 import { recordActivity } from "@/lib/activity";
 import type { FieldContact } from "@/lib/field/types";
@@ -35,7 +34,7 @@ const Body = z.discriminatedUnion("action", [
 ]);
 
 async function claudeDraft(c: FieldContact): Promise<Draft> {
-  const model = conductorModel(await resolveModelTier());
+  const model = COPY;
   const ask = async (prompt: string) => {
     const started = Date.now();
     const r = await generateText({
@@ -43,6 +42,8 @@ async function claudeDraft(c: FieldContact): Promise<Draft> {
       system: PLAYBOOK_SYSTEM,
       prompt,
       output: Output.object({ schema: z.object({ subject: z.string(), body: z.string() }) }),
+      // Opus 5.5 defaults to medium effort; pin it. On a classifier decline, retry server-side on Anthropic's recommended model.
+      providerOptions: { anthropic: { effort: "medium", fallbacks: "default" } },
     });
     void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
     return r.output;
