@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Modal } from "@/components/deck/DeckModals";
-import { lintPrices } from "@/lib/field/lint";
+import { lintCopy } from "@/lib/field/lint";
 import { composeOutgoing } from "@/lib/field/playbook";
 import type { ConsoleConfig, FieldContact, NickVerdict } from "@/lib/field/types";
 import { Button, Caption, PriorityBadge, StageBadge, cx } from "./ui";
@@ -47,7 +47,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
 
   const canGreenlight = config.canGreenlight;
   const dirty = subject !== c.subject || body !== c.body;
-  const lint = lintPrices(subject, body);
+  const lint = lintCopy(subject, body);
   const editable = OPEN.includes(c.stage) && c.priority !== "Soft";
 
   const run = async (label: string, payload: Record<string, unknown>) => {
@@ -106,7 +106,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         : c.suppressed
           ? "Recipient is suppressed"
           : lint.length
-            ? "Remove prices from copy"
+            ? "Fix the copy lint"
             : null;
   const sendWhy = !canGreenlight
     ? "Thomas-only (Ace needs FIELD_ACE_CAN_SEND)"
@@ -165,7 +165,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         </div>
 
         <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[12px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#ff6a00]/30 bg-[#ff6a00]/[0.06] text-[#ffb066]")} data-testid="price-banner">
-          <strong className="font-mono text-[10px] uppercase tracking-[0.2em]">No prices</strong> — no dollar amounts, fees, or Gates SKUs in Email 1.
+          <strong className="font-mono text-[10px] uppercase tracking-[0.2em]">Outreach brief</strong> · no prices, stats, client claims, HIPAA claims, &quot;week&quot;/&quot;weak&quot;, em dashes or hype. Under 110 words.
           {lint.length > 0 && <span className="mt-1 block">Found: {lint.map((i) => `“${i.match}” (${i.rule})`).join(", ")}</span>}
         </div>
 

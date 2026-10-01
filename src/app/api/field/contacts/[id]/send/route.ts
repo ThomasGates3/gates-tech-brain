@@ -49,7 +49,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
     sent = await sendEmail({
       to: contact.email,
       subject: contact.subject,
-      text: composeOutgoing(contact.body, canSpamFooter(fieldEnv.signer().company, address)),
+      text: composeOutgoing(contact.body, canSpamFooter(address)),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

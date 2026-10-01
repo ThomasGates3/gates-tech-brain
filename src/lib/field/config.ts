@@ -22,7 +22,11 @@ export const fieldEnv = {
   aceCanSend: () => env("FIELD_ACE_CAN_SEND") === "true",
   domainWarmed: () => env("FIELD_DOMAIN_WARMED") === "true",
   dailyCap: () => Math.max(1, Number(env("FIELD_DAILY_SEND_CAP")) || 20),
-  signer: (): Signer => ({ name: env("FIELD_SENDER_NAME") || "Thomas", company: env("FIELD_SENDER_COMPANY") || "Gates Technologies" }),
+  signer: (): Signer => ({
+    name: env("FIELD_SENDER_NAME") || "Thomas Gates III",
+    company: env("FIELD_SENDER_COMPANY") || "Gates Technologies",
+    site: env("FIELD_SENDER_SITE") || "gatestech.solutions",
+  }),
 };
 
 /** YYYY-MM-DD for "today" in the console's timezone (Atlanta by default). */

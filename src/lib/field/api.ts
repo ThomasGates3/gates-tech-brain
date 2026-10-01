@@ -34,7 +34,7 @@ export async function consoleConfig(operator: Operator | null): Promise<ConsoleC
     inbox: fieldEnv.agentmailInbox() || null,
     claude: fieldEnv.claude(),
     mailingAddress: fieldEnv.mailingAddress() || null,
-    footer: fieldEnv.mailingAddress() ? canSpamFooter(fieldEnv.signer().company, fieldEnv.mailingAddress()) : null,
+    footer: fieldEnv.mailingAddress() ? canSpamFooter(fieldEnv.mailingAddress()) : null,
     domainWarmed: fieldEnv.domainWarmed(),
     dailyCap: fieldEnv.dailyCap(),
     sentToday: db ? await sentSince(startOfTodayIso()).catch(() => 0) : 0,

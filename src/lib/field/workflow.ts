@@ -8,10 +8,10 @@
  * Every gate the PRD names is enforced here, server-side, so the UI can't route
  * around it: Approve needs Nick PASS on the exact current draft; Send needs
  * a greenlighter (Thomas, or Ace once FIELD_ACE_CAN_SEND=true) + an approval of
- * the exact current draft; no prices anywhere.
+ * the exact current draft; copy passes the outreach-brief lint.
  */
 import { createHash } from "crypto";
-import { lintPrices } from "./lint";
+import { lintCopy } from "./lint";
 import type { DraftSource, FieldContact, NickVerdict, Operator, Stage } from "./types";
 
 export type Action =
@@ -47,8 +47,8 @@ export function draftHash(subject: string, body: string): string {
 const fail = (status: number, error: string): Result => ({ ok: false, status, error });
 
 function lintError(c: Pick<FieldContact, "subject" | "body">): string | null {
-  const issues = lintPrices(c.subject, c.body);
-  return issues.length ? `Price lint failed: ${issues.map((i) => `"${i.match}"`).join(", ")}. Remove prices/SKUs from the copy.` : null;
+  const issues = lintCopy(c.subject, c.body);
+  return issues.length ? `Copy lint failed: ${issues.map((i) => `"${i.match}" (${i.rule})`).join(", ")}. Rewrite per the outreach brief.` : null;
 }
 
 /** Shared gate for Approve and Send: is this contact a legal Email 1 target? */

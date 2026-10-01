@@ -12,7 +12,7 @@ Morning pack → draft → Nick PASS → Thomas Approve → AgentMail send → l
 | Step | Who | Gate (enforced server-side) |
 | --- | --- | --- |
 | Load pack | Ace / Thomas | Notion "Cold emails (paste)" rows dated today (or a pasted CSV). Soft → Hold-only, never sendable. |
-| Draft Email 1 | Ace / Thomas | Field playbook template, or "Draft with Claude". Price lint banner: no $, fees, or Gates SKUs. |
+| Draft Email 1 | Ace / Thomas | Template or "Draft with Claude", both built on `docs/outreach-brief.md`. Copy lint blocks prices, stats, client claims, HIPAA claims, "week"/"weak", em dashes, hype, >110 words. Address + opt-out are appended at send. |
 | Nick audit | recorded by Ace / Thomas | PASS / REVISE / KILL + note. Any edit after PASS clears it. |
 | Approve | **Thomas** (Ace too with `FIELD_ACE_CAN_SEND=true`) | Needs Nick PASS on the exact current draft, clean price lint, unsuppressed recipient. |
 | Send | **Thomas** (Ace too with `FIELD_ACE_CAN_SEND=true`) | Explicit confirm; draft must equal the approved draft; CAN-SPAM address set; daily cap; atomic claim prevents double sends. |
@@ -29,6 +29,7 @@ Morning pack → draft → Nick PASS → Thomas Approve → AgentMail send → l
 
 | Call | Purpose |
 | --- | --- |
+| `GET /api/field/brief` | The outreach brief Ace must write inside, plus the Email 1 rules. Read it before drafting. |
 | `GET /api/field/queue?date=YYYY-MM-DD` | Today's pack, every contact's stage/draft/`draftHash`, plus console config (`canGreenlight`, caps, gates). |
 | `POST /api/field/queue` `{ "source": "notion", "date" }` | Load the morning pack from Notion. |
 | `POST /api/field/contacts/:id` `{ "action": "generate", "mode": "template" \| "claude" }` | Draft Email 1 from the playbook. |
@@ -41,6 +42,8 @@ Morning pack → draft → Nick PASS → Thomas Approve → AgentMail send → l
 Every gate (price lint, PASS on the exact draft, suppression, daily cap, CAN-SPAM, one send per contact) still applies to Ace. Errors come back as `{ ok: false, error }` with a status code Ace can act on.
 
 **Outside-app blockers (tracked in the status bar, never faked):** cold-domain warm-up (`FIELD_DOMAIN_WARMED`), CAN-SPAM physical address (`FIELD_MAILING_ADDRESS`, sends are blocked without it).
+
+Update the brief in `~/dev/gates-outreach/OUTREACH-BRIEF.md`, then `npm run brief:sync` to pull it in.
 
 `npm test` runs the workflow/lint/playbook/CSV tests.
 
