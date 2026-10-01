@@ -13,9 +13,9 @@ interface Price { input: number; output: number } // $ per 1M tokens
 
 function priceFor(model: string): Price {
   const m = model.toLowerCase();
-  if (m.includes("opus")) return { input: num("PRICE_OPUS_IN", 15), output: num("PRICE_OPUS_OUT", 75) };
-  if (m.includes("haiku")) return { input: num("PRICE_HAIKU_IN", 0.8), output: num("PRICE_HAIKU_OUT", 4) };
-  return { input: num("PRICE_SONNET_IN", 3), output: num("PRICE_SONNET_OUT", 15) }; // sonnet default
+  if (m.includes("opus")) return { input: num("PRICE_OPUS_IN", 4), output: num("PRICE_OPUS_OUT", 20) };
+  if (m.includes("haiku")) return { input: num("PRICE_HAIKU_IN", 1), output: num("PRICE_HAIKU_OUT", 5) };
+  return { input: num("PRICE_SONNET_IN", 2), output: num("PRICE_SONNET_OUT", 10) }; // sonnet default
 }
 const num = (k: string, d: number) => Number(process.env[k] ?? d);
 

@@ -60,10 +60,10 @@ export function BrainChat({
         scrollDown();
       }
       if (!acc.trim()) {
-        setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "(No response. Set AI_GATEWAY_API_KEY in .env.local to bring me online.)" } : msg)));
+        setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "(No response. Set ANTHROPIC_API_KEY to bring me online.)" } : msg)));
       }
     } catch {
-      setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "I couldn't reach the model. Add AI_GATEWAY_API_KEY to .env.local and restart to bring me online." } : msg)));
+      setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "I couldn't reach the model. Add ANTHROPIC_API_KEY and restart to bring me online." } : msg)));
     }
   };
 

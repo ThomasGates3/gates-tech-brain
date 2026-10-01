@@ -15,11 +15,11 @@
 /** Which brain runs the Conductor. Set per deployment via MODEL_TIER. */
 export type ModelTier = "standard" | "flagship";
 
-/** AI Gateway model id resolved from the active tier. */
+/** Anthropic API model id resolved from the active tier. */
 export type ModelId =
-  | "anthropic/claude-sonnet-4-6" // standard Conductor
-  | "anthropic/claude-opus-4-8" // flagship Conductor
-  | "anthropic/claude-haiku-4-5"; // cheap sub-tasks
+  | "claude-sonnet-5" // standard Conductor
+  | "claude-opus-5-5" // flagship Conductor
+  | "claude-haiku-4-5"; // cheap sub-tasks
 
 /** The 5 sellable personalities (PRD §9). */
 export type Vertical =

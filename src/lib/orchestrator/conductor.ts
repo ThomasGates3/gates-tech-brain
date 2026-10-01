@@ -1,10 +1,10 @@
 /**
  * Conductor agent — the "brain" that plans, delegates to specialists, and streams AgentEvents.
  */
-import { Experimental_Agent, gateway, tool, createAgentUIStream } from "ai";
+import { Experimental_Agent, tool, createAgentUIStream } from "ai";
 import { z } from "zod";
 import type { AgentEvent, SpecialistId, ModelTier } from "@/lib/types";
-import { conductorModel } from "@/lib/models";
+import { claude, conductorModel } from "@/lib/models";
 import { specialists } from "./specialists";
 
 const CONDUCTOR_SYSTEM = `You are the AI Brain Conductor — a precise, competent orchestrator.
@@ -38,7 +38,7 @@ const delegateTool = tool({
 export function createConductor(tier?: ModelTier) {
   return new Experimental_Agent({
     id: "conductor",
-    model: gateway(conductorModel(tier)),
+    model: claude(conductorModel(tier)),
     instructions: CONDUCTOR_SYSTEM,
     tools: { delegate_to: delegateTool },
   });
