@@ -17,6 +17,7 @@ import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, type Draft } from "@/li
 import { getContact, isSuppressed, patchContact } from "@/lib/field/store";
 import { apply, type Action } from "@/lib/field/workflow";
 import { claude, COPY } from "@/lib/models";
+import { budgetBlock } from "@/lib/budget";
 import { recordUsage } from "@/lib/usage";
 import { recordActivity } from "@/lib/activity";
 import type { FieldContact } from "@/lib/field/types";
@@ -71,6 +72,10 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
     let action: Action;
     if (input.action === "generate") {
       if (input.mode === "claude" && !fieldEnv.claude()) return error(503, "Claude drafting needs ANTHROPIC_API_KEY. Use the playbook template instead.");
+      if (input.mode === "claude") {
+        const blocked = await budgetBlock();
+        if (blocked) return error(429, "Daily Claude budget reached. Use the playbook template until midnight.");
+      }
       const draft = input.mode === "claude" ? await claudeDraft(contact) : templateDraft(contact, fieldEnv.signer());
       action = { type: "save_draft", subject: draft.subject, body: draft.body, source: input.mode };
     } else if (input.action === "save_draft") {

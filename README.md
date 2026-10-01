@@ -38,8 +38,8 @@ Morning pack → draft → Nick PASS → Thomas Approve → AgentMail send → l
 | `POST /api/field/contacts/:id` `{ "action": "approve" }` / `hold` / `release` | Greenlight (needs `FIELD_ACE_CAN_SEND=true`) or park a contact. |
 | `POST /api/field/contacts/:id/send` `{ "confirm": true, "draftHash" }` | Send one Email 1 (needs `FIELD_ACE_CAN_SEND=true`). |
 | `GET /api/field/log` · `POST /api/field/log` `{ "email", "reason": "opt_out" }` | Send log + suppressions; suppress "no" replies. |
-| `POST /api/field/claude` `{ "prompt", "system"?, "model"?: "light" \| "standard" \| "copy", "maxTokens"? }` | **Use Claude instead of Grok tokens** for heavy work (summaries, rewrites, research reads). `light` = Haiku 4.5 (default, cheapest), `standard` = Sonnet 5.5, `copy` = Opus 5.5. Text in, text out. Hard daily cap `FIELD_ACE_AI_DAILY_USD` (default $3); returns 429 when reached. |
-| `GET /api/field/claude` | Today's Claude spend vs the cap. |
+| `POST /api/field/claude` `{ "prompt", "system"?, "model"?: "light" \| "standard" \| "copy", "maxTokens"? }` | **Use Claude instead of Grok tokens** for heavy work (summaries, rewrites, research reads). `light` = Haiku 4.5 (default, cheapest), `standard` = Sonnet 5.5, `copy` = Opus 5.5. Text in, text out. Shares the Brain-wide daily Claude budget (warn $3, hard stop $5.50); returns 429 when the cap is hit. |
+| `GET /api/field/claude` | Today's Claude spend vs the warn line and hard cap. |
 
 Every gate (price lint, PASS on the exact draft, suppression, daily cap, CAN-SPAM, one send per contact) still applies to Ace. Errors come back as `{ ok: false, error }` with a status code Ace can act on.
 

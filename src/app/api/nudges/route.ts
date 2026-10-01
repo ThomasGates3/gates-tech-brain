@@ -3,6 +3,7 @@
  * today's spend, recent activity, and connector health. "NOVA noticed…".
  */
 import { todayUsage } from "@/lib/usage";
+import { claudeBudget } from "@/lib/budget";
 import { recentActivity } from "@/lib/activity";
 import { registry } from "@/lib/connectors/registry";
 
@@ -12,7 +13,12 @@ export async function GET() {
   const nudges: Nudge[] = [];
 
   const usage = await todayUsage();
-  if (usage.spendUsd > 5) nudges.push({ id: "spend", tone: "warn", text: `Spend is $${usage.spendUsd.toFixed(2)} today across ${usage.calls} calls — worth a glance.` });
+  const budget = await claudeBudget();
+  if (budget.status !== "ok") nudges.push({ id: "spend", tone: "warn", text: budget.unreadable
+    ? "Couldn't read today's Claude spend, so Claude is paused to protect the budget."
+    : budget.status === "blocked"
+    ? `Claude hard cap hit: $${budget.spentTodayUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)}. Claude is paused until midnight.`
+    : `Claude spend is $${budget.spentTodayUsd.toFixed(2)} today, past the $${budget.warnUsd.toFixed(2)} warning. Hard stop at $${budget.capUsd.toFixed(2)}.` });
   if (usage.calls === 0) nudges.push({ id: "idle", tone: "info", text: "Quiet so far today — ask me to run a briefing or an automation." });
 
   const acts = await recentActivity(5);

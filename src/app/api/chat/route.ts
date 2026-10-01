@@ -7,6 +7,7 @@
 import { streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 import { claude, conductorModel } from "@/lib/models";
+import { budgetBlock } from "@/lib/budget";
 import { resolveModelTier } from "@/lib/settings";
 import { recordUsage } from "@/lib/usage";
 import { specialists } from "@/lib/orchestrator/specialists";
@@ -51,6 +52,8 @@ export async function POST(req: Request) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) return new Response("Chat is offline: ANTHROPIC_API_KEY is not set.", { status: 503 });
+  const blocked = await budgetBlock();
+  if (blocked) return new Response("Daily Claude budget reached. Chat resumes at midnight.", { status: 429 });
 
   const tier = await resolveModelTier();
   const model = conductorModel(tier);

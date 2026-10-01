@@ -18,6 +18,7 @@ function StatusBar({ config }: { config: ConsoleConfig }) {
     { label: "Domain warm-up", ok: config.domainWarmed, warn: true, detail: config.domainWarmed ? "confirmed" : "unconfirmed (outside app)" },
     { label: "Claude", ok: config.claude, warn: true, detail: config.claude ? "drafting on" : "template only" },
     { label: "Sent today", ok: config.sentToday < config.dailyCap, detail: `${config.sentToday} / ${config.dailyCap}` },
+    { label: "Claude spend", ok: config.claudeBudget.status === "ok", warn: config.claudeBudget.status === "warning", detail: config.claudeBudget.unreadable ? "can't read spend · paused" : `$${config.claudeBudget.spentTodayUsd.toFixed(2)} / $${config.claudeBudget.capUsd.toFixed(2)}${config.claudeBudget.status === "blocked" ? " · paused" : ""}` },
   ];
   return (
     <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl border border-white/10 bg-[#08101f] px-4 py-3" data-testid="status-bar">

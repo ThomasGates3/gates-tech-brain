@@ -6,10 +6,12 @@ import type { Job } from "@/lib/types";
 import { listJobs, updateJobStatus } from "./jobs";
 import { createConductor } from "@/lib/orchestrator/conductor";
 import audit from "@/lib/audit";
+import { budgetBlock } from "@/lib/budget";
 
 export async function runJob(job: Job): Promise<void> {
   await updateJobStatus(job.id, "running");
   try {
+    if (await budgetBlock()) throw new Error("Daily Claude budget reached");
     const conductor = createConductor();
     const result = await conductor.generate({ prompt: job.prompt });
     const output = result.text ?? "(no output)";
