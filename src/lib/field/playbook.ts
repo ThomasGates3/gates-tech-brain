@@ -41,6 +41,8 @@ export function cleanGap(gap: string): string {
     .replace(/\bweekends\b/gi, "Saturdays and Sundays")
     .replace(/\bweekend\b/gi, "Saturday and Sunday")
     .replace(/\bweekdays?\b/gi, "Monday to Friday")
+    .replace(/\b(?:all|the whole|seven days a) week\b/gi, "every day")
+    .replace(/\b(?:each|every|per|a) week\b/gi, "every seven days")
     .replace(/\s*—\s*/g, ", ")
     .replace(/([^.!?])$/, "$1.");
 }
