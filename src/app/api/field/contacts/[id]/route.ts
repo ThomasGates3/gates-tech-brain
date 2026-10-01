@@ -36,15 +36,23 @@ const Body = z.discriminatedUnion("action", [
 
 async function claudeDraft(c: FieldContact): Promise<Draft> {
   const model = conductorModel(await resolveModelTier());
-  const started = Date.now();
-  const r = await generateText({
-    model: claude(model),
-    system: PLAYBOOK_SYSTEM,
-    prompt: playbookPrompt(c, fieldEnv.signer()),
-    output: Output.object({ schema: z.object({ subject: z.string(), body: z.string() }) }),
-  });
-  void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
-  return r.output;
+  const ask = async (prompt: string) => {
+    const started = Date.now();
+    const r = await generateText({
+      model: claude(model),
+      system: PLAYBOOK_SYSTEM,
+      prompt,
+      output: Output.object({ schema: z.object({ subject: z.string(), body: z.string() }) }),
+    });
+    void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
+    return r.output;
+  };
+  const prompt = playbookPrompt(c, fieldEnv.signer());
+  const draft = await ask(prompt);
+  const issues = lintCopy(draft.subject, draft.body);
+  if (!issues.length) return draft;
+  // One self-correction pass; whatever comes back is still linted at Nick/Approve/Send.
+  return ask(`${prompt}\n\nYour previous draft broke these rules: ${issues.map((i) => `"${i.match}" (${i.rule})`).join(", ")}.\nPrevious draft:\nSubject: ${draft.subject}\n\n${draft.body}\n\nRewrite it to fix every issue.`);
 }
 
 export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/[id]">) {
