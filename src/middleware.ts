@@ -6,7 +6,7 @@
  * Unauthenticated → /sign-in (pages) or 401 (API).
  */
 import { apiRateLimiter, securityHeaders, corsHeaders } from "@/lib/security";
-import { GATE_COOKIE, gateEnabled, verifyToken } from "@/lib/gate";
+import { GATE_COOKIE, gateEnabled, operatorForBearer, verifyToken } from "@/lib/gate";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -30,7 +30,8 @@ export default async function middleware(req: NextRequest) {
 
   // Password gate.
   if (gateEnabled() && !isPublic(pathname)) {
-    const ok = await verifyToken(req.cookies.get(GATE_COOKIE)?.value);
+    const bot = pathname.startsWith("/api/field/") && operatorForBearer(req.headers.get("authorization")) !== null;
+    const ok = bot || (await verifyToken(req.cookies.get(GATE_COOKIE)?.value));
     if (!ok) {
       if (pathname.startsWith("/api/")) {
         return new NextResponse("Unauthorized", { status: 401, headers: { ...securityHeaders, ...corsHeaders(origin) } });

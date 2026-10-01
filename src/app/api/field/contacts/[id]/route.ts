@@ -4,7 +4,7 @@
  *   { action: "save_draft", subject, body }               manual edit (clears Nick PASS / approval)
  *   { action: "submit_nick" }                             mark as waiting on Nick
  *   { action: "nick_verdict", verdict, note }             record Nick PASS / REVISE / KILL
- *   { action: "approve" }                                 Thomas greenlight (needs PASS)
+ *   { action: "approve" }                                 greenlight (needs PASS; Thomas, or Ace if FIELD_ACE_CAN_SEND)
  *   { action: "hold" } | { action: "release" }
  * Sending is a separate endpoint (./send) so it can never ride along with another action.
  */
@@ -12,7 +12,7 @@ import { generateText, gateway, Output } from "ai";
 import { z } from "zod";
 import { error, json, requireOperator, syncNotion, type SyncResult } from "@/lib/field/api";
 import { fieldEnv } from "@/lib/field/config";
-import { lintPrices } from "@/lib/field/lint";
+import { lintCopy } from "@/lib/field/lint";
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, type Draft } from "@/lib/field/playbook";
 import { getContact, isSuppressed, patchContact } from "@/lib/field/store";
 import { apply, type Action } from "@/lib/field/workflow";
@@ -74,6 +74,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
 
     const result = apply(contact, action, {
       operator: auth.operator,
+      aceCanSend: fieldEnv.aceCanSend(),
       suppressed: action.type === "approve" ? await isSuppressed(contact.email) : false,
       now: new Date().toISOString(),
     });
@@ -90,7 +91,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
       void recordActivity({ kind: "updated", target: `Field: killed ${updated.name}`, because: updated.nickNote ?? "Nick KILL", agent: "field-console" });
     }
 
-    return json({ ok: true, contact: updated, lint: lintPrices(updated.subject, updated.body), notion });
+    return json({ ok: true, contact: updated, lint: lintCopy(updated.subject, updated.body), notion });
   } catch (e) {
     return error(500, e instanceof Error ? e.message : String(e));
   }

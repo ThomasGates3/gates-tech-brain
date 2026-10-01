@@ -1,8 +1,8 @@
 /**
  * Field Console server config — env-driven, read per request. Server-only.
  */
-import { cookies } from "next/headers";
-import { GATE_COOKIE, gateEnabled, readSession } from "@/lib/gate";
+import { cookies, headers } from "next/headers";
+import { GATE_COOKIE, gateEnabled, operatorForBearer, readSession } from "@/lib/gate";
 import type { Operator } from "./types";
 import type { Signer } from "./playbook";
 
@@ -18,9 +18,15 @@ export const fieldEnv = {
   agentmailBase: () => env("AGENTMAIL_BASE_URL") || "https://api.agentmail.to",
   claude: () => Boolean(env("AI_GATEWAY_API_KEY") || env("VERCEL_OIDC_TOKEN")),
   mailingAddress: () => env("FIELD_MAILING_ADDRESS"),
+  /** Lets Ace (the bot) Approve + Send too, not just Thomas. Off until you flip it. */
+  aceCanSend: () => env("FIELD_ACE_CAN_SEND") === "true",
   domainWarmed: () => env("FIELD_DOMAIN_WARMED") === "true",
   dailyCap: () => Math.max(1, Number(env("FIELD_DAILY_SEND_CAP")) || 20),
-  signer: (): Signer => ({ name: env("FIELD_SENDER_NAME") || "Thomas", company: env("FIELD_SENDER_COMPANY") || "Gates Technologies" }),
+  signer: (): Signer => ({
+    name: env("FIELD_SENDER_NAME") || "Thomas Gates III",
+    company: env("FIELD_SENDER_COMPANY") || "Gates Technologies",
+    site: env("FIELD_SENDER_SITE") || "gatestech.solutions",
+  }),
 };
 
 /** YYYY-MM-DD for "today" in the console's timezone (Atlanta by default). */
@@ -41,7 +47,7 @@ export function startOfTodayIso(tz = fieldEnv.timezone()): string {
 }
 
 /**
- * Who is operating. From the signed session cookie. With the gate fully off
+ * Who is operating. Ace's bearer API key first, then the signed session cookie. With the gate fully off
  * (local dev only), FIELD_DEV_OPERATOR can stand in — never in production.
  */
 export async function currentOperator(): Promise<Operator | null> {
@@ -49,6 +55,8 @@ export async function currentOperator(): Promise<Operator | null> {
     const dev = env("FIELD_DEV_OPERATOR") as Operator;
     return process.env.NODE_ENV !== "production" && (dev === "thomas" || dev === "ace") ? dev : null;
   }
+  const bot = operatorForBearer((await headers()).get("authorization"));
+  if (bot) return bot;
   const session = await readSession((await cookies()).get(GATE_COOKIE)?.value);
   return session?.operator ?? null;
 }

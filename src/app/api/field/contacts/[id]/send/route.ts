@@ -1,7 +1,7 @@
 /**
  * POST /api/field/contacts/:id/send { confirm: true, draftHash } — send ONE Email 1.
  *
- * Thomas-only, after Approve, for the exact draft he approved (draftHash must
+ * Thomas (or Ace with FIELD_ACE_CAN_SEND=true), after Approve, for the exact draft he approved (draftHash must
  * match what his screen showed). One contact per call; there is no batch or
  * autopilot path. Order: gates → atomic claim (approved → sending) → AgentMail
  * → send log + suppression → Notion "Sent". If AgentMail fails, the claim is
@@ -35,7 +35,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
 
   const contact = await getContact(id);
   if (!contact) return error(404, "Contact not found.");
-  const gate = sendError(contact, { operator: auth.operator, suppressed: await isSuppressed(contact.email), now: new Date().toISOString() });
+  const gate = sendError(contact, { operator: auth.operator, aceCanSend: fieldEnv.aceCanSend(), suppressed: await isSuppressed(contact.email), now: new Date().toISOString() });
   if (gate) return error(gate.status, gate.error);
   if (parsed.data.draftHash !== contact.approvedHash) return error(409, "The draft on your screen isn't the approved draft. Refresh and review.");
 
@@ -49,7 +49,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
     sent = await sendEmail({
       to: contact.email,
       subject: contact.subject,
-      text: composeOutgoing(contact.body, canSpamFooter(fieldEnv.signer().company, address)),
+      text: composeOutgoing(contact.body, canSpamFooter(address)),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -62,7 +62,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
   try {
     const entry = await recordSend(contact, { ...sent, inbox, operator: auth.operator });
     audit.record({ action: "email_send", actor: auth.operator, target: contact.email, detail: { contactId: contact.id, messageId: sent.messageId } });
-    void recordActivity({ kind: "sent", target: `Email 1 → ${contact.name}`, because: "Nick PASS + Thomas approve", agent: "field-console" });
+    void recordActivity({ kind: "sent", target: `Email 1 → ${contact.name}`, because: `Nick PASS + ${contact.approvedBy ?? "thomas"} approve`, agent: "field-console" });
     const notion = await syncNotion(contact, { status: "Sent" });
     return json({ ok: true, log: entry, notion });
   } catch (e) {

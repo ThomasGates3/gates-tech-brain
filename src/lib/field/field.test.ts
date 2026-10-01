@@ -4,13 +4,13 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lintPrices } from "./lint";
-import { templateDraft, shortCity, shortName, composeOutgoing, canSpamFooter } from "./playbook";
+import { lintCopy } from "./lint";
+import { templateDraft, shortCity, shortName, composeOutgoing, canSpamFooter, cleanGap, PLAYBOOK_SYSTEM } from "./playbook";
 import { apply, draftHash, sendError, type Ctx } from "./workflow";
 import { csvToRows } from "./csv";
 import type { FieldContact } from "./types";
 
-const signer = { name: "Thomas", company: "Gates Technologies" };
+const signer = { name: "Thomas Gates III", company: "Gates Technologies", site: "gatestech.solutions" };
 const now = "2026-10-01T13:00:00.000Z";
 const thomas: Ctx = { operator: "thomas", suppressed: false, now };
 const ace: Ctx = { operator: "ace", suppressed: false, now };
@@ -39,40 +39,58 @@ function drafted(over: Partial<FieldContact> = {}) {
 
 // ── Playbook ────────────────────────────────────────────────────────────────
 
-test("template matches the Field playbook shape and has no prices", () => {
+test("template follows the outreach brief shape and passes the copy lint", () => {
   const d = templateDraft(contact(), signer);
-  assert.equal(d.subject, "cosmo med spa hours");
-  assert.match(d.body, /^Saw Cosmo Med Spa & Salon in Alpharetta this week\.\n\nPublished hours/);
-  assert.match(d.body, /tied up in a treatment/);
-  assert.match(d.body, /Worth a 15 minute look\?\n\nThomas\nGates Technologies\n\nNot a fit\? Reply 'no' and I won't follow up\.$/);
-  assert.deepEqual(lintPrices(d.subject, d.body), []);
+  assert.equal(d.subject, "calls after you close");
+  assert.match(d.body, /^Published hours are Tuesday-Saturday 9-5 with Sunday and Monday closed\.\n\nSo a call after you close has nowhere to go\./);
+  assert.match(d.body, /Worth a look, or do you have that covered already\?\n\nThomas Gates III\nGates Technologies · gatestech\.solutions$/);
+  assert.doesNotMatch(d.body, /Alpharetta/); // no city unless it's relevant
+  assert.deepEqual(lintCopy(d.subject, d.body), []);
 });
 
-test("template helpers", () => {
+test("template: non-hours gap, missing gap, and gap cleanup", () => {
   assert.equal(shortCity("Marietta (East Cobb / Lower Roswell)"), "Marietta");
-  assert.equal(shortName("Bella Forever Med Spa"), "bella forever med");
   assert.equal(shortName("Revive Health Center & Spa"), "revive health center");
   const d = templateDraft(contact({ name: "Shine Mobile Detail", batch: "ATL detailers", gap: "No booking form on the IG bio" }), signer);
-  assert.equal(d.subject, "shine mobile detail front desk");
-  assert.match(d.body, /out on a job/);
+  assert.equal(d.subject, "missed calls at shine mobile detail");
+  assert.match(d.body, /while you're out on a job/);
+  const generic = templateDraft(contact({ gap: "" }), signer);
+  assert.match(generic.body, /^When the phone rings and nobody can pick up/);
+  assert.deepEqual(lintCopy(generic.subject, generic.body), []);
+  assert.equal(cleanGap("Closed weekends — phone only"), "Closed Saturdays and Sundays, phone only.");
 });
 
-test("CAN-SPAM footer is appended to the outgoing body", () => {
-  const out = composeOutgoing("Hi.\n", canSpamFooter("Gates Technologies", "123 Peachtree St, Atlanta GA"));
-  assert.equal(out, "Hi.\n\n--\nGates Technologies\n123 Peachtree St, Atlanta GA");
+test("Claude prompt carries the full outreach brief", () => {
+  assert.match(PLAYBOOK_SYSTEM, /<outreach_brief>[\s\S]*The one rule that matters most[\s\S]*<\/outreach_brief>/);
 });
 
-// ── Price lint ──────────────────────────────────────────────────────────────
+test("CAN-SPAM footer (address + opt-out) is appended to the outgoing body", () => {
+  const out = composeOutgoing("Hi.\n", canSpamFooter("3800 Camp Creek Pkwy, Atlanta, GA 30331"));
+  assert.equal(out, `Hi.\n\n3800 Camp Creek Pkwy, Atlanta, GA 30331\nReply "stop" and I won't write again.`);
+});
 
-test("price lint catches money, recurring amounts, price talk and SKUs", () => {
-  const hits = (s: string) => lintPrices(s).map((i) => i.rule);
+// ── Copy lint (outreach brief "never assert") ───────────────────────────────
+
+test("copy lint enforces the outreach brief", () => {
+  const hits = (subject: string, body = "") => lintCopy(subject, body).map((i) => i.rule);
   assert.ok(hits("only $97/mo").includes("Dollar amount"));
   assert.ok(hits("it's 1,000 dollars").includes("Currency word"));
   assert.ok(hits("just 250 per booked meeting").includes("Recurring amount"));
   assert.ok(hits("our pricing is simple").includes("Price talk"));
   assert.ok(hits("Speed-to-Lead agent").includes("Gates SKU"));
-  assert.ok(hits("Offer 1 gets you a site").includes("Gates SKU"));
-  assert.deepEqual(lintPrices("Worth a 15 minute look? Open Mon-Sat 9-5."), []);
+  assert.ok(hits("bookings up 34%").includes("Percentage"));
+  assert.ok(hits("we've helped 50+ med spas").includes("Client claim"));
+  for (const w of ["this week", "weekends", "weekly", "a weak spot"]) assert.ok(hits(w).includes("Banned word"), w);
+  assert.ok(hits("calls — and texts").includes("Em dash"));
+  assert.ok(hits("our HIPAA-compliant agent").includes("HIPAA claim"));
+  assert.ok(hits("never miss a call again").includes("Banned phrase"));
+  assert.ok(hits("I hope this email finds you well").includes("Banned phrase"));
+  assert.ok(hits("it won't replace your front desk").includes("Replaces staff"));
+  assert.ok(hits("Great!").includes("Exclamation mark"));
+  assert.ok(hits("RE: your hours").includes("Fake reply subject"));
+  assert.ok(hits("s", Array(111).fill("word").join(" ")).includes("Too long"));
+  assert.ok(hits("s", "https://a.example and https://b.example").includes("Too many links"));
+  assert.deepEqual(lintCopy("calls after you close", "HIPAA-aware where that scope applies. Open Mon-Sat 9-5. Worth a look?"), []);
 });
 
 // ── Workflow gates ──────────────────────────────────────────────────────────
@@ -99,13 +117,23 @@ test("Approve is gated on Nick PASS", () => {
   assert.ok(!apply(revised, { type: "approve" }, thomas).ok);
 });
 
-test("Approve and Send are Thomas-only", () => {
+test("Approve and Send are Thomas-only by default", () => {
   const passed = step(drafted(), { type: "nick_verdict", verdict: "PASS", note: "" });
   const r = apply(passed, { type: "approve" }, ace);
   assert.ok(!r.ok && r.status === 403);
   const approved = step(passed, { type: "approve" }, thomas);
   assert.equal(sendError(approved, ace)?.status, 403);
   assert.equal(sendError(approved, { ...thomas, operator: "team" })?.status, 403);
+});
+
+test("Ace can Approve and Send once FIELD_ACE_CAN_SEND is on (team still can't)", () => {
+  const aceSends: Ctx = { ...ace, aceCanSend: true };
+  const passed = step(drafted(), { type: "nick_verdict", verdict: "PASS", note: "" });
+  const approved = step(passed, { type: "approve" }, aceSends);
+  assert.equal(approved.stage, "approved");
+  assert.equal(approved.approvedBy, "ace");
+  assert.equal(sendError(approved, aceSends), null);
+  assert.equal(sendError(approved, { ...aceSends, operator: "team" })?.status, 403);
 });
 
 test("editing after PASS/approval clears both — Nick must re-audit", () => {

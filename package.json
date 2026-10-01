@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "test": "node --import tsx --test \"src/**/*.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "brief:sync": "cp ../gates-outreach/OUTREACH-BRIEF.md docs/outreach-brief.md && node scripts/gen-brief.mjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.17",

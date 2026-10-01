@@ -68,6 +68,8 @@ export interface Suppression {
 /** Things the console needs to know to render honest gates. */
 export interface ConsoleConfig {
   operator: Operator | null;
+  /** Can this operator Approve + Send (Thomas, or Ace with FIELD_ACE_CAN_SEND). */
+  canGreenlight: boolean;
   today: string;
   timezone: string;
   database: boolean;
