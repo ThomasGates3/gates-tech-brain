@@ -13,7 +13,7 @@ export interface ErrorStateProps {
 }
 
 /**
- * ErrorState — sunset-orange accent for error surfaces.
+ * ErrorState — gatestech coral accent for error surfaces.
  * Keyboard accessible: Tab to retry / dismiss, Enter / Space to activate.
  */
 export function ErrorState({
@@ -29,11 +29,11 @@ export function ErrorState({
     <div
       data-testid={testId}
       role="alert"
-      className={`flex flex-col gap-4 rounded-[8px] border border-[#ff7a17]/30 bg-[#191919] p-6 ${className}`}
+      className={`flex flex-col gap-4 rounded-[8px] border border-[#ff7a45]/40 bg-[#0a1224] p-6 ${className}`}
     >
       {/* Eyebrow */}
       <div className="flex items-center justify-between gap-2">
-        <p className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#ff7a17]">
+        <p className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#ff7a45]">
           {code ? `ERROR · ${code}` : "ERROR"}
         </p>
         {dismiss && (
@@ -41,7 +41,7 @@ export function ErrorState({
             data-testid={`${testId}-dismiss`}
             onClick={dismiss}
             aria-label="Dismiss error"
-            className="min-h-[44px] min-w-[44px] rounded-full text-[#7d8187] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
+            className="min-h-[44px] min-w-[44px] rounded-full text-[#7a93ad] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
           >
             ✕
           </button>
@@ -58,7 +58,7 @@ export function ErrorState({
         </h4>
         <p
           data-testid={`${testId}-message`}
-          className="text-[14px] leading-[20px] text-[#7d8187]"
+          className="text-[14px] leading-[20px] text-[#7a93ad]"
         >
           {message}
         </p>
@@ -69,7 +69,7 @@ export function ErrorState({
         <button
           data-testid={`${testId}-retry`}
           onClick={retry}
-          className="min-h-[44px] self-start rounded-full border border-[#212327] bg-[#0a0a0a] px-4 py-2 text-[14px] leading-[20px] text-white transition-colors hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
+          className="min-h-[44px] self-start rounded-full border border-[#16263d] bg-[#050914] px-4 py-2 text-[14px] leading-[20px] text-white transition-colors hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
         >
           Try again
         </button>

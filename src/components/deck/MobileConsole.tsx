@@ -22,11 +22,11 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
       {!open && (
         <div className="fixed inset-0 flex flex-col items-center justify-center gap-10 px-8 text-center">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.45em] text-zinc-500">AI Brain</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.45em] text-slate-500">AI Brain</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight">
               {greeting}. I&apos;m <span className="text-[var(--accent)]">{personaName}</span>.
             </h1>
-            <p className="mt-2 text-sm text-zinc-500">Tap the core to talk to me.</p>
+            <p className="mt-2 text-sm text-slate-500">Tap the core to talk to me.</p>
           </div>
 
           <button
@@ -44,7 +44,7 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
             </div>
           </button>
 
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-600">
             {active ? "listening…" : "core online"}
           </span>
         </div>
@@ -59,14 +59,14 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
                 <CoreOrb state={active ? "thinking" : "idle"} className="h-10 w-10" />
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">AI Brain</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-500">AI Brain</p>
                 <p className="text-sm font-semibold text-[var(--accent)]">{personaName}</p>
               </div>
             </div>
             <button
               data-testid="mobile-close"
               onClick={() => setOpen(false)}
-              className="grid h-11 w-11 place-items-center rounded-full text-zinc-400 hover:bg-white/5"
+              className="grid h-11 w-11 place-items-center rounded-full text-slate-400 hover:bg-white/5"
               aria-label="Close"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>

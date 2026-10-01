@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 /**
  * Corner telemetry + outcome-phrased activity feed for the JARVIS deck.
- * Deep-orange on black. Activity reads like results, not internal chatter:
+ * Gates cyan on deep navy. Activity reads like results, not internal chatter:
  *   "Generated…", "Updated… because…", "Spawned subagent to…".
  */
 
@@ -40,10 +40,10 @@ export function StatPanel({ title, stats, onClick, "data-testid": testId = "stat
         {stats.map((s) => (
           <div key={s.label} data-testid={`stat-${s.label}`}>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">{s.label}</span>
-              <span className="font-mono text-sm text-zinc-100">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{s.label}</span>
+              <span className="font-mono text-sm text-slate-100">
                 {s.value}
-                {s.sub && <span className="ml-1 text-[10px] text-zinc-500">{s.sub}</span>}
+                {s.sub && <span className="ml-1 text-[10px] text-slate-500">{s.sub}</span>}
               </span>
             </div>
             {typeof s.bar === "number" && (
@@ -73,11 +73,11 @@ export interface Activity {
 
 const KIND_META: Record<ActivityKind, { verb: string; color: string; icon: string }> = {
   generated: { verb: "Generated", color: "var(--accent)", icon: "✦" },
-  updated:   { verb: "Updated",   color: "#ffab40",       icon: "↻" },
-  spawned:   { verb: "Spawned subagent to", color: "#ffc042", icon: "⌁" },
+  updated:   { verb: "Updated",   color: "#00b7ff",       icon: "↻" },
+  spawned:   { verb: "Spawned subagent to", color: "#7fdfff", icon: "⌁" },
   connected: { verb: "Connected", color: "#7dd3fc",       icon: "⇄" },
   sent:      { verb: "Sent",      color: "#a3e635",       icon: "➤" },
-  queried:   { verb: "Queried",   color: "#ffb066",       icon: "⌕" },
+  queried:   { verb: "Queried",   color: "#7fdfff",       icon: "⌕" },
   alert:     { verb: "Flagged",   color: "#ff3b30",       icon: "!" },
 };
 
@@ -114,10 +114,10 @@ export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "dat
           <span className="h-1 w-4 bg-[var(--accent)]" />
           <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
         </div>
-        <span className="font-mono text-[10px] text-zinc-600">live</span>
+        <span className="font-mono text-[10px] text-slate-600">live</span>
       </div>
       {loaded && items.length === 0 && (
-        <p className="py-6 text-center text-[12px] text-zinc-600">Nothing yet — run an automation or a dev task and it shows up here.</p>
+        <p className="py-6 text-center text-[12px] text-slate-600">Nothing yet — run an automation or a dev task and it shows up here.</p>
       )}
       <ul className="space-y-2.5">
         {items.map((a) => {
@@ -128,12 +128,12 @@ export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "dat
                 {m.icon}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] leading-snug text-zinc-300">
+                <p className="text-[13px] leading-snug text-slate-300">
                   <span style={{ color: m.color }}>{m.verb}</span>{" "}
-                  <span className="text-zinc-100">{a.target}</span>
-                  {a.because && <span className="text-zinc-500"> — because {a.because}</span>}
+                  <span className="text-slate-100">{a.target}</span>
+                  {a.because && <span className="text-slate-500"> — because {a.because}</span>}
                 </p>
-                <p className="mt-0.5 font-mono text-[10px] text-zinc-600">
+                <p className="mt-0.5 font-mono text-[10px] text-slate-600">
                   {a.agent ? `${a.agent} · ` : ""}{a.at}
                 </p>
               </div>

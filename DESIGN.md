@@ -1,23 +1,25 @@
 ---
 version: alpha
-name: xAI-design-analysis
-description: An inspired interpretation of xAI's design language — Elon Musk's frontier-AI company whose web surface is a strict near-black canvas broken only by white pill outlines, occasional warm sunset / dusk gradient accents, a custom geometric sans (Universal Sans) for display, and an uppercase tracked monospace caption face; the whole system reads as engineered-cosmic, unmarketed.
+name: gates-technologies-brain
+description: Gates Technologies palette from gatestech.solutions (deep navy canvas, cyan/blue accents, ice-white text, coral used sparingly) on the original engineered-cosmic layout system. Geist sans + Geist Mono.
 
 colors:
-  primary: "#ffffff"
-  on-primary: "#0a0a0a"
-  ink: "#ffffff"
-  ink-hover: "#fafaf7"
-  body: "#dadbdf"
-  body-mid: "#7d8187"
-  mute: "#7d8187"
-  hairline: "#212327"
-  canvas: "#0a0a0a"
-  canvas-soft: "#1a1c20"
-  canvas-card: "#191919"
-  canvas-mid: "#363a3f"
-  accent-sunset: "#ff7a17"
-  accent-sunset-soft: "#ffc285"
+  primary: "#eaf7ff"
+  on-primary: "#050914"
+  ink: "#eaf7ff"
+  ink-hover: "#f4fbff"
+  body: "#b7d0e6"
+  body-mid: "#7a93ad"
+  mute: "#7a93ad"
+  hairline: "#16263d"
+  canvas: "#050914"
+  canvas-soft: "#0e1a2e"
+  canvas-card: "#0a1224"
+  canvas-mid: "#24384f"
+  accent-sunset: "#00e5ff"
+  accent-sunset-soft: "#7fdfff"
+  accent-blue: "#00b7ff"
+  accent-warm: "#ff7a45"
   accent-dusk: "#7c3aed"
   accent-twilight: "#c4b5fd"
   accent-breeze: "#a0c3ec"
@@ -240,6 +242,8 @@ components:
 
 
 ## Overview
+
+> **Palette override (2026-10-01): Gates Technologies.** The colors now match gatestech.solutions and supersede every color named below. The canvas is deep navy `#050914` with panels in `#0a1224`. The primary accent is cyan `#00e5ff` (text, active states, focus); blue `#00b7ff` is for borders and hovers; soft cyan `#7fdfff` is for secondary accent text. Text runs ice white `#eaf7ff`, then body `#b7d0e6`, then mute `#7a93ad`. Coral `#ff7a45` is the warm accent and is used sparingly (errors, warnings). Neutral Tailwind greys use `slate-*`, not `zinc-*`. Do not reintroduce orange. Layout, typography and component rules below still apply.
 
 xAI is Elon Musk's frontier-AI lab and the website wears that posture with engineered restraint: a near-black canvas `{colors.canvas}` (`#0a0a0a`) edge-to-edge, white outline pills as every interactive element, and a single proprietary geometric sans `Universal Sans` carrying every display headline at weight 400. There is no gradient hero, no atmospheric backdrop, no product screenshot. The brand reads as confidently sparse — a research lab announcing its work rather than a SaaS marketing site.
 

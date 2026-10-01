@@ -59,7 +59,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
           <span className="h-1 w-4 bg-[var(--accent)]" />
           <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Automations</span>
         </div>
-        <span className="font-mono text-[10px] text-zinc-600">{shown.length} available</span>
+        <span className="font-mono text-[10px] text-slate-600">{shown.length} available</span>
       </div>
 
       {/* category filter */}
@@ -70,7 +70,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
             data-testid={`autocat-${c.id}`}
             onClick={() => setCat(c.id)}
             className={`min-h-[32px] rounded-full px-3 text-[11px] transition-colors ${
-              cat === c.id ? "bg-[var(--accent)] text-black" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+              cat === c.id ? "bg-[var(--accent)] text-black" : "bg-white/5 text-slate-400 hover:text-slate-200"
             }`}
           >
             {c.label}
@@ -88,8 +88,8 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
             <div key={a.id} data-testid={`auto-${a.id}`} className="rounded-lg border border-white/[0.06] bg-black/30 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-zinc-100">{a.name}</p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-zinc-500">{a.description}</p>
+                  <p className="truncate text-sm font-medium text-slate-100">{a.name}</p>
+                  <p className="mt-0.5 text-[12px] leading-snug text-slate-500">{a.description}</p>
                 </div>
                 <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[var(--accent-soft)]">
                   {TRIGGER_BADGE[a.trigger.kind]}
@@ -106,7 +106,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                       placeholder={p}
                       value={vars[p] ?? ""}
                       onChange={(e) => setVars((v) => ({ ...v, [p]: e.target.value }))}
-                      className="min-h-[38px] w-full rounded-md border border-white/10 bg-black/40 px-2.5 text-[13px] text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-[var(--accent)]/60"
+                      className="min-h-[38px] w-full rounded-md border border-white/10 bg-black/40 px-2.5 text-[13px] text-slate-100 placeholder:text-slate-600 outline-none focus:border-[var(--accent)]/60"
                     />
                   ))}
                 </div>
@@ -139,7 +139,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                   {st.error ? (
                     <p className="text-[12px] text-[var(--orb-error,#ff3b30)]">{st.error}</p>
                   ) : (
-                    <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-zinc-300">{st.output}</pre>
+                    <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-slate-300">{st.output}</pre>
                   )}
                 </div>
               )}

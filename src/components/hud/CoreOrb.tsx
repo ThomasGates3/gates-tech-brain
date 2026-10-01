@@ -14,11 +14,11 @@ interface CoreOrbProps {
 }
 
 const STATE_CONFIG: Record<OrbState, { color: string; glow: string; label: string }> = {
-  idle:     { color: "#ff6a00", glow: "rgba(255, 106, 0, 0.40)",   label: "STANDBY"  },
-  thinking: { color: "#ff8c1a", glow: "rgba(255, 140, 26, 0.55)",  label: "THINKING" },
-  tool:     { color: "#ffab40", glow: "rgba(255, 171, 64, 0.45)",  label: "EXECUTING"},
+  idle:     { color: "#00e5ff", glow: "rgba(0, 229, 255, 0.40)",   label: "STANDBY"  },
+  thinking: { color: "#5cefff", glow: "rgba(92, 239, 255, 0.55)",  label: "THINKING" },
+  tool:     { color: "#00b7ff", glow: "rgba(0, 183, 255, 0.45)",  label: "EXECUTING"},
   error:    { color: "#ff3b30", glow: "rgba(255, 59, 48, 0.45)",   label: "ERROR"    },
-  success:  { color: "#ffc042", glow: "rgba(255, 192, 66, 0.40)",  label: "DONE"     },
+  success:  { color: "#7fdfff", glow: "rgba(127, 223, 255, 0.40)",  label: "DONE"     },
 };
 
 const SIZE = 240;          // logical canvas units; CSS scales to the container
@@ -137,7 +137,7 @@ export default function CoreOrb({
 
       // ── core sphere (offset highlight for a 3D read) ──
       const core = ctx.createRadialGradient(C - 10, C - 12, 3, C, C, 32);
-      core.addColorStop(0, "#fff6ec");
+      core.addColorStop(0, "#eaf7ff");
       core.addColorStop(0.35, col + "ee");
       core.addColorStop(1, col + "66");
       ctx.beginPath();

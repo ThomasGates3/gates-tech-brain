@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 interface Nudge { id: string; tone: "info" | "warn" | "good"; text: string }
-const DOT: Record<Nudge["tone"], string> = { info: "#ffb066", warn: "#ff3b30", good: "#ffc042" };
+const DOT: Record<Nudge["tone"], string> = { info: "#7fdfff", warn: "#ff3b30", good: "#7fdfff" };
 
 /** Proactive "NOVA noticed…" surface — real observations, not chatter. */
 export function NovaNoticed({ name }: { name: string }) {
@@ -31,11 +31,11 @@ export function NovaNoticed({ name }: { name: string }) {
       {shown.map((n) => (
         <div key={n.id} className="flex items-center gap-3 rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/60 px-4 py-2.5 backdrop-blur" data-testid={`nudge-${n.id}`}>
           <span className="h-2 w-2 shrink-0 animate-pulse rounded-full" style={{ background: DOT[n.tone] }} />
-          <p className="flex-1 text-[13px] text-zinc-300">
+          <p className="flex-1 text-[13px] text-slate-300">
             <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--accent-soft)]">{name} noticed · </span>
             {n.text}
           </p>
-          <button onClick={() => setDismissed((s) => new Set(s).add(n.id))} className="shrink-0 text-zinc-600 hover:text-zinc-300" aria-label="Dismiss" data-testid={`nudge-dismiss-${n.id}`}>
+          <button onClick={() => setDismissed((s) => new Set(s).add(n.id))} className="shrink-0 text-slate-600 hover:text-slate-300" aria-label="Dismiss" data-testid={`nudge-dismiss-${n.id}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>

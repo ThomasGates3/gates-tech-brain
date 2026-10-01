@@ -33,19 +33,19 @@ export function EmptyState({
   return (
     <div
       data-testid={testId}
-      className={`flex flex-col items-center justify-center gap-6 rounded-[8px] border border-[#212327] bg-[#191919] px-6 py-12 text-center ${className}`}
+      className={`flex flex-col items-center justify-center gap-6 rounded-[8px] border border-[#16263d] bg-[#0a1224] px-6 py-12 text-center ${className}`}
     >
       {eyebrow && (
         <p
           data-testid={`${testId}-eyebrow`}
-          className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#7d8187]"
+          className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#7a93ad]"
         >
           {eyebrow}
         </p>
       )}
 
       {icon && (
-        <div data-testid={`${testId}-icon`} className="text-[#7d8187]">
+        <div data-testid={`${testId}-icon`} className="text-[#7a93ad]">
           {icon}
         </div>
       )}
@@ -61,7 +61,7 @@ export function EmptyState({
         {description && (
           <p
             data-testid={`${testId}-description`}
-            className="max-w-sm text-[14px] leading-[20px] text-[#7d8187]"
+            className="max-w-sm text-[14px] leading-[20px] text-[#7a93ad]"
           >
             {description}
           </p>
@@ -72,7 +72,7 @@ export function EmptyState({
         <button
           data-testid={action.testId ?? `${testId}-action`}
           onClick={action.onClick}
-          className="min-h-[44px] rounded-full border border-[#212327] bg-[#0a0a0a] px-4 py-2 text-[14px] leading-[20px] text-[#ffffff] transition-colors hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
+          className="min-h-[44px] rounded-full border border-[#16263d] bg-[#050914] px-4 py-2 text-[14px] leading-[20px] text-[#ffffff] transition-colors hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50"
         >
           {action.label}
         </button>

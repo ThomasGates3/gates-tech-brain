@@ -71,7 +71,7 @@ export function BrainChat({
     <div
       data-testid={testId}
       className={`flex flex-col rounded-2xl border border-[var(--accent-deep)]/40 bg-[var(--panel)]/80 backdrop-blur ${className}`}
-      style={{ boxShadow: "0 0 40px rgba(255,106,0,0.06), inset 0 0 1px rgba(255,106,0,0.3)" }}
+      style={{ boxShadow: "0 0 40px rgba(0,229,255,0.06), inset 0 0 1px rgba(0,229,255,0.3)" }}
     >
       {/* header */}
       <div className="flex items-center justify-between border-b border-[var(--accent-deep)]/30 px-4 py-2.5">
@@ -81,7 +81,7 @@ export function BrainChat({
             {personaName} · direct line
           </span>
         </div>
-        <span className="font-mono text-[10px] text-zinc-600">CMD+K</span>
+        <span className="font-mono text-[10px] text-slate-600">CMD+K</span>
       </div>
 
       {/* messages — collapses to nothing when idle */}
@@ -92,8 +92,8 @@ export function BrainChat({
             <div
               className={
                 m.role === "user"
-                  ? "max-w-[80%] rounded-2xl rounded-br-sm bg-[var(--accent)]/15 px-3.5 py-2 text-sm text-zinc-100 ring-1 ring-[var(--accent)]/30"
-                  : "max-w-[85%] rounded-2xl rounded-bl-sm bg-white/[0.04] px-3.5 py-2 text-sm text-zinc-300 ring-1 ring-white/5"
+                  ? "max-w-[80%] rounded-2xl rounded-br-sm bg-[var(--accent)]/15 px-3.5 py-2 text-sm text-slate-100 ring-1 ring-[var(--accent)]/30"
+                  : "max-w-[85%] rounded-2xl rounded-bl-sm bg-white/[0.04] px-3.5 py-2 text-sm text-slate-300 ring-1 ring-white/5"
               }
             >
               {m.role === "brain" && (
@@ -114,7 +114,7 @@ export function BrainChat({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(input)}
           placeholder="Tell me what to do…"
-          className="min-h-[44px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-[var(--accent)]/60"
+          className="min-h-[44px] flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-[var(--accent)]/60"
         />
         <VoiceControl
           compact
