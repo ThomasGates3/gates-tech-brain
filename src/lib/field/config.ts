@@ -19,6 +19,8 @@ export const fieldEnv = {
   claude: () => Boolean(env("ANTHROPIC_API_KEY")),
   mailingAddress: () => env("FIELD_MAILING_ADDRESS"),
   /** Lets Ace (the bot) Approve + Send too, not just Thomas. Off until you flip it. */
+  /** Daily USD cap on Ace's general Claude calls (/api/field/claude). */
+  aceAiDailyUsd: () => Math.max(0, Number(env("FIELD_ACE_AI_DAILY_USD")) || 3),
   aceCanSend: () => env("FIELD_ACE_CAN_SEND") === "true",
   domainWarmed: () => env("FIELD_DOMAIN_WARMED") === "true",
   dailyCap: () => Math.max(1, Number(env("FIELD_DAILY_SEND_CAP")) || 20),

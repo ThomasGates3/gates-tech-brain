@@ -50,7 +50,7 @@ export const usage = pgTable("usage", {
   totalTokens: integer("total_tokens").notNull().default(0),
   costUsd: text("cost_usd").notNull().default("0"), // string for precision
   latencyMs: integer("latency_ms").notNull().default(0),
-  source: text("source").notNull().default("chat"), // chat | automation | dev
+  source: text("source").notNull().default("chat"), // chat | automation | dev | ace
   at: text("at").notNull(),
 });
 
