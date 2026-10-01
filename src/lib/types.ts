@@ -18,7 +18,8 @@ export type ModelTier = "standard" | "flagship";
 /** Anthropic API model id resolved from the active tier. */
 export type ModelId =
   | "claude-sonnet-5-5" // operations: standard Conductor + specialists
-  | "claude-opus-5-5"; // copy (Field drafts) + flagship Conductor
+  | "claude-opus-5-5" // copy (Field drafts) + flagship Conductor
+  | "claude-haiku-4-5"; // light specialists: research, data, comms
 
 /** The 5 sellable personalities (PRD §9). */
 export type Vertical =

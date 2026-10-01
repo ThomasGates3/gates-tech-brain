@@ -6,7 +6,7 @@ import { Experimental_Agent, tool } from "ai";
 import type { ToolSet } from "ai";
 import { z } from "zod";
 import type { SpecialistId } from "@/lib/types";
-import { claude, OPS } from "@/lib/models";
+import { claude, LIGHT, OPS } from "@/lib/models";
 import { executeToolCall } from "@/lib/tools/router";
 import { registry } from "@/lib/connectors/registry";
 import { createNotebook, addSource, askNotebook, generateBriefing } from "@/lib/notebooklm";
@@ -94,10 +94,10 @@ const devTool = tool({
   execute: async ({ repo, task }) => dispatchDevTask(repo, task),
 });
 
-function makeAgent(id: SpecialistId, system: string, tools: ToolSet) {
+function makeAgent(id: SpecialistId, system: string, tools: ToolSet, model = OPS) {
   return new Experimental_Agent({
     id,
-    model: claude(OPS),
+    model: claude(model),
     instructions: system,
     tools,
   });
@@ -107,12 +107,14 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
   research: makeAgent(
     "research",
     "You are the Research specialist. Use NotebookLM tools to create notebooks, ingest sources, and generate briefings. Return structured, cited answers.",
-    notebooklmTools
+    notebooklmTools,
+    LIGHT
   ),
   data: makeAgent(
     "data",
     "You are the Data specialist. Use database connectors (Supabase, BigQuery) to query, analyze, and summarize business data. Always show the SQL or query used.",
-    connectorTools(["supabase", "bigquery"])
+    connectorTools(["supabase", "bigquery"]),
+    LIGHT
   ),
   devops: makeAgent(
     "devops",
@@ -122,7 +124,8 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
   comms: makeAgent(
     "comms",
     "You are the Comms/Reporting specialist. Use webhook connectors to send notifications and deliver report artifacts to Slack, email, or other channels.",
-    connectorTools(["webhook"])
+    connectorTools(["webhook"]),
+    LIGHT
   ),
   operator: makeAgent(
     "operator",

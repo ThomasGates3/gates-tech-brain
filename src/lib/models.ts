@@ -6,8 +6,10 @@ const TIER_MAP: Record<ModelTier, ModelId> = {
   flagship: "claude-opus-5-5",
 };
 
-/** Operations: specialist sub-agents. */
+/** Operations: specialists that take real actions (devops, operator). */
 export const OPS: ModelId = "claude-sonnet-5-5";
+/** Light work: read, summarize, format, notify (research, data, comms). Half Sonnet's price. */
+export const LIGHT: ModelId = "claude-haiku-4-5";
 /** Copy: Field Email 1 drafts ("Draft with Claude"). */
 export const COPY: ModelId = "claude-opus-5-5";
 
