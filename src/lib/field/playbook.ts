@@ -83,6 +83,8 @@ How this console works (overrides the brief's template where they differ):
   line, in plain words, without adding anything to it. If it is empty, send the generic version.
 - Do not mention the city. Do not guess an owner name. No link in Email 1.
 - Body under 110 words including the signature.
+- The banned-word rule includes "weekday", "weekdays", "weeknight", "weekend" and "weekly". Write
+  "Monday to Friday", "Saturday and Sunday" or "every seven days" instead.
 
 <outreach_brief>
 ${OUTREACH_BRIEF}
@@ -92,7 +94,7 @@ export function playbookPrompt(c: Pick<FieldContact, "name" | "gap" | "batch">, 
   return [
     `Business: ${c.name}`,
     `Niche / batch: ${c.batch || "(unknown, do not assume a vertical)"}`,
-    `Observed gap: ${c.gap.trim() || "(none verified, send the generic version)"}`,
+    `Observed gap: ${c.gap.trim() ? cleanGap(c.gap) : "(none verified, send the generic version)"}`,
     `Signature:\n${signature(signer)}`,
     "",
     "Write Email 1 (subject + body).",

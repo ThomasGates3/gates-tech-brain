@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { lintCopy } from "./lint";
-import { templateDraft, shortCity, shortName, composeOutgoing, canSpamFooter, cleanGap, PLAYBOOK_SYSTEM } from "./playbook";
+import { templateDraft, shortCity, shortName, composeOutgoing, canSpamFooter, cleanGap, PLAYBOOK_SYSTEM, playbookPrompt } from "./playbook";
 import { apply, draftHash, sendError, type Ctx } from "./workflow";
 import { csvToRows } from "./csv";
 import type { FieldContact } from "./types";
@@ -59,6 +59,11 @@ test("template: non-hours gap, missing gap, and gap cleanup", () => {
   assert.deepEqual(lintCopy(generic.subject, generic.body), []);
   assert.equal(cleanGap("Closed weekends — phone only"), "Closed Saturdays and Sundays, phone only.");
   assert.equal(cleanGap("Appointment-only all week"), "Appointment-only every day.");
+});
+
+test("Claude prompt gets the cleaned gap (no banned words to copy)", () => {
+  const p = playbookPrompt(contact({ gap: "Hours end weekdays at 5 — closed weekends" }), signer);
+  assert.match(p, /Observed gap: Hours end Monday to Friday at 5, closed Saturdays and Sundays\./);
 });
 
 test("Claude prompt carries the full outreach brief", () => {
