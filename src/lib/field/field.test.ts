@@ -99,13 +99,23 @@ test("Approve is gated on Nick PASS", () => {
   assert.ok(!apply(revised, { type: "approve" }, thomas).ok);
 });
 
-test("Approve and Send are Thomas-only", () => {
+test("Approve and Send are Thomas-only by default", () => {
   const passed = step(drafted(), { type: "nick_verdict", verdict: "PASS", note: "" });
   const r = apply(passed, { type: "approve" }, ace);
   assert.ok(!r.ok && r.status === 403);
   const approved = step(passed, { type: "approve" }, thomas);
   assert.equal(sendError(approved, ace)?.status, 403);
   assert.equal(sendError(approved, { ...thomas, operator: "team" })?.status, 403);
+});
+
+test("Ace can Approve and Send once FIELD_ACE_CAN_SEND is on (team still can't)", () => {
+  const aceSends: Ctx = { ...ace, aceCanSend: true };
+  const passed = step(drafted(), { type: "nick_verdict", verdict: "PASS", note: "" });
+  const approved = step(passed, { type: "approve" }, aceSends);
+  assert.equal(approved.stage, "approved");
+  assert.equal(approved.approvedBy, "ace");
+  assert.equal(sendError(approved, aceSends), null);
+  assert.equal(sendError(approved, { ...aceSends, operator: "team" })?.status, 403);
 });
 
 test("editing after PASS/approval clears both — Nick must re-audit", () => {

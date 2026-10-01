@@ -2,6 +2,7 @@
  * Shared helpers for /api/field/* route handlers. Server-only.
  */
 import { currentOperator, fieldEnv, startOfTodayIso, todayIn } from "./config";
+import { canGreenlight } from "./workflow";
 import { sentSince } from "./store";
 import { writeBack, type NotionStatus } from "./notion";
 import { canSpamFooter } from "./playbook";
@@ -24,6 +25,7 @@ export async function consoleConfig(operator: Operator | null): Promise<ConsoleC
   const db = fieldEnv.database();
   return {
     operator,
+    canGreenlight: canGreenlight(operator, fieldEnv.aceCanSend()),
     today: todayIn(),
     timezone: fieldEnv.timezone(),
     database: db,

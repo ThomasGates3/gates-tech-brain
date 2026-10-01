@@ -4,7 +4,7 @@
  *   { action: "save_draft", subject, body }               manual edit (clears Nick PASS / approval)
  *   { action: "submit_nick" }                             mark as waiting on Nick
  *   { action: "nick_verdict", verdict, note }             record Nick PASS / REVISE / KILL
- *   { action: "approve" }                                 Thomas greenlight (needs PASS)
+ *   { action: "approve" }                                 greenlight (needs PASS; Thomas, or Ace if FIELD_ACE_CAN_SEND)
  *   { action: "hold" } | { action: "release" }
  * Sending is a separate endpoint (./send) so it can never ride along with another action.
  */
@@ -74,6 +74,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
 
     const result = apply(contact, action, {
       operator: auth.operator,
+      aceCanSend: fieldEnv.aceCanSend(),
       suppressed: action.type === "approve" ? await isSuppressed(contact.email) : false,
       now: new Date().toISOString(),
     });

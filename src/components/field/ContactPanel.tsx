@@ -45,7 +45,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
   const [confirm, setConfirm] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
-  const isThomas = config.operator === "thomas";
+  const canGreenlight = config.canGreenlight;
   const dirty = subject !== c.subject || body !== c.body;
   const lint = lintPrices(subject, body);
   const editable = OPEN.includes(c.stage) && c.priority !== "Soft";
@@ -97,8 +97,8 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
   // ── Gate reasons (mirror of the server rules; the server is authoritative) ──
   const nickReady = (c.stage === "drafted" || c.stage === "nick") && Boolean(c.draftHash) && !dirty;
   const passCurrent = c.stage === "nick" && c.nickVerdict === "PASS" && c.nickHash === c.draftHash;
-  const approveWhy = !isThomas
-    ? "Thomas-only"
+  const approveWhy = !canGreenlight
+    ? "Thomas-only (Ace needs FIELD_ACE_CAN_SEND)"
     : dirty
       ? "Save edits first"
       : !passCurrent
@@ -108,8 +108,8 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           : lint.length
             ? "Remove prices from copy"
             : null;
-  const sendWhy = !isThomas
-    ? "Thomas-only"
+  const sendWhy = !canGreenlight
+    ? "Thomas-only (Ace needs FIELD_ACE_CAN_SEND)"
     : c.stage !== "approved"
       ? "Approve first"
       : dirty
