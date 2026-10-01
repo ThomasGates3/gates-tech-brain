@@ -2,11 +2,11 @@
  * POST /api/chat — the brain's direct line.
  * Streams the Conductor's reply (plain text) and lets it delegate to specialists.
  * Model is tier-driven (MODEL_TIER): Sonnet (standard) / Opus (flagship).
- * Requires AI_GATEWAY_API_KEY (or Vercel OIDC) to reach the gateway.
+ * Requires ANTHROPIC_API_KEY (Claude via the Anthropic API directly).
  */
-import { streamText, tool, stepCountIs, gateway } from "ai";
+import { streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { conductorModel } from "@/lib/models";
+import { claude, conductorModel } from "@/lib/models";
 import { resolveModelTier } from "@/lib/settings";
 import { recordUsage } from "@/lib/usage";
 import { specialists } from "@/lib/orchestrator/specialists";
@@ -50,15 +50,18 @@ export async function POST(req: Request) {
     return new Response("Message is required (1–4000 chars).", { status: 400 });
   }
 
+  if (!process.env.ANTHROPIC_API_KEY) return new Response("Chat is offline: ANTHROPIC_API_KEY is not set.", { status: 503 });
+
   const tier = await resolveModelTier();
   const model = conductorModel(tier);
   const started = Date.now();
   const result = streamText({
-    model: gateway(model),
+    model: claude(model),
     system: SYSTEM,
     prompt: parsed.data.message,
     tools: { delegate_to: delegateTool },
     stopWhen: stepCountIs(6),
+    onError: ({ error }) => console.error("[chat] model call failed:", error),
     onFinish: ({ usage }) => {
       void recordUsage({ model, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, latencyMs: Date.now() - started, source: "chat" });
     },

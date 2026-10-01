@@ -2,11 +2,11 @@
  * Specialist sub-agent definitions.
  * Each has a scoped system prompt + tool subset.
  */
-import { Experimental_Agent, tool, gateway } from "ai";
+import { Experimental_Agent, tool } from "ai";
 import type { ToolSet } from "ai";
 import { z } from "zod";
 import type { SpecialistId } from "@/lib/types";
-import { HAIKU } from "@/lib/models";
+import { claude, HAIKU } from "@/lib/models";
 import { executeToolCall } from "@/lib/tools/router";
 import { registry } from "@/lib/connectors/registry";
 import { createNotebook, addSource, askNotebook, generateBriefing } from "@/lib/notebooklm";
@@ -97,7 +97,7 @@ const devTool = tool({
 function makeAgent(id: SpecialistId, system: string, tools: ToolSet) {
   return new Experimental_Agent({
     id,
-    model: gateway(HAIKU),
+    model: claude(HAIKU),
     instructions: system,
     tools,
   });

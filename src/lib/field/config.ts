@@ -16,7 +16,7 @@ export const fieldEnv = {
   agentmailKey: () => env("AGENTMAIL_API_KEY"),
   agentmailInbox: () => env("AGENTMAIL_INBOX_ID"),
   agentmailBase: () => env("AGENTMAIL_BASE_URL") || "https://api.agentmail.to",
-  claude: () => Boolean(env("AI_GATEWAY_API_KEY") || env("VERCEL_OIDC_TOKEN")),
+  claude: () => Boolean(env("ANTHROPIC_API_KEY")),
   mailingAddress: () => env("FIELD_MAILING_ADDRESS"),
   /** Lets Ace (the bot) Approve + Send too, not just Thomas. Off until you flip it. */
   aceCanSend: () => env("FIELD_ACE_CAN_SEND") === "true",

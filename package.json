@@ -13,10 +13,11 @@
     "brief:sync": "cp ../gates-outreach/OUTREACH-BRIEF.md docs/outreach-brief.md && node scripts/gen-brief.mjs"
   },
   "dependencies": {
-    "@ai-sdk/react": "^4.0.17",
+    "@ai-sdk/anthropic": "^4.0.71",
+    "@ai-sdk/react": "^4.0.130",
     "@auth/core": "^0.41.2",
     "@neondatabase/serverless": "^1.1.0",
-    "ai": "^7.0.16",
+    "ai": "^7.0.127",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",

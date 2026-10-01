@@ -8,7 +8,7 @@
  *   { action: "hold" } | { action: "release" }
  * Sending is a separate endpoint (./send) so it can never ride along with another action.
  */
-import { generateText, gateway, Output } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import { error, json, requireOperator, syncNotion, type SyncResult } from "@/lib/field/api";
 import { fieldEnv } from "@/lib/field/config";
@@ -16,7 +16,7 @@ import { lintCopy } from "@/lib/field/lint";
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, type Draft } from "@/lib/field/playbook";
 import { getContact, isSuppressed, patchContact } from "@/lib/field/store";
 import { apply, type Action } from "@/lib/field/workflow";
-import { conductorModel } from "@/lib/models";
+import { claude, conductorModel } from "@/lib/models";
 import { resolveModelTier } from "@/lib/settings";
 import { recordUsage } from "@/lib/usage";
 import { recordActivity } from "@/lib/activity";
@@ -38,7 +38,7 @@ async function claudeDraft(c: FieldContact): Promise<Draft> {
   const model = conductorModel(await resolveModelTier());
   const started = Date.now();
   const r = await generateText({
-    model: gateway(model),
+    model: claude(model),
     system: PLAYBOOK_SYSTEM,
     prompt: playbookPrompt(c, fieldEnv.signer()),
     output: Output.object({ schema: z.object({ subject: z.string(), body: z.string() }) }),
@@ -61,7 +61,7 @@ export async function POST(req: Request, ctx: RouteContext<"/api/field/contacts/
 
     let action: Action;
     if (input.action === "generate") {
-      if (input.mode === "claude" && !fieldEnv.claude()) return error(503, "Claude drafting needs AI_GATEWAY_API_KEY. Use the playbook template instead.");
+      if (input.mode === "claude" && !fieldEnv.claude()) return error(503, "Claude drafting needs ANTHROPIC_API_KEY. Use the playbook template instead.");
       const draft = input.mode === "claude" ? await claudeDraft(contact) : templateDraft(contact, fieldEnv.signer());
       action = { type: "save_draft", subject: draft.subject, body: draft.body, source: input.mode };
     } else if (input.action === "save_draft") {
