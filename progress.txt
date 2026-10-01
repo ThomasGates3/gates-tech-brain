@@ -19,6 +19,12 @@ AI BRAIN — Progress Tracker
 ✓ F9: Business-app connectors — Twin Trading, Twin Trading Bio, Ad System, AI Link in Bio, Gates Tech (GTV2), Speed to Lead. Registered (12 total). "operator" specialist runs them. Need per-app URL+agent-token to go live (apps use own auth today).
 ✓ F10: Moby dev-agent — /api/dev-task + moby_dev_task tool spins up Claude Code on the Moby repo (branch-isolated). Gated by MOBY_DEV_ENABLED (dry-run until set true).
 
+✓ F11: Field Console (/field) — internal Email 1 cold-outreach console for Thomas + Ace (docs/field-console-PRD.md).
+     Notion Cold emails DB (or CSV) → Field playbook draft (template or Claude) → Nick PASS/REVISE/KILL → Thomas Approve → AgentMail send → send log + suppression.
+     Gates enforced server-side: Soft = Hold only, no prices (lint), Approve needs PASS on the exact draft, Send is Thomas-only + explicit confirm + one at a time,
+     atomic claim (no double send), CAN-SPAM address required, daily cap. Tables: field_contacts, field_send_log, field_suppressions (npm run db:push). Tests: npm test.
+     OUTSIDE-APP BLOCKERS: cold domain warm-up (trygates.*), CAN-SPAM physical address (FIELD_MAILING_ADDRESS).
+
 ○ F8: 5 Vertical Personalities — presets from YouTube source (spec'd in PRD §9):
      Agencies · Accounting/Bookkeeping · Law Firms · Dental/Medical · Insurance Brokerages
 

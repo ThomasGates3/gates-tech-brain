@@ -1,10 +1,15 @@
 /**
- * Simple password gate — one shared password, a signed cookie. Edge-compatible
- * (Web Crypto), so it works in middleware and on Vercel with zero OAuth setup.
+ * Simple password gate — shared password plus optional per-operator passwords,
+ * a signed cookie. Edge-compatible (Web Crypto), so it works in middleware and
+ * on Vercel with zero OAuth setup.
  *
- * Enable by setting ACCESS_PASSWORD. Cookies are signed with AUTH_SECRET.
- * If ACCESS_PASSWORD is unset, the gate is OFF (open) — fine for local dev only.
+ * ACCESS_PASSWORD        → operator "team" (the deck; no Field Console greenlight)
+ * FIELD_THOMAS_PASSWORD  → operator "thomas" (Field Console Approve / Send)
+ * FIELD_ACE_PASSWORD     → operator "ace" (Field Console ops)
+ * The gate turns on when any of them is set. Cookies are signed with AUTH_SECRET.
+ * With none set, the gate is OFF (open) — fine for local dev only.
  */
+import type { Operator } from "@/lib/field/types";
 
 export const GATE_COOKIE = "brain_session";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -24,13 +29,18 @@ async function hmac(secret: string, data: string): Promise<string> {
   return b64url(sig);
 }
 
+const PASSWORDS: [Operator, string][] = [
+  ["thomas", "FIELD_THOMAS_PASSWORD"],
+  ["ace", "FIELD_ACE_PASSWORD"],
+  ["team", "ACCESS_PASSWORD"],
+];
+
 export function gateEnabled(): boolean {
-  return Boolean(process.env.ACCESS_PASSWORD);
+  return PASSWORDS.some(([, env]) => Boolean(process.env[env]));
 }
 
 /** Constant-ish time compare to avoid trivially leaking length/prefix. */
-export function passwordOk(input: string): boolean {
-  const expected = process.env.ACCESS_PASSWORD ?? "";
+function sameString(input: string, expected: string): boolean {
   if (!expected) return false;
   if (input.length !== expected.length) return false;
   let diff = 0;
@@ -38,24 +48,49 @@ export function passwordOk(input: string): boolean {
   return diff === 0;
 }
 
+/** Which operator this password belongs to (most privileged match wins), or null. */
+export function operatorForPassword(input: string): Operator | null {
+  for (const [op, env] of PASSWORDS) if (sameString(input, process.env[env] ?? "")) return op;
+  return null;
+}
+
 function secret(): string {
   return process.env.AUTH_SECRET || "insecure-dev-secret-set-AUTH_SECRET";
 }
 
-export async function issueToken(): Promise<string> {
-  const payload = `v1.${Date.now() + TTL_MS}`;
+const OPERATORS: Operator[] = ["thomas", "ace", "team"];
+
+export async function issueToken(operator: Operator = "team"): Promise<string> {
+  const payload = `v2.${operator}.${Date.now() + TTL_MS}`;
   return `${payload}.${await hmac(secret(), payload)}`;
 }
 
-export async function verifyToken(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
+/** Verify a session cookie and return who it belongs to (v1 cookies → "team"). */
+export async function readSession(token: string | undefined): Promise<{ operator: Operator } | null> {
+  if (!token) return null;
   const i = token.lastIndexOf(".");
-  if (i < 0) return false;
+  if (i < 0) return null;
   const payload = token.slice(0, i);
   const sig = token.slice(i + 1);
-  const [v, exp] = payload.split(".");
-  if (v !== "v1" || !exp || Number(exp) < Date.now()) return false;
-  return sig === (await hmac(secret(), payload));
+  const parts = payload.split(".");
+  let operator: Operator;
+  let exp: string | undefined;
+  if (parts[0] === "v1" && parts.length === 2) {
+    operator = "team";
+    exp = parts[1];
+  } else if (parts[0] === "v2" && parts.length === 3 && OPERATORS.includes(parts[1] as Operator)) {
+    operator = parts[1] as Operator;
+    exp = parts[2];
+  } else {
+    return null;
+  }
+  if (!exp || Number(exp) < Date.now()) return null;
+  if (sig !== (await hmac(secret(), payload))) return null;
+  return { operator };
+}
+
+export async function verifyToken(token: string | undefined): Promise<boolean> {
+  return (await readSession(token)) !== null;
 }
 
 export const cookieOptions = {

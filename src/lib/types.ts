@@ -203,7 +203,8 @@ export type AuditAction =
   | "secret_access"
   | "connector_change"
   | "job_run"
-  | "login";
+  | "login"
+  | "email_send";
 
 export interface AuditEntry {
   id: string;
