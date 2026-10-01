@@ -3,6 +3,7 @@
  */
 import { currentOperator, fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { canGreenlight } from "./workflow";
+import { claudeBudget } from "@/lib/budget";
 import { sentSince } from "./store";
 import { writeBack, type NotionStatus } from "./notion";
 import { canSpamFooter } from "./playbook";
@@ -38,6 +39,7 @@ export async function consoleConfig(operator: Operator | null): Promise<ConsoleC
     domainWarmed: fieldEnv.domainWarmed(),
     dailyCap: fieldEnv.dailyCap(),
     sentToday: db ? await sentSince(startOfTodayIso()).catch(() => 0) : 0,
+    claudeBudget: await claudeBudget(),
   };
 }
 

@@ -52,9 +52,10 @@ export async function recordUsage(u: UsageInput): Promise<void> {
   }
 }
 
-/** USD spent by one source since an ISO instant (e.g. Ace's Claude calls today). */
-export async function spentSince(source: NonNullable<UsageInput["source"]>, sinceIso: string): Promise<number> {
-  const rows = await db.select({ c: usage.costUsd }).from(usage).where(and(eq(usage.source, source), gte(usage.at, sinceIso)));
+/** USD spent since an ISO instant, optionally for one source (e.g. "ace"). */
+export async function spentSince(source: UsageInput["source"] | undefined, sinceIso: string): Promise<number> {
+  const since = gte(usage.at, sinceIso);
+  const rows = await db.select({ c: usage.costUsd }).from(usage).where(source ? and(eq(usage.source, source), since) : since);
   return rows.reduce((s, r) => s + Number(r.c ?? 0), 0);
 }
 

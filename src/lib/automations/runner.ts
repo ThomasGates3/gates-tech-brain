@@ -9,6 +9,7 @@ import { deliver } from "./deliver";
 import { recordActivity } from "@/lib/activity";
 import { resolveModelTier } from "@/lib/settings";
 import { conductorModel } from "@/lib/models";
+import { budgetBlock } from "@/lib/budget";
 import { recordUsage } from "@/lib/usage";
 import { getAutomation, fillPrompt, type AutomationTemplate } from "./catalog";
 
@@ -36,6 +37,7 @@ export async function runAutomation(
   const prompt = fillPrompt(tpl.prompt, vars);
 
   try {
+    if (await budgetBlock()) return { id: tpl.id, name: tpl.name, status: "error", output: "", ranAt, error: "Daily Claude budget reached" };
     const tier = await resolveModelTier();
     const conductor = createConductor(tier);
     const started = Date.now();

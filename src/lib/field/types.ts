@@ -83,6 +83,8 @@ export interface ConsoleConfig {
   domainWarmed: boolean;
   dailyCap: number;
   sentToday: number;
+  /** Today's Claude spend across the whole Brain vs the warn line and hard cap. */
+  claudeBudget: { spentTodayUsd: number; warnUsd: number; capUsd: number; status: "ok" | "warning" | "blocked"; unreadable?: boolean };
 }
 
 export interface QueueResponse {
