@@ -58,6 +58,7 @@ test("template: non-hours gap, missing gap, and gap cleanup", () => {
   assert.match(generic.body, /^When the phone rings and nobody can pick up/);
   assert.deepEqual(lintCopy(generic.subject, generic.body), []);
   assert.equal(cleanGap("Closed weekends — phone only"), "Closed Saturdays and Sundays, phone only.");
+  assert.equal(cleanGap("Appointment-only all week"), "Appointment-only every day.");
 });
 
 test("Claude prompt carries the full outreach brief", () => {
