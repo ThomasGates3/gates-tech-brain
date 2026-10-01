@@ -33,7 +33,7 @@ const PRESETS: Record<Vertical, VerticalPreset> = {
   agency: {
     id: "agency",
     name: "NOVA",
-    accent: "#ff7a17", // sunset orange
+    accent: "#00e5ff", // gates cyan
     systemPrompt: `You are NOVA, the Agency Brain — a dry, competent AI operating system for a marketing and creative agency. Your job is to stop knowledge from siloing across editors, designers, and account managers. You speak with calm authority, surface what matters, and act across the business stack without drama. You remember clients, projects, SOPs, and team history. When someone leaves, their knowledge stays. When someone joins, they're onboarded in days, not months. You are the institutional memory and the execution layer — simultaneously.`,
     voiceId: "nova",
     defaultConnectors: ["hubspot", "asana", "slack", "google-analytics", "supabase"],
@@ -93,7 +93,7 @@ const PRESETS: Record<Vertical, VerticalPreset> = {
   insurance: {
     id: "insurance",
     name: "BROKER",
-    accent: "#ffc285", // sunset soft
+    accent: "#ff7a45", // gates coral
     systemPrompt: `You are BROKER, the Insurance Brokerage Brain — a relentlessly efficient AI for insurance brokerages operating on thin, spiky margins. You kill internal waste. You reclaim hours lost to manual policy lookups, renewal chasing, and scattered client knowledge. You surface ROI wins, maintain policy and renewal knowledge bases, and report time saved in concrete numbers. Every insight you deliver pays the retainer several times over.`,
     voiceId: "broker",
     defaultConnectors: ["ams", "policy-docs", "email", "webhook", "supabase"],

@@ -20,12 +20,12 @@ function StatusBar({ config }: { config: ConsoleConfig }) {
     { label: "Sent today", ok: config.sentToday < config.dailyCap, detail: `${config.sentToday} / ${config.dailyCap}` },
   ];
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl border border-white/10 bg-[#0c0d0e] px-4 py-3" data-testid="status-bar">
+    <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl border border-white/10 bg-[#08101f] px-4 py-3" data-testid="status-bar">
       {items.map((i) => (
         <div key={i.label} className="flex items-center gap-2 text-[12px]">
           <Dot ok={i.ok} warn={i.warn} />
-          <span className="text-zinc-300">{i.label}</span>
-          <span className="text-zinc-500">{i.detail}</span>
+          <span className="text-slate-300">{i.label}</span>
+          <span className="text-slate-500">{i.detail}</span>
         </div>
       ))}
     </div>
@@ -113,18 +113,18 @@ export function FieldConsole() {
   const operatorLabel = data?.config.operator === "thomas" ? "Thomas · greenlight" : data?.config.operator === "ace" ? "Ace · ops" : "";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-zinc-100">
-      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(900px 400px at 15% -10%, rgba(255,106,0,0.08), transparent 70%)" }} />
+    <div className="min-h-screen bg-[#050914] text-slate-100">
+      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(900px 400px at 15% -10%, rgba(0,229,255,0.08), transparent 70%)" }} />
       <div className="relative mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
         <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <Caption>Gates · internal ops</Caption>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">Field Console</h1>
-            <p className="mt-1 text-sm text-zinc-500">Email 1 · morning pack → draft → Nick PASS → Thomas approve → AgentMail → log</p>
+            <p className="mt-1 text-sm text-slate-500">Email 1 · morning pack → draft → Nick PASS → Thomas approve → AgentMail → log</p>
           </div>
           <div className="flex items-center gap-2">
-            {operatorLabel && <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-300" data-testid="operator">{operatorLabel}</span>}
-            <Link href="/" className="min-h-[44px] content-center rounded-xl px-3 text-sm text-zinc-400 hover:bg-white/5">Deck</Link>
+            {operatorLabel && <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300" data-testid="operator">{operatorLabel}</span>}
+            <Link href="/" className="min-h-[44px] content-center rounded-xl px-3 text-sm text-slate-400 hover:bg-white/5">Deck</Link>
             <Button
               variant="quiet"
               onClick={async () => {
@@ -147,7 +147,7 @@ export function FieldConsole() {
               aria-selected={tab === t}
               onClick={() => setTab(t)}
               data-testid={`tab-${t}`}
-              className={cx("min-h-[44px] rounded-xl px-4 font-mono text-[11px] uppercase tracking-[0.2em]", tab === t ? "bg-white/10 text-zinc-100" : "text-zinc-500 hover:text-zinc-300")}
+              className={cx("min-h-[44px] rounded-xl px-4 font-mono text-[11px] uppercase tracking-[0.2em]", tab === t ? "bg-white/10 text-slate-100" : "text-slate-500 hover:text-slate-300")}
             >
               {t}
             </button>
@@ -179,7 +179,7 @@ export function FieldConsole() {
                   }}
                   aria-label="Pack date"
                   data-testid="pack-date"
-                  className="min-h-[44px] rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 [color-scheme:dark]"
+                  className="min-h-[44px] rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-slate-100 [color-scheme:dark]"
                 />
                 <Button variant="primary" disabled={!data?.config.notion || !!loading} onClick={() => load("notion")} title={data?.config.notion ? "" : "NOTION_TOKEN / data source not set"} data-testid="load-notion">
                   {loading === "notion" ? "Loading…" : "Load morning pack"}
@@ -188,18 +188,18 @@ export function FieldConsole() {
                   CSV
                 </Button>
               </div>
-              {notice && <p className="mb-3 text-[12px] text-zinc-400" role="status">{notice}</p>}
+              {notice && <p className="mb-3 text-[12px] text-slate-400" role="status">{notice}</p>}
 
               {data && (
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500" data-testid="queue-counts">
+                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500" data-testid="queue-counts">
                   {counts.sendable} High+Med · {counts.awaitingNick} at Nick · {counts.readyForThomas} PASS → Thomas · {counts.approved} approved · {counts.sent} sent
                 </p>
               )}
 
-              <ul className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-[#0c0d0e]">
-                {loading === "queue" && <li className="p-4 text-sm text-zinc-500">Loading queue…</li>}
+              <ul className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-[#08101f]">
+                {loading === "queue" && <li className="p-4 text-sm text-slate-500">Loading queue…</li>}
                 {!loading && data && visible.length === 0 && (
-                  <li className="p-4 text-sm text-zinc-500">
+                  <li className="p-4 text-sm text-slate-500">
                     No High/Med contacts for {date}. {data.config.notion ? "Load the morning pack from Notion" : "Paste a CSV"} to start.
                   </li>
                 )}
@@ -208,12 +208,12 @@ export function FieldConsole() {
                     <button
                       onClick={() => setSelected(c.id)}
                       data-testid="queue-row"
-                      className={cx("flex min-h-[56px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]", selected === c.id && "bg-[#ff6a00]/[0.07]")}
+                      className={cx("flex min-h-[56px] w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]", selected === c.id && "bg-[#00e5ff]/[0.07]")}
                     >
                       <PriorityBadge priority={c.priority} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-zinc-100">{c.name}</span>
-                        <span className="block truncate text-[12px] text-zinc-500">{c.batch || c.city || c.email}</span>
+                        <span className="block truncate text-sm text-slate-100">{c.name}</span>
+                        <span className="block truncate text-[12px] text-slate-500">{c.batch || c.city || c.email}</span>
                       </span>
                       {c.suppressed && c.stage !== "sent" && <span className="font-mono text-[10px] text-red-400">SUPP</span>}
                       {c.nickVerdict === "PASS" && c.stage === "nick" && <span className="font-mono text-[10px] text-emerald-300">PASS</span>}
@@ -223,7 +223,7 @@ export function FieldConsole() {
                 ))}
               </ul>
               {counts.held > 0 && (
-                <button onClick={() => setShowClosed((s) => !s)} className="mt-2 min-h-[44px] px-1 text-[12px] text-zinc-500 hover:text-zinc-300" data-testid="toggle-held">
+                <button onClick={() => setShowClosed((s) => !s)} className="mt-2 min-h-[44px] px-1 text-[12px] text-slate-500 hover:text-slate-300" data-testid="toggle-held">
                   {showClosed ? "Hide" : "Show"} {counts.held} Soft (Hold-only) / killed
                 </button>
               )}
@@ -237,7 +237,7 @@ export function FieldConsole() {
                   <ContactPanel contact={current} config={data.config} onChanged={onChanged} onSent={() => refresh(date)} />
                 </>
               ) : (
-                <div className="grid min-h-[300px] place-items-center rounded-2xl border border-dashed border-white/10 text-sm text-zinc-500">
+                <div className="grid min-h-[300px] place-items-center rounded-2xl border border-dashed border-white/10 text-sm text-slate-500">
                   Pick a contact from the queue.
                 </div>
               )}
@@ -248,8 +248,8 @@ export function FieldConsole() {
 
       {csvOpen && (
         <Modal title="CSV fallback · paste pack" onClose={() => setCsvOpen(false)} data-testid="csv-modal">
-          <p className="mb-2 text-[13px] text-zinc-400">
-            Columns like the Notion DB: <span className="font-mono text-zinc-300">Name, To, Priority, City, Gap, Batch</span> (optional Subject, Body, Status). Loads into {date}. Soft rows land on Hold.
+          <p className="mb-2 text-[13px] text-slate-400">
+            Columns like the Notion DB: <span className="font-mono text-slate-300">Name, To, Priority, City, Gap, Batch</span> (optional Subject, Body, Status). Loads into {date}. Soft rows land on Hold.
           </p>
           <textarea
             value={csv}
@@ -257,9 +257,9 @@ export function FieldConsole() {
             rows={10}
             data-testid="csv-input"
             placeholder={"Name,To,Priority,City,Gap,Batch\nPele Aesthetics,info@spapele.com,High,Marietta,Closed Sundays...,ATL med spa"}
-            className="w-full rounded-xl border border-white/10 bg-black/50 p-3 font-mono text-[12px] text-zinc-200 outline-none focus:border-[#ff6a00]/60"
+            className="w-full rounded-xl border border-white/10 bg-black/50 p-3 font-mono text-[12px] text-slate-200 outline-none focus:border-[#00e5ff]/60"
           />
-          <label className="mt-2 inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] text-zinc-400">
+          <label className="mt-2 inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] text-slate-400">
             <input
               type="file"
               accept=".csv,text/csv"

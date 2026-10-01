@@ -132,15 +132,15 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           <PriorityBadge priority={c.priority} />
           <StageBadge stage={c.stage} />
           {c.suppressed && <span className="rounded-full border border-red-500/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-red-400">Suppressed</span>}
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-600">{c.source}</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-600">{c.source}</span>
         </div>
-        <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-50">{c.name}</h2>
-        <p className="mt-0.5 text-sm text-zinc-400">
+        <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-50">{c.name}</h2>
+        <p className="mt-0.5 text-sm text-slate-400">
           {c.email || <span className="text-red-400">no email</span>} · {c.city || "—"} · {c.batch || "—"}
         </p>
         {c.gap && (
-          <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[13px] leading-relaxed text-zinc-300">
-            <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-500">Gap</span>
+          <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[13px] leading-relaxed text-slate-300">
+            <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Gap</span>
             {c.gap}
           </p>
         )}
@@ -149,7 +149,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
       </div>
 
       {/* 1 — Draft */}
-      <section className="rounded-2xl border border-white/10 bg-[#0c0d0e] p-4">
+      <section className="rounded-2xl border border-white/10 bg-[#08101f] p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <Caption>1 · Email 1 draft{c.draftSource ? ` · ${c.draftSource}` : ""}</Caption>
           {editable && (
@@ -164,7 +164,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           )}
         </div>
 
-        <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[12px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#ff6a00]/30 bg-[#ff6a00]/[0.06] text-[#ffb066]")} data-testid="price-banner">
+        <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[12px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#00e5ff]/30 bg-[#00e5ff]/[0.06] text-[#7fdfff]")} data-testid="price-banner">
           <strong className="font-mono text-[10px] uppercase tracking-[0.2em]">Outreach brief</strong> · no prices, stats, client claims, HIPAA claims, &quot;week&quot;/&quot;weak&quot;, em dashes or hype. Under 110 words.
           {lint.length > 0 && <span className="mt-1 block">Found: {lint.map((i) => `“${i.match}” (${i.rule})`).join(", ")}</span>}
         </div>
@@ -177,7 +177,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
             disabled={!editable}
             placeholder="Subject"
             data-testid="draft-subject"
-            className="min-h-[44px] w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[#ff6a00]/60 disabled:opacity-60"
+            className="min-h-[44px] w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-[#00e5ff]/60 disabled:opacity-60"
           />
         </label>
         <label className="mt-2 block">
@@ -190,15 +190,15 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
             rows={12}
             placeholder={editable ? "Generate from the playbook, or write Email 1 here." : ""}
             data-testid="draft-body"
-            className="w-full resize-y rounded-xl border border-white/10 bg-black/40 p-3 text-sm leading-relaxed text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[#ff6a00]/60 disabled:opacity-60"
+            className="w-full resize-y rounded-xl border border-white/10 bg-black/40 p-3 text-sm leading-relaxed text-slate-100 outline-none placeholder:text-slate-600 focus:border-[#00e5ff]/60 disabled:opacity-60"
           />
         </label>
         {editable && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600">Insert</span>
-            <button type="button" onClick={() => insert(c.name)} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-zinc-300 hover:bg-white/5">business</button>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-600">Insert</span>
+            <button type="button" onClick={() => insert(c.name)} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-slate-300 hover:bg-white/5">business</button>
             {c.city && (
-              <button type="button" onClick={() => insert(c.city.replace(/\s*\(.*?\)\s*/g, " ").trim())} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-zinc-300 hover:bg-white/5">city</button>
+              <button type="button" onClick={() => insert(c.city.replace(/\s*\(.*?\)\s*/g, " ").trim())} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-slate-300 hover:bg-white/5">city</button>
             )}
             <div className="ml-auto flex gap-2">
               {dirty && (
@@ -216,7 +216,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
       </section>
 
       {/* 2 — Nick */}
-      <section className="rounded-2xl border border-white/10 bg-[#0c0d0e] p-4" data-testid="nick-section">
+      <section className="rounded-2xl border border-white/10 bg-[#08101f] p-4" data-testid="nick-section">
         <div className="mb-3 flex items-center justify-between gap-2">
           <Caption>2 · Nick audit</Caption>
           {c.stage === "drafted" && (
@@ -226,14 +226,14 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           )}
         </div>
         {c.nickVerdict ? (
-          <p className="mb-3 text-sm text-zinc-300">
+          <p className="mb-3 text-sm text-slate-300">
             <span className={cx("mr-2 font-mono text-[11px] tracking-widest", c.nickVerdict === "PASS" ? "text-emerald-300" : c.nickVerdict === "REVISE" ? "text-amber-200" : "text-red-400")}>{c.nickVerdict}</span>
-            {c.nickNote && <span className="text-zinc-400">“{c.nickNote}”</span>}
-            <span className="ml-2 font-mono text-[10px] text-zinc-600">{c.nickBy} · {c.nickAt ? new Date(c.nickAt).toLocaleString() : ""}</span>
+            {c.nickNote && <span className="text-slate-400">“{c.nickNote}”</span>}
+            <span className="ml-2 font-mono text-[10px] text-slate-600">{c.nickBy} · {c.nickAt ? new Date(c.nickAt).toLocaleString() : ""}</span>
             {c.nickVerdict === "PASS" && c.nickHash !== c.draftHash && <span className="mt-1 block text-[12px] text-amber-200/80">Draft changed after this PASS — needs a fresh audit.</span>}
           </p>
         ) : (
-          <p className="mb-3 text-sm text-zinc-500">{c.stage === "nick" ? "Waiting on Nick." : "No verdict yet."}</p>
+          <p className="mb-3 text-sm text-slate-500">{c.stage === "nick" ? "Waiting on Nick." : "No verdict yet."}</p>
         )}
         {nickReady && (
           <>
@@ -242,7 +242,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
               onChange={(e) => setNote(e.target.value)}
               placeholder="Nick's note (optional)"
               data-testid="nick-note"
-              className="mb-2 min-h-[44px] w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[#ff6a00]/60"
+              className="mb-2 min-h-[44px] w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-[#00e5ff]/60"
             />
             <div className="grid grid-cols-3 gap-2">
               {(["PASS", "REVISE", "KILL"] as NickVerdict[]).map((v) => (
@@ -259,20 +259,20 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
             </div>
           </>
         )}
-        {dirty && (c.stage === "drafted" || c.stage === "nick") && <p className="text-[12px] text-zinc-500">Save the draft before recording a verdict.</p>}
+        {dirty && (c.stage === "drafted" || c.stage === "nick") && <p className="text-[12px] text-slate-500">Save the draft before recording a verdict.</p>}
       </section>
 
       {/* 3 — Approve / Send */}
-      <section className="rounded-2xl border border-[#ff6a00]/25 bg-[#0c0d0e] p-4" data-testid="greenlight-section">
+      <section className="rounded-2xl border border-[#00e5ff]/25 bg-[#08101f] p-4" data-testid="greenlight-section">
         <Caption className="mb-3">3 · Thomas greenlight</Caption>
         {c.stage === "sent" ? (
           <p className="text-sm text-emerald-300">Sent {c.sentAt ? new Date(c.sentAt).toLocaleString() : ""}. Logged and suppressed.</p>
         ) : c.stage === "sending" ? (
-          <p className="text-sm text-[#ffb066]">Send in flight — if this persists, check the Log before doing anything else.</p>
+          <p className="text-sm text-[#7fdfff]">Send in flight — if this persists, check the Log before doing anything else.</p>
         ) : (
           <>
             {c.stage === "approved" && (
-              <p className="mb-3 text-sm text-zinc-300">Approved by Thomas {c.approvedAt ? new Date(c.approvedAt).toLocaleString() : ""}.</p>
+              <p className="mb-3 text-sm text-slate-300">Approved by Thomas {c.approvedAt ? new Date(c.approvedAt).toLocaleString() : ""}.</p>
             )}
             <div className="flex flex-wrap gap-2">
               {c.stage !== "approved" && (
@@ -284,7 +284,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
                 Send via AgentMail
               </Button>
             </div>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-600" data-testid="greenlight-why">
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-600" data-testid="greenlight-why">
               {c.stage === "approved" ? sendWhy ?? "Ready — one email, explicit confirm." : approveWhy ?? "Ready to approve."}
             </p>
           </>
@@ -305,19 +305,19 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
       )}
 
       {err && <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[13px] text-red-300" role="alert" data-testid="panel-error">{err}</p>}
-      {info && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[13px] text-zinc-300" role="status" data-testid="panel-info">{info}</p>}
+      {info && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[13px] text-slate-300" role="status" data-testid="panel-info">{info}</p>}
 
       {confirm && (
         <Modal title="Send Email 1 · confirm" onClose={() => busy !== "send" && setConfirm(false)} data-testid="send-confirm">
           <dl className="mb-3 grid grid-cols-[72px_1fr] gap-y-1 text-sm">
-            <dt className="text-zinc-500">From</dt>
-            <dd className="text-zinc-200">{config.inbox}</dd>
-            <dt className="text-zinc-500">To</dt>
-            <dd className="text-zinc-200">{c.email}</dd>
-            <dt className="text-zinc-500">Subject</dt>
-            <dd className="text-zinc-200">{c.subject}</dd>
+            <dt className="text-slate-500">From</dt>
+            <dd className="text-slate-200">{config.inbox}</dd>
+            <dt className="text-slate-500">To</dt>
+            <dd className="text-slate-200">{c.email}</dd>
+            <dt className="text-slate-500">Subject</dt>
+            <dd className="text-slate-200">{c.subject}</dd>
           </dl>
-          <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 font-sans text-[13px] leading-relaxed text-zinc-300">
+          <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 font-sans text-[13px] leading-relaxed text-slate-300">
             {composeOutgoing(c.body, config.footer)}
           </pre>
           {!config.domainWarmed && <p className="mt-3 text-[12px] text-amber-200/80">Domain warm-up isn&apos;t confirmed (FIELD_DOMAIN_WARMED). Keep volume to one-at-a-time.</p>}

@@ -18,11 +18,11 @@ const STAGE_LABEL: Record<Stage, string> = {
 };
 
 const STAGE_STYLE: Record<Stage, string> = {
-  new: "border-white/15 text-zinc-300",
+  new: "border-white/15 text-slate-300",
   drafted: "border-sky-400/40 text-sky-300",
   nick: "border-violet-400/40 text-violet-300",
-  approved: "border-[#ff8c1a]/60 text-[#ffb066]",
-  sending: "border-[#ff8c1a]/60 text-[#ffb066] animate-pulse",
+  approved: "border-[#5cefff]/60 text-[#7fdfff]",
+  sending: "border-[#5cefff]/60 text-[#7fdfff] animate-pulse",
   sent: "border-emerald-400/40 text-emerald-300",
   hold: "border-amber-300/30 text-amber-200/80",
   kill: "border-red-500/40 text-red-400",
@@ -37,9 +37,9 @@ export function StageBadge({ stage }: { stage: Stage }) {
 }
 
 const PRI_STYLE: Record<Priority, string> = {
-  High: "bg-[#ff6a00] text-black",
-  Med: "bg-[#ff6a00]/25 text-[#ffb066]",
-  Soft: "bg-white/5 text-zinc-500",
+  High: "bg-[#00e5ff] text-black",
+  Med: "bg-[#00e5ff]/25 text-[#7fdfff]",
+  Soft: "bg-white/5 text-slate-500",
 };
 
 export function PriorityBadge({ priority }: { priority: Priority }) {
@@ -56,10 +56,10 @@ export function Button({
       {...props}
       className={cx(
         "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-        variant === "primary" && "bg-[#ff6a00] text-black hover:bg-[#ff8c1a]",
-        variant === "ghost" && "border border-white/15 text-zinc-100 hover:border-white/30 hover:bg-white/5",
+        variant === "primary" && "bg-[#00e5ff] text-black hover:bg-[#5cefff]",
+        variant === "ghost" && "border border-white/15 text-slate-100 hover:border-white/30 hover:bg-white/5",
         variant === "danger" && "border border-red-500/40 text-red-300 hover:bg-red-500/10",
-        variant === "quiet" && "text-zinc-400 hover:bg-white/5 hover:text-zinc-200",
+        variant === "quiet" && "text-slate-400 hover:bg-white/5 hover:text-slate-200",
         className
       )}
     />
@@ -67,7 +67,7 @@ export function Button({
 }
 
 export function Caption({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <p className={cx("font-mono text-[10px] uppercase tracking-[0.28em] text-zinc-500", className)}>{children}</p>;
+  return <p className={cx("font-mono text-[10px] uppercase tracking-[0.28em] text-slate-500", className)}>{children}</p>;
 }
 
 export function Dot({ ok, warn }: { ok: boolean; warn?: boolean }) {

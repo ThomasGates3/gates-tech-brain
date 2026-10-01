@@ -39,7 +39,7 @@ export function LoadingState({
       )}
 
       {variant === "bar" && (
-        <div data-testid={`${testId}-bar`} className="h-[2px] w-48 overflow-hidden rounded-full bg-[#212327]">
+        <div data-testid={`${testId}-bar`} className="h-[2px] w-48 overflow-hidden rounded-full bg-[#16263d]">
           <div className="h-full w-1/2 animate-[slide_1.2s_ease-in-out_infinite] rounded-full bg-white/40" />
         </div>
       )}
@@ -57,11 +57,11 @@ export function LoadingState({
       )}
 
       <div className="flex flex-col items-center gap-1">
-        <p data-testid={`${testId}-label`} className="text-[14px] leading-[20px] text-[#dadbdf]">
+        <p data-testid={`${testId}-label`} className="text-[14px] leading-[20px] text-[#b7d0e6]">
           {label}
         </p>
         {subLabel && (
-          <p data-testid={`${testId}-sublabel`} className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#7d8187]">
+          <p data-testid={`${testId}-sublabel`} className="font-mono text-[12px] uppercase tracking-[1.2px] text-[#7a93ad]">
             {subLabel}
           </p>
         )}

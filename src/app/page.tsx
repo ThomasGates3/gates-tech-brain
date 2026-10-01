@@ -91,11 +91,11 @@ export default function Home() {
   const muteBriefing = () => { localStorage.setItem("mute_briefing", "1"); window.speechSynthesis?.cancel(); };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 font-sans">
+    <div className="min-h-screen bg-black text-slate-100 font-sans">
       {booting && <BootSequence name={preset.name} accent={preset.accent} onDone={finishBoot} />}
 
       {/* Ambient core glow + faint grid */}
-      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(900px 500px at 50% 8%, rgba(255,106,0,0.10), transparent 70%)" }} />
+      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(900px 500px at 50% 8%, rgba(0,229,255,0.10), transparent 70%)" }} />
       <div className="pointer-events-none fixed inset-0 opacity-[0.05]" style={{ backgroundImage: "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
 
       {/* Desktop: full command deck */}
@@ -105,7 +105,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" style={{ boxShadow: "0 0 10px var(--accent)" }} />
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-zinc-500">AI BRAIN</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">AI BRAIN</p>
               <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
                 {getGreeting()}. All systems online — I&apos;m <span className="text-[var(--accent)]">{preset.name}</span>.
               </h1>
@@ -116,17 +116,17 @@ export default function Home() {
               data-testid="vertical-switcher"
               value={vertical}
               onChange={(e) => setVertical(e.target.value as Vertical)}
-              className="min-h-[36px] rounded-lg border border-white/10 bg-black/40 px-2.5 font-mono text-[11px] uppercase tracking-wider text-zinc-300 outline-none focus:border-[var(--accent)]/60"
+              className="min-h-[36px] rounded-lg border border-white/10 bg-black/40 px-2.5 font-mono text-[11px] uppercase tracking-wider text-slate-300 outline-none focus:border-[var(--accent)]/60"
               aria-label="Switch persona"
             >
               {getAllPresets().map((p) => (
                 <option key={p.id} value={p.id}>{p.name} · {p.id}</option>
               ))}
             </select>
-            <button onClick={muteBriefing} data-testid="mute-briefing" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-zinc-400 hover:text-zinc-200" aria-label="Mute voice">
+            <button onClick={muteBriefing} data-testid="mute-briefing" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-400 hover:text-slate-200" aria-label="Mute voice">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="m23 9-6 6M17 9l6 6" /></svg>
             </button>
-            <div className="hidden font-mono text-[11px] text-zinc-500 sm:block">
+            <div className="hidden font-mono text-[11px] text-slate-500 sm:block">
               <span className="text-[var(--accent-soft)]">{new Date().toLocaleDateString()}</span> · {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </div>
           </div>
@@ -155,15 +155,15 @@ export default function Home() {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Briefing</span>
                 </div>
-                <p className="mb-3 text-sm text-zinc-200">{briefing.lead}</p>
+                <p className="mb-3 text-sm text-slate-200">{briefing.lead}</p>
                 <ul className="space-y-1.5">
                   {briefing.items.slice(0, 4).map((it) => (
                     <li key={it.label} onClick={() => setBriefItem(it)} data-testid={`briefing-item-${it.label}`} className="flex cursor-pointer items-baseline justify-between gap-3 rounded border-b border-white/[0.04] pb-1.5 transition-colors last:border-0 hover:bg-white/[0.03]">
-                      <span className={`text-[13px] ${it.urgent ? "text-[var(--accent-soft)]" : "text-zinc-400"}`}>
+                      <span className={`text-[13px] ${it.urgent ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>
                         {it.urgent && <span className="mr-1.5 text-[var(--accent)]">!</span>}
                         {it.label}
                       </span>
-                      <span className="shrink-0 font-mono text-[13px] text-zinc-100">
+                      <span className="shrink-0 font-mono text-[13px] text-slate-100">
                         {it.value}
                         {it.delta && <span className="ml-1.5 text-[11px] text-emerald-400/80">{it.delta}</span>}
                       </span>

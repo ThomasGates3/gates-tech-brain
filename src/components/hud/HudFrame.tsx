@@ -18,7 +18,7 @@ interface HudFrameProps {
 
 const DEFAULT_READOUTS: TelemetryReadout[] = [
   { label: "CONDUCTOR",  value: "OPUS 4.8",    color: "#c4b5fd" },
-  { label: "TIER",       value: "FLAGSHIP",    color: "#ff7a17" },
+  { label: "TIER",       value: "FLAGSHIP",    color: "#00e5ff" },
   { label: "CONNECTORS", value: "6 ACTIVE",    color: "#22c55e" },
   { label: "MEMORY",     value: "pgvector",    color: "#a0c3ec" },
 ];

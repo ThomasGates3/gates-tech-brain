@@ -274,7 +274,7 @@ export function VoiceControl({
   // Accent ring color by state
   const ringColor =
     isListening
-      ? "ring-2 ring-[#ff7a17]/60"
+      ? "ring-2 ring-[#00e5ff]/60"
       : isSpeaking
         ? "ring-2 ring-[#a0c3ec]/60"
         : "ring-0";
@@ -312,20 +312,20 @@ export function VoiceControl({
           "relative flex items-center justify-center",
           compact ? "h-11 w-11" : "h-14 w-14",
           "min-h-[44px] min-w-[44px]",
-          "rounded-full border border-[#212327] bg-[#191919]",
+          "rounded-full border border-[#16263d] bg-[#0a1224]",
           "transition-all duration-200",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/50",
           "disabled:cursor-not-allowed disabled:opacity-40",
           "select-none",
           ringColor,
-          isListening ? "bg-[#ff7a17]/10" : "",
+          isListening ? "bg-[#00e5ff]/10" : "",
         ]
           .filter(Boolean)
           .join(" ")}
       >
         {/* Animated ping when listening */}
         {isListening && (
-          <span className="absolute inset-0 animate-ping rounded-full border border-[#ff7a17]/30" />
+          <span className="absolute inset-0 animate-ping rounded-full border border-[#00e5ff]/30" />
         )}
         {/* Icon */}
         <MicIcon
@@ -340,7 +340,7 @@ export function VoiceControl({
       {!compact && (
         <p
           data-testid={`${testId}-state-label`}
-          className="font-mono text-[11px] uppercase tracking-[1.2px] text-[#7d8187]"
+          className="font-mono text-[11px] uppercase tracking-[1.2px] text-[#7a93ad]"
         >
           {isListening
             ? "Listening"
@@ -360,12 +360,12 @@ export function VoiceControl({
       {showTranscript && (transcript || interimTranscript) && (
         <div
           data-testid={`${testId}-transcript`}
-          className="max-w-xs rounded-[8px] border border-[#212327] bg-[#191919] px-3 py-2"
+          className="max-w-xs rounded-[8px] border border-[#16263d] bg-[#0a1224] px-3 py-2"
         >
-          <p className="text-[14px] leading-[20px] text-[#dadbdf]">
+          <p className="text-[14px] leading-[20px] text-[#b7d0e6]">
             {transcript || interimTranscript}
             {interimTranscript && !transcript && (
-              <span className="text-[#7d8187]"> …</span>
+              <span className="text-[#7a93ad]"> …</span>
             )}
           </p>
         </div>
@@ -376,7 +376,7 @@ export function VoiceControl({
         <p
           data-testid={`${testId}-error`}
           role="alert"
-          className="text-[12px] leading-[16px] text-[#ff7a17]"
+          className="text-[12px] leading-[16px] text-[#00e5ff]"
         >
           {errorMsg}
         </p>
@@ -399,12 +399,12 @@ function MicIcon({
   size?: number;
 }) {
   const color = active
-    ? "#ff7a17"
+    ? "#00e5ff"
     : speaking
       ? "#a0c3ec"
       : processing
         ? "#c4b5fd"
-        : "#7d8187";
+        : "#7a93ad";
 
   return (
     <svg

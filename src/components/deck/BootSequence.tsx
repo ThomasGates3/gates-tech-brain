@@ -35,7 +35,7 @@ export function BootSequence({ name, accent, onDone }: { name: string; accent: s
       <div className="mt-10 h-24 w-[280px] font-mono text-[12px] uppercase tracking-[0.2em]">
         {LINES.slice(0, step).map((l, i) => (
           <p key={i} className="leading-6" style={{ color: i === step - 1 ? accent : "#5a5a5a" }}>
-            <span className="text-zinc-700">›</span> {l.replace("{name}", name)}
+            <span className="text-slate-700">›</span> {l.replace("{name}", name)}
           </p>
         ))}
       </div>

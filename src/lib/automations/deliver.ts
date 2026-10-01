@@ -37,7 +37,7 @@ async function deliverDiscord({ title, body }: DeliveryPayload): Promise<void> {
           {
             title: `🧠 ${title}`.slice(0, 256),
             description: body.slice(0, 4000), // Discord embed description limit
-            color: 0xff6a00, // deep orange
+            color: 0x00e5ff, // gates cyan
             footer: { text: `AI Brain · ${new Date().toLocaleString()}` },
           },
         ],
