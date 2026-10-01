@@ -22,7 +22,8 @@ function SignInForm() {
       });
       const data = await res.json();
       if (data.ok) {
-        router.replace(params.get("callbackUrl") || "/");
+        const home = data.operator === "thomas" || data.operator === "ace" ? "/field" : "/";
+        router.replace(params.get("callbackUrl") || home);
         router.refresh();
       } else {
         setError(data.error || "Incorrect password");

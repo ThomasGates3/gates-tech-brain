@@ -1,9 +1,9 @@
 /**
- * POST /api/auth/login { password } — verify the shared password, set a signed
- * session cookie. GET /api/auth/logout clears it.
+ * POST /api/auth/login { password } — match the password to an operator (team /
+ * thomas / ace), set a signed session cookie. GET /api/auth/logout clears it.
  */
 import { z } from "zod";
-import { passwordOk, issueToken, GATE_COOKIE, cookieOptions, gateEnabled } from "@/lib/gate";
+import { operatorForPassword, issueToken, GATE_COOKIE, cookieOptions, gateEnabled } from "@/lib/gate";
 
 const Schema = z.object({ password: z.string().min(1).max(200) });
 
@@ -19,12 +19,13 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return Response.json({ ok: false, error: "Password required" }, { status: 400 });
 
-  if (!passwordOk(parsed.data.password)) {
+  const operator = operatorForPassword(parsed.data.password);
+  if (!operator) {
     return Response.json({ ok: false, error: "Incorrect password" }, { status: 401 });
   }
 
-  const token = await issueToken();
-  const res = Response.json({ ok: true });
+  const token = await issueToken(operator);
+  const res = Response.json({ ok: true, operator });
   res.headers.append(
     "Set-Cookie",
     `${GATE_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${cookieOptions.maxAge}; SameSite=Lax${cookieOptions.secure ? "; Secure" : ""}`
