@@ -43,7 +43,10 @@ export function cleanGap(gap: string): string {
     .replace(/\bweekdays?\b/gi, "Monday to Friday")
     .replace(/\b(?:all|the whole|seven days a) week\b/gi, "every day")
     .replace(/\b(?:each|every|per|a) week\b/gi, "every seven days")
-    .replace(/\s*—\s*/g, ", ")
+    .replace(/(\d)\s*[–—]\s*(\d)/g, "$1 to $2") // 9–5 → 9 to 5
+    .replace(/([A-Za-z])–([A-Za-z])/g, "$1 to $2") // Saturday–Sunday → Saturday to Sunday
+    .replace(/\s*[—–]\s*/g, ", ")
+    .replace(/(?<=\S)\s+-\s+(?=\S)/g, ", ")
     .replace(/([^.!?])$/, "$1.");
 }
 
@@ -121,6 +124,9 @@ How this console works (overrides the brief's template where they differ):
   line, in plain words, without adding anything to it. If it is empty, send the generic version.
 - Do not mention the city. Do not guess an owner name. No link in Email 1.
 - Body under 110 words including the signature.
+- Voice: American plain speech. No em dashes or en dashes, and no hyphen used as punctuation between
+  words; hyphens only inside real compound words (after-hours). No AI-isms: "one-pager", "teardown",
+  "pulled a", "quick question about", "circling back", "deep dive", "touch base", "leverage".
 - The banned-word rule includes "weekday", "weekdays", "weeknight", "weekend" and "weekly". Write
   "Monday to Friday", "Saturday and Sunday" or "every seven days" instead.
 

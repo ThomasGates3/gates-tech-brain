@@ -11,12 +11,13 @@ import { generateText, stepCountIs } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { contactStep, sendContact, loadPack, addSuppression } from "@/lib/field/actions";
-import { upsertContact, getStep, listSuppressions } from "@/lib/field/store";
+import { upsertContact, getStep, listSuppressions, mergeContacts } from "@/lib/field/store";
 import { nextDue, dueDate } from "@/lib/field/sequence";
 import { fetchInbound } from "@/lib/field/inbound";
 import { getGates, setGates } from "@/lib/field/gates";
+import { leadsFor, EMAIL1_STATUSES } from "@/lib/field/leads";
 import { fieldSnapshot } from "@/lib/field/snapshot";
-import { listQueue, listLog, getContact } from "@/lib/field/store";
+import { listLog, getContact } from "@/lib/field/store";
 import { todayIn } from "@/lib/field/config";
 import { lintCopy, MAX_WORDS } from "@/lib/field/lint";
 import { OUTREACH_BRIEF } from "@/lib/field/brief";
@@ -113,10 +114,13 @@ export const TOOLS = [
   tool({
     name: "brain_today",
     title: "Today's Field status",
-    description: "One call for the whole picture: queue counts by stage, sends today vs cap, Claude spend vs budget, gates (AgentMail, Notion, CAN-SPAM, domain warm-up), and the next actions. Start here.",
+    description: "One call for the whole picture. Aggregates (queue by stage, core vs website, sends vs cap, approved-unsent, follow-ups due, unanswered inbound, gates, Claude budget, next actions) plus leads[]: every lead for the date with lane, source, tier, email1_status (undrafted | drafted | atNick | PASS | approved | sent | hold | kill), Nick verdict, subject and next_action. Same data as the Control Center board. Start here.",
     input: z.object({ agent: Agent, date: DateStr }),
     kind: "queried",
-    run: ({ date }) => fieldSnapshot(date),
+    run: async ({ date }) => {
+      const [snap, l] = await Promise.all([fieldSnapshot(date), leadsFor({ date })]);
+      return { ...snap, lead_counts: l.counts, leads: l.leads };
+    },
   }),
   tool({
     name: "brain_list_agents",
@@ -206,16 +210,19 @@ export const TOOLS = [
   tool({
     name: "brain_field_queue",
     title: "Field queue",
-    description: "Today's High+Med contacts (Soft excluded unless include_soft), with lane (core | website). load_from_notion:true pulls the morning pack from the Notion Cold emails DB first.",
-    input: z.object({ agent: Agent, date: DateStr, load_from_notion: z.boolean().default(false), include_soft: z.boolean().default(false), lane: z.enum(["core", "website"]).optional() }),
+    description: "Leads for a date (default today ET), each with lane, source, tier, email1_status, Nick verdict, subject, next_action. Soft is excluded unless include_soft or tier:\"Soft\". Filters: lane, status, tier. load_from_notion:true pulls the morning pack from Notion first (tagged source notion).",
+    input: z.object({
+      agent: Agent, date: DateStr,
+      load_from_notion: z.boolean().default(false), include_soft: z.boolean().default(false),
+      lane: z.enum(["core", "website"]).optional(), status: z.enum(EMAIL1_STATUSES).optional(), tier: z.enum(["High", "Med", "Soft"]).optional(),
+    }),
     kind: "queried",
-    run: async ({ date, load_from_notion, include_soft, lane }) => {
+    run: async ({ date, load_from_notion, include_soft, lane, status, tier }) => {
       const day = date ?? todayIn();
       const loaded = load_from_notion ? await loadPack("notion", day) : null;
-      const contacts = (await listQueue(day))
-        .filter((c) => (include_soft || c.priority !== "Soft") && (!lane || c.lane === lane))
-        .map((c) => ({ contact_id: c.id, name: c.name, email: c.email, lane: c.lane, source: c.source, priority: c.priority, stage: c.stage, gap: c.gap, has_draft: Boolean(c.draftHash), nick: c.nickVerdict, approved: Boolean(c.approvedHash && c.approvedHash === c.draftHash), suppressed: c.suppressed }));
-      return { date: day, loaded, count: contacts.length, contacts };
+      const l = await leadsFor({ date: day, lane, status, tier });
+      const contacts = l.leads.filter((x) => include_soft || tier === "Soft" || x.tier !== "Soft");
+      return { date: day, loaded, counts: l.counts, count: contacts.length, contacts };
     },
   }),
   tool({
@@ -267,7 +274,7 @@ export const TOOLS = [
   tool({
     name: "brain_approve_send",
     title: "Approve + send email",
-    description: "Approve (if not already) and send ONE email (Email n, default 1) via AgentMail from the cold inbox. Email 1 starts a thread; Emails 2–4 reply in it and only send on/after their due date (Day 3/7/12) once the previous step went out. Requires Nick PASS on the exact current draft, a clean copy lint, no opt-out/bounce suppression, the CAN-SPAM address and the daily send cap. Thomas-only (an Ace key only with FIELD_ACE_CAN_SEND=true). Returns the AgentMail send id.",
+    description: "Approve (if not already) and send ONE email (Email n, default 1) via AgentMail from the cold inbox. Email 1 starts a thread; Emails 2–4 reply in it and only send on/after their due date (Day 3/7/12) once the previous step went out. Requires domain warm-up confirmed (brain_set_gate), Nick PASS on the exact current draft, a clean copy lint, no opt-out/bounce suppression, the CAN-SPAM address and the daily send cap. Thomas-only (an Ace key only with FIELD_ACE_CAN_SEND=true). Returns the AgentMail send id.",
     input: z.object({ agent: Agent, contact_id: ContactId, email_n: EmailNum, confirm: z.literal(true).describe("Must be true: you reviewed the exact draft") }),
     kind: "sent",
     run: async ({ contact_id, email_n }, ctx) => {
@@ -314,19 +321,24 @@ export const TOOLS = [
       contact_name: z.string().trim().max(120).optional(),
       email: z.email().max(320),
       tier: z.enum(["High", "Med", "Soft"]),
-      lane: z.enum(["core", "website"]),
+      lane: z.enum(["core", "website"]).optional().describe("Default: website for Prospectacle, core otherwise"),
       site_url: z.url().max(500).optional(),
       gap: z.string().max(1000).optional().describe("Verified observation for the opener (Vera's gap note)"),
       city: z.string().max(120).optional(),
       notes: z.string().max(2000).optional(),
-      source: z.enum(["ashley", "prospectacle", "notion", "manual"]),
+      source: z.enum(["ashley", "prospectacle", "notion", "manual"]).optional().describe("Default: your agent id if ashley/prospectacle, else manual"),
       date: DateStr,
     }),
     kind: "updated",
     run: async (a) => {
       if (PLACEHOLDER_EMAIL.test(a.email)) throw new ToolError(400, `Rejected: "${a.email}" looks like a placeholder. Only real, verified emails.`);
-      const { contact, created } = await upsertContact({ contactId: a.contact_id, business: a.business, contactName: a.contact_name, email: a.email, tier: a.tier, lane: a.lane, siteUrl: a.site_url, gap: a.gap, city: a.city, notes: a.notes, source: a.source, date: a.date ?? todayIn() });
-      return { created, contact_id: contact.id, name: contact.name, email: contact.email, lane: contact.lane, priority: contact.priority, stage: contact.stage, pack_date: contact.packDate, on_queue: contact.priority !== "Soft" };
+      // Wiring: Ashley → core, Prospectacle → website.
+      const source = a.source ?? (a.agent === "ashley" || a.agent === "prospectacle" ? a.agent : "manual");
+      const lane = a.lane ?? (source === "prospectacle" ? "website" : "core");
+      if (source === "ashley" && lane !== "core") throw new ToolError(400, "Ashley leads are the core lane (missed-call Field).");
+      if (source === "prospectacle" && lane !== "website") throw new ToolError(400, "Prospectacle leads are the website lane.");
+      const { contact, created } = await upsertContact({ contactId: a.contact_id, business: a.business, contactName: a.contact_name, email: a.email, tier: a.tier, lane, siteUrl: a.site_url, gap: a.gap, city: a.city, notes: a.notes, source, date: a.date ?? todayIn() });
+      return { created, contact_id: contact.id, name: contact.name, email: contact.email, lane: contact.lane, source: contact.source, priority: contact.priority, stage: contact.stage, pack_date: contact.packDate, on_queue: contact.priority !== "Soft" };
     },
   }),
   tool({
@@ -372,6 +384,21 @@ export const TOOLS = [
     input: z.object({ agent: Agent, items: z.array(NickItem).min(1).max(50) }),
     kind: "updated",
     run: ({ items }, ctx) => runBatch(items, (i) => setNick(i, ctx)),
+  }),
+  tool({
+    name: "brain_merge_contacts",
+    title: "Merge duplicate leads",
+    description: "Fold a duplicate lead (drop_id) into the one to keep (keep_id): fills keep's missing contact name, site, notes, gap and Notion link, takes drop's draft if keep has none, keeps the more cautious tier, then deletes drop. Both must be unsent. Use when brain_today/board shows duplicate_of.",
+    input: z.object({ agent: Agent, keep_id: ContactId, drop_id: ContactId }),
+    kind: "updated",
+    run: async ({ keep_id, drop_id }) => {
+      try {
+        const m = await mergeContacts(keep_id, drop_id);
+        return { merged_into: m.id, dropped: drop_id, name: m.name, email: m.email, lane: m.lane, source: m.source, tier: m.priority, stage: m.stage };
+      } catch (e) {
+        throw new ToolError(409, e instanceof Error ? e.message : String(e));
+      }
+    },
   }),
   tool({
     name: "brain_list_suppressions",

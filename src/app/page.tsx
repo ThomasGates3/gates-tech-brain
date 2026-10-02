@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import HudFrame from "@/components/hud/HudFrame";
 import type { OrbState } from "@/components/hud/CoreOrb";
 import { BrainChat } from "@/components/deck/BrainChat";
@@ -11,6 +11,7 @@ import { NovaNoticed } from "@/components/deck/NovaNoticed";
 import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
 import { SystemStatPanel } from "@/components/deck/SystemStatPanel";
 import { Scoreboard, type ScoreboardData } from "@/components/deck/Scoreboard";
+import { LeadsBoard } from "@/components/deck/LeadsBoard";
 import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset } from "@/lib/persona/presets";
@@ -25,7 +26,18 @@ interface DeckState {
   readouts: { tier: string; activeAgents: number; sent: string; claude: string };
 }
 
+/** true on lg+ screens, false below, null during SSR: mounts exactly one leads board. */
+const LG = "(min-width: 1024px)";
+function useIsDesktop(): boolean | null {
+  return useSyncExternalStore(
+    (cb) => { const m = window.matchMedia(LG); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); },
+    () => window.matchMedia(LG).matches,
+    () => null
+  );
+}
+
 export default function Home() {
+  const isDesktop = useIsDesktop();
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [voiceActive, setVoiceActive] = useState(false);
   const [modal, setModal] = useState<"settings" | "connections" | null>(null);
@@ -135,6 +147,9 @@ export default function Home() {
         {/* Proactive nudges */}
         <NovaNoticed name={preset.name} />
 
+        {/* Primary: today's leads (Brain DB is the source of truth) */}
+        <div className="mb-4">{isDesktop && <LeadsBoard />}</div>
+
         {/* 3-column JARVIS grid: activity | core+chat | stats */}
         <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_260px]">
           {/* Left — activity (real, DB-backed) */}
@@ -193,6 +208,12 @@ export default function Home() {
         <div className="mt-4">
           <AutomationsPanel />
         </div>
+      </div>
+
+      {/* Phone: the leads board first */}
+      <div className="relative px-4 pb-28 pt-5 lg:hidden">
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">GATES TECH BRAIN · CONTROL CENTER</p>
+        {isDesktop === false && <LeadsBoard />}
       </div>
 
       {/* Mobile floating orb → chat sheet */}

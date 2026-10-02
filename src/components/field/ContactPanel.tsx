@@ -114,7 +114,9 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
       ? "Approve first"
       : dirty
         ? "Save edits first"
-        : !config.agentmail
+        : !config.domainWarmed
+          ? "Warm-up: do not send"
+          : !config.agentmail
           ? "AgentMail not configured"
           : !config.mailingAddress
             ? "CAN-SPAM address missing"

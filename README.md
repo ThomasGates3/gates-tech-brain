@@ -53,6 +53,37 @@ brain_list_suppressions {"agent":"ace","search":"glow"}
 brain_set_gate {"domain_warmed":true,"daily_cap":30}
 ```
 
+**Changelog (2026-10-02, leads board)**
+
+- `brain_today` now also returns `lead_counts` and `leads[]` (every lead for the date: lane, source, tier, `email1_status`, Nick verdict/note, approved, sent_at, subject, `next_action`, `duplicate_of`). Same data as the Control Center **Today's leads** board.
+- `brain_field_queue` returns the same lead objects; filters `lane`, `status`, `tier` (Soft only with `include_soft` or `tier:"Soft"`).
+- `brain_upsert_contact`: `source`/`lane` default from your agent (Ashley → core/ashley, Prospectacle → website/prospectacle); a mismatch is rejected.
+- Notion loads attach to an existing unsent Ashley/Prospectacle lead with the same email instead of duplicating it. New `brain_merge_contacts {keep_id, drop_id}` folds existing duplicates.
+- Copy lint also blocks en dashes, hyphens used as punctuation (`word - word`) and AI-isms (one-pager, teardown, "pulled a", "quick question about", deep dive, touch base, leverage…). Nick PASS is refused while lint fails.
+- Sends are blocked (423) until Thomas confirms domain warm-up (`brain_set_gate {domain_warmed:true}`). Approve never sends.
+
+`email1_status`: `undrafted → drafted → atNick → PASS → approved → sent`, or `hold` / `kill`.
+
+```jsonc
+// brain_today {"agent":"ace"}  (trimmed)
+{
+  "date": "2026-10-02",
+  "lead_counts": { "total": 35, "core": 22, "website": 6, "undrafted": 13, "drafted": 12, "awaitingNick": 0,
+                   "passAwaitingApprove": 0, "approvedUnsent": 0, "sent": 0, "softHold": 10, "duplicates": 8 },
+  "sentToday": 0, "dailyCap": 20,
+  "gates": { "domainWarmed": false, "warmNote": "Domain not warmed: keep volume low until Thomas confirms warm-up." },
+  "leads": [
+    { "contact_id": "ashley_…", "business": "Plumber Local Pros", "email": "experts@plumberlocalpros.com", "lane": "website",
+      "source": "prospectacle", "tier": "Med", "email1_status": "undrafted", "nick_verdict": null, "approved": false,
+      "subject": null, "duplicate_of": [], "next_action": "Prospectacle draft" },
+    { "contact_id": "3edea766-…", "business": "The Aesthetic Company", "lane": "core", "source": "notion", "tier": "High",
+      "email1_status": "drafted", "subject": "monday opens at 1", "next_action": "Nick audit" }
+  ],
+  "next": ["13 High/Med contacts not drafted yet (Darrell).", "12 drafts not yet with Nick.", "Domain not warmed: …"]
+}
+```
+Ace answers "what came in today for website vs core, and what's drafted?" from `lead_counts` + `leads[].lane / email1_status` in this one call.
+
 All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.
 
 ## Field Console

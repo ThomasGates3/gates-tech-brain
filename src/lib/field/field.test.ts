@@ -240,6 +240,17 @@ test("follow-up and website templates pass the copy lint", () => {
   assert.deepEqual(lintCopy(w.subject, w.body), []);
 });
 
+test("voice lint: dashes, clause hyphens and AI-isms; compounds are fine", () => {
+  const rules = (t: string) => lintCopy("s", t).map((i) => i.rule);
+  assert.ok(rules("calls go out – fast").includes("En dash"));
+  assert.ok(rules("calls go out - fast").includes("Clause hyphen"));
+  assert.ok(rules("I put together a one-pager for you").includes("AI-ism"));
+  assert.ok(rules("I pulled a teardown of your site").includes("AI-ism"));
+  assert.ok(rules("Quick question about your outbound").includes("Banned phrase"));
+  assert.deepEqual(lintCopy("calls after you close", "We answer after-hours calls and text back. Worth a look?"), []);
+  assert.equal(cleanGap("Open Tuesday–Saturday 9–5 - phone only"), "Open Tuesday to Saturday 9 to 5, phone only.");
+});
+
 test("inbound classifier: opt-out, not-now, auto-reply, bounce, real reply", () => {
   assert.equal(classifyReply("No", "a@b.com").action, "suppress_opt_out");
   assert.equal(classifyReply("no thanks\n\nOn Tue, Thomas wrote:\n> Worth a look?", "a@b.com").action, "suppress_opt_out");
