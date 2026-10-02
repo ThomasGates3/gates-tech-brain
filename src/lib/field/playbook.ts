@@ -7,7 +7,7 @@
  * them to every send so they can never be edited out.
  */
 import { OUTREACH_BRIEF } from "./brief";
-import type { FieldContact } from "./types";
+import type { EmailN, FieldContact, Lane } from "./types";
 
 export interface Signer {
   name: string;
@@ -52,8 +52,9 @@ export function signature(signer: Signer): string {
 }
 
 /** Deterministic Email 1. With no verified gap it sends the generic version (brief §7). */
-export function templateDraft(c: Pick<FieldContact, "name" | "gap" | "batch">, signer: Signer): Draft {
+export function templateDraft(c: Pick<FieldContact, "name" | "gap" | "batch"> & { lane?: Lane }, signer: Signer): Draft {
   const gap = c.gap.trim() ? cleanGap(c.gap) : "";
+  if (c.lane === "website") return websiteDraft(c.name, gap, signer);
   const hours = HOURS_GAP.test(gap);
   const busy = TREATMENT_NICHE.test(`${c.batch} ${c.name}`) ? "with a client" : "out on a job";
   const scene = !gap
@@ -73,6 +74,43 @@ export function templateDraft(c: Pick<FieldContact, "name" | "gap" | "batch">, s
   return { subject: hours ? "calls after you close" : `missed calls at ${shortName(c.name)}`, body };
 }
 
+/** Website lane (Prospectacle): redesign with booking built in + the Core call-recovery add-on. */
+function websiteDraft(name: string, gap: string, signer: Signer): Draft {
+  const body = [
+    gap || "Your site takes inquiries, but there's no way to book from it after hours.",
+    "So someone who finds you at night has to call, and if nobody picks up they move on to the next result.",
+    "We rebuild the site with booking built in, and add a system that answers after hours and texts back any missed call.",
+    "Worth a look, or is the site already handled?",
+    signature(signer),
+  ].join("\n\n");
+  return { subject: `the booking path on ${shortName(name)}'s site`, body };
+}
+
+/** Follow-ups (brief §6): each adds something new. Sent as replies in the Email 1 thread. */
+export function followupTemplate(n: Exclude<EmailN, 1>, c: Pick<FieldContact, "name" | "subject"> & { lane?: Lane }, signer: Signer): Draft {
+  const lines: Record<2 | 3 | 4, string[]> = {
+    2: [
+      c.lane === "website"
+        ? "One more angle on the site. When a visitor can't book on the spot, most don't come back to finish."
+        : "One more angle. A caller who reaches voicemail during a busy hour usually doesn't call back. They book whoever answers.",
+      "We text that person back right away, so they still have a way to book with you.",
+      "Worth a look?",
+    ],
+    3: [
+      "Easier to show than tell.",
+      `Want me to send a 15-second clip of how it handles a missed call for ${c.name}?`,
+    ],
+    4: ["I'll leave it here. If missed calls or after-hours bookings ever move up the list, just reply and I'll pick it back up."],
+  };
+  return { subject: c.subject, body: [...lines[n], signature(signer)].join("\n\n") };
+}
+
+const STEP_JOBS: Record<2 | 3 | 4, string> = {
+  2: "Email 2 (Day 3): a different angle on the same problem, not a restatement. 60 words or fewer.",
+  3: "Email 3 (Day 7): show, don't tell. Offer the 15-second demo clip (or a look at the site). 50 words or fewer.",
+  4: "Email 4 (Day 12): one or two lines closing the loop (\"I'll leave it here\"). No new pitch.",
+};
+
 export const PLAYBOOK_SYSTEM = `You write Email 1 (the first cold touch) for Gates Technologies.
 The outreach brief below is the ONLY source of truth. If a fact is not in it, you do not know it.
 
@@ -90,14 +128,26 @@ How this console works (overrides the brief's template where they differ):
 ${OUTREACH_BRIEF}
 </outreach_brief>`;
 
-export function playbookPrompt(c: Pick<FieldContact, "name" | "gap" | "batch">, signer: Signer): string {
+export function playbookPrompt(
+  c: Pick<FieldContact, "name" | "gap" | "batch"> & { lane?: Lane; siteUrl?: string | null; subject?: string },
+  signer: Signer,
+  n: EmailN = 1,
+  previous: string[] = []
+): string {
+  const lane = c.lane === "website"
+    ? "Lane: website. Gates rebuilds the business's site with booking built in and adds the core call-recovery system. Lead with the observed site gap (their problem), not with us."
+    : "Lane: core (missed-call text-back and after-hours booking).";
+  const step = n === 1 ? "Write Email 1 (subject + body)." : `${STEP_JOBS[n]} It is sent as a reply in the same thread, so reuse this subject exactly: "${c.subject ?? ""}". Don't repeat earlier emails.`;
   return [
+    lane,
+    ...(c.siteUrl ? [`Site: ${c.siteUrl}`] : []),
+    ...(previous.length ? [`Earlier emails in this sequence:\n${previous.map((p, i) => `--- Email ${i + 1} ---\n${p}`).join("\n")}`] : []),
     `Business: ${c.name}`,
     `Niche / batch: ${c.batch || "(unknown, do not assume a vertical)"}`,
     `Observed gap: ${c.gap.trim() ? cleanGap(c.gap) : "(none verified, send the generic version)"}`,
     `Signature:\n${signature(signer)}`,
     "",
-    "Write Email 1 (subject + body).",
+    step,
   ].join("\n");
 }
 

@@ -41,6 +41,17 @@ export async function GET() {
       { label: "Approvals", value: String(q.passAwaitingApprove), sub: "PASS waiting" },
       { label: "API keys", value: String(keys.filter((k) => !k.revokedAt).length), sub: "active" },
     ],
+    scoreboard: {
+      sent: { value: snap.sentToday, cap: snap.dailyCap },
+      passAwaitingApprove: q.passAwaitingApprove,
+      approvedUnsent: snap.approvedUnsent,
+      core: q.core,
+      website: q.website,
+      inboundUnanswered: snap.inboundUnanswered,
+      sequenceDue: snap.sequenceDue.total,
+      domainWarmed: snap.gates.domainWarmed,
+      warmNote: snap.gates.warmNote,
+    },
     readouts: { tier: tier.toUpperCase(), activeAgents: active, sent: `${snap.sentToday}/${snap.dailyCap}`, claude: `$${snap.claudeBudget.spentTodayUsd.toFixed(2)}/$${snap.claudeBudget.capUsd.toFixed(2)}` },
   });
 }

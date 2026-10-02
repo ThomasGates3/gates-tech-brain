@@ -83,7 +83,7 @@ export const approvals = pgTable("approvals", {
 
 export const fieldContacts = pgTable("field_contacts", {
   id: text("id").primaryKey(), // Notion page id, or csv_<hash>
-  source: text("source").notNull(), // notion | csv
+  source: text("source").notNull(), // notion | csv | ashley | prospectacle | manual
   notionPageId: text("notion_page_id"),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -108,6 +108,35 @@ export const fieldContacts = pgTable("field_contacts", {
   sentAt: text("sent_at"),
   lastError: text("last_error"),
   updatedAt: text("updated_at").notNull(),
+  lane: text("lane").notNull().default("core"), // core (missed-call Field) | website (redesign + Core add-on)
+  contactName: text("contact_name"),
+  siteUrl: text("site_url"),
+  notes: text("notes"),
+  repliedAt: text("replied_at"), // any inbound reply ends the sequence
+});
+
+/** Sequence steps Email 2–4 (Email 1 lives on field_contacts). One row per contact × step. */
+export const fieldSteps = pgTable("field_steps", {
+  id: text("id").primaryKey(), // `${contactId}:${n}`
+  contactId: text("contact_id").notNull(),
+  n: integer("n").notNull(), // 2 | 3 | 4
+  stage: text("stage").notNull().default("new"), // new | drafted | nick | approved | sending | sent | hold | kill
+  subject: text("subject").notNull().default(""),
+  body: text("body").notNull().default(""),
+  draftSource: text("draft_source"),
+  draftHash: text("draft_hash"),
+  nickVerdict: text("nick_verdict"),
+  nickNote: text("nick_note"),
+  nickHash: text("nick_hash"),
+  nickAt: text("nick_at"),
+  nickBy: text("nick_by"),
+  approvedHash: text("approved_hash"),
+  approvedAt: text("approved_at"),
+  approvedBy: text("approved_by"),
+  sentAt: text("sent_at"),
+  messageId: text("message_id"),
+  lastError: text("last_error"),
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const fieldSendLog = pgTable("field_send_log", {
@@ -122,6 +151,7 @@ export const fieldSendLog = pgTable("field_send_log", {
   operator: text("operator").notNull(),
   suppressed: boolean("suppressed").notNull().default(true),
   sentAt: text("sent_at").notNull(),
+  emailN: integer("email_n").notNull().default(1),
 });
 
 export const fieldSuppressions = pgTable("field_suppressions", {

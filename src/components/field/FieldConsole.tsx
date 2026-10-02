@@ -213,7 +213,10 @@ export function FieldConsole() {
                     >
                       <PriorityBadge priority={c.priority} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-slate-100">{c.name}</span>
+                        <span className="block truncate text-sm text-slate-100">
+                          {c.name}
+                          {c.lane === "website" && <span data-testid="lane-website" className="ml-1.5 rounded bg-[var(--accent)]/15 px-1.5 py-0.5 align-middle font-mono text-[9px] uppercase tracking-wider text-[var(--accent-soft)]">web</span>}
+                        </span>
                         <span className="block truncate text-[12px] text-slate-500">{c.batch || c.city || c.email}</span>
                       </span>
                       {c.suppressed && c.stage !== "sent" && <span className="font-mono text-[10px] text-red-400">SUPP</span>}

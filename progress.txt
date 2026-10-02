@@ -38,3 +38,10 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ API keys: create (shown once, hashed) / revoke in Operations → Access (Thomas only)
 ✓ Roster status real (active = activity in last 30 min); Connections show AgentMail/Notion live or needs-key with setup steps
 ✓ Field drafts: Sonnet 5.5 default, Opus 5.5 for hard drafts only
+
+── 2026-10-02 · Sequence, lanes, inbound, gates, Control Center ────────────
+✓ Lanes (core | website) on contacts; Prospectacle on the roster; Ashley = med-spa / missed-call leads
+✓ brain_upsert_contact (rejects incomplete rows + placeholder emails)
+✓ Sequence Email 1–4 on Day 1/3/7/12: steps table, per-step draft/lint/Nick/approve, follow-ups reply in the Email 1 thread, due-date + order gates, stop on reply/opt-out/hold
+✓ brain_approve (no send), brain_approve_send email_n, brain_next_due, brain_inbound (read + classify; suppress only with confirm), brain_set_gate (Thomas-only, logged), batch draft/nick, brain_list_suppressions
+✓ Control Center scoreboard (sent/cap, PASS→approve, approved-unsent, core/website, inbound, follow-ups due, warm-up); tokens/latency demoted
