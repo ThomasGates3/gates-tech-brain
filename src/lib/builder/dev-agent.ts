@@ -1,6 +1,6 @@
 /**
  * Dev-agent dispatcher — the Brain spins up a coding agent (Claude Code) to do
- * real development on a target repo (Moby, Ad System, …).
+ * real development on a Gates repo (the Brain), on a branch.
  *
  * Safety:
  *  - Runs on a dedicated branch so main is untouched and work is revertible.
@@ -18,8 +18,7 @@ const CLAUDE_BIN = process.env.CLAUDE_BIN ?? "claude";
 
 /** Registered dev targets. Paths overridable via env. */
 const TARGETS: Record<string, { label: string; path: string }> = {
-  moby: { label: "Moby", path: process.env.MOBY_REPO_PATH ?? "/Users/tg3/dev/moby" },
-  "ad-system": { label: "Ad System", path: process.env.AD_SYSTEM_REPO_PATH ?? "/Users/tg3/dev/ad-system" },
+  brain: { label: "Gates Tech Brain", path: process.env.BRAIN_REPO_PATH ?? "/Users/tg3/dev/ai-brain" },
 };
 
 export const DEV_TARGETS = Object.keys(TARGETS) as (keyof typeof TARGETS)[];

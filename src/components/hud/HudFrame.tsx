@@ -17,17 +17,15 @@ interface HudFrameProps {
 }
 
 const DEFAULT_READOUTS: TelemetryReadout[] = [
-  { label: "CONDUCTOR",  value: "SONNET 5.5",  color: "#c4b5fd" },
-  { label: "TIER",       value: "FLAGSHIP",    color: "#00e5ff" },
-  { label: "CONNECTORS", value: "6 ACTIVE",    color: "#22c55e" },
-  { label: "MEMORY",     value: "pgvector",    color: "#a0c3ec" },
+  { label: "CONDUCTOR", value: "SONNET 5.5", color: "#00e5ff" },
+  { label: "TIER", value: "—" },
 ];
 
 /** Telemetry overlay frame rendered around the main orb area */
 export default function HudFrame({
   orbState = "idle",
   readouts = DEFAULT_READOUTS,
-  uptime = "00:00:00",
+  uptime = "—",
   className = "",
   "data-testid": testId = "hud-frame",
 }: HudFrameProps) {
@@ -88,7 +86,7 @@ export default function HudFrame({
 
       {/* Bottom uptime */}
       <div className="absolute bottom-3 left-10 right-10 flex justify-between items-center">
-        <span className="eyebrow" style={{ fontSize: 9 }}>UPTIME {uptime}</span>
+        <span className="eyebrow" style={{ fontSize: 9 }}>{uptime}</span>
         <div className="flex items-center gap-1.5">
           <div className={`status-dot ${orbState === "error" ? "status-dot-error" : orbState === "idle" ? "status-dot-idle" : "status-dot-active"}`} />
           <span className="eyebrow" style={{ fontSize: 9 }}>SYSTEM NOMINAL</span>

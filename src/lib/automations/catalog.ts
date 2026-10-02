@@ -1,214 +1,140 @@
 /**
- * Automation catalog — native to the Brain (no n8n).
- * Each template is a reusable Job the Conductor can run: it reasons over the
- * task, calls specialists/connectors, and delivers a result. Grounded in the
- * /dev domains: real estate, trading, content, social, ops.
+ * Automation catalog — Gates Technologies only. Every automation is DRAFT-ONLY:
+ * it produces text for a human (or Nick/Thomas) to act on. Nothing here sends
+ * outreach; Email 1 goes out only through the Field path (Nick PASS → Approve → send).
  *
- * Turn a template into a scheduled Job with createJob() (scheduler/jobs.ts),
- * or run one on demand via POST /api/automations.
+ * {{field}} and {{activity}} are filled automatically with real data at run time.
  */
-import type { JobTrigger, Vertical } from "@/lib/types";
+import type { JobTrigger } from "@/lib/types";
 
-export type AutomationCategory = "real-estate" | "trading" | "content" | "social" | "ops";
+export type AutomationCategory = "clients" | "ops";
 
 export interface AutomationTemplate {
   id: string;
   name: string;
   category: AutomationCategory;
-  description: string; // one line — what it does + why it's worth it
-  trigger: JobTrigger; // default schedule/trigger
-  deliverTo: ("deck" | "slack" | "email")[];
-  requires: string[]; // connector ids it wants (informational; degrades gracefully)
-  vertical?: Vertical;
-  /** The instruction handed to the Conductor. {{var}} placeholders filled at run time. */
+  description: string;
+  trigger: JobTrigger;
+  deliverTo: ("deck" | "slack" | "discord" | "email")[];
+  requires: string[];
+  /** Inputs the caller should pass (filled into {{name}}). */
+  inputs?: string[];
+  /** Allow Claude web search (max 5 searches/run). */
+  webSearch?: boolean;
   prompt: string;
 }
 
+const DRAFT_ONLY = "DRAFT ONLY: nothing is sent or posted; a human reviews it first. No prices, stats, guarantees or client claims.";
+
 export const AUTOMATIONS: AutomationTemplate[] = [
-  // ── Real estate (gates-acquisitions, lotlens, land-estimation, speed-to-lead) ──
-  {
-    id: "speed-to-lead",
-    name: "Speed-to-Lead Responder",
-    category: "real-estate",
-    description: "New seller lead → qualify, pull comps, draft an offer and a first text — in under 60s.",
-    trigger: { kind: "webhook", secretRef: "WEBHOOK_SECRET_LEADS" },
-    deliverTo: ["deck", "slack"],
-    requires: ["webhook"],
-    vertical: "agency",
-    prompt:
-      "A new seller lead just arrived: {{lead}}. Qualify it (motivation, timeline, condition), " +
-      "estimate ARV and a wholesale-friendly max offer from any available comps, and draft a warm, " +
-      "concise first text to the seller plus a one-line internal summary for the acquisitions team. " +
-      "If you lack comp data, state the assumptions you used.",
-  },
-  {
-    id: "dead-lead-reactivation",
-    name: "Dead-Lead Reactivation",
-    category: "real-estate",
-    description: "Weekly: re-engage cold seller leads with a personalized nudge so no deal rots in the CRM.",
-    trigger: { kind: "cron", expression: "0 15 * * 1" }, // Mondays 15:00 UTC
-    deliverTo: ["deck", "slack"],
-    requires: ["webhook"],
-    prompt:
-      "Review our cold/aged seller leads. Pick the 10 highest-potential to re-engage this week and, for each, " +
-      "write a short personalized follow-up message referencing why now might be the right time to sell. " +
-      "Rank them and explain the prioritization.",
-  },
-
-  // ── Trading (ai-trading-journal, xauusd-printer, bullcycle-binoculars) ──
-  {
-    id: "nightly-journal-review",
-    name: "Nightly Trade-Journal Review",
-    category: "trading",
-    description: "End of day: tag setups, compute win-rate by setup, and flag rule violations.",
-    trigger: { kind: "cron", expression: "0 22 * * 1-5" }, // weekdays 22:00 UTC
-    deliverTo: ["deck"],
-    requires: [],
-    prompt:
-      "Review today's trades from the journal. Tag each by setup, compute win-rate and R-multiple by setup, " +
-      "and flag any trades that broke the plan (over-leverage, revenge trades, no stop). End with one concrete " +
-      "adjustment for tomorrow.",
-  },
-
-  // ── Content (ad-system Veo/HeyGen, threads-content-simplifier) ──
-  {
-    id: "faceless-video-factory",
-    name: "Faceless Video Factory",
-    category: "content",
-    description: "Topic → researched hook + full script + shotlist, ready to hand to Veo/HeyGen.",
-    trigger: { kind: "manual" },
-    deliverTo: ["deck"],
-    requires: [],
-    prompt:
-      "Create a faceless short-form video on: {{topic}}. Research the angle, write a scroll-stopping 3-second hook, " +
-      "a 45–60s script in spoken cadence, an on-screen text/shotlist, and 5 title options. Optimize for retention.",
-  },
-  {
-    id: "repurpose-to-threads",
-    name: "Repurpose to Threads",
-    category: "content",
-    description: "One long piece → 10 native Threads/X posts, each standalone and hooky.",
-    trigger: { kind: "manual" },
-    deliverTo: ["deck"],
-    requires: [],
-    prompt:
-      "Turn this into 10 standalone Threads posts: {{content}}. Each must hook in the first line, carry one idea, " +
-      "and read natively (no 'thread 🧵' filler). Vary the formats (hot take, story, list, question).",
-  },
-
-  // ── Social (ai-growth-engine, google-review) ──
-  {
-    id: "weekly-client-report",
-    name: "Weekly Client Report",
-    category: "social",
-    description: "Friday: pull the week's metrics and write a client-ready report — unattended.",
-    trigger: { kind: "cron", expression: "0 16 * * 5" }, // Fridays 16:00 UTC
-    deliverTo: ["email", "deck"],
-    requires: ["webhook"],
-    vertical: "agency",
-    prompt:
-      "Produce this week's client report for {{client}}: what we shipped, key metrics vs last week (with % deltas), " +
-      "wins, and next week's plan. Professional but plain-spoken. Flag anything that needs the client's decision.",
-  },
-
-  // ── Ops (sop, goal-execution-os) ──
   {
     id: "morning-briefing",
     name: "Morning Situational Briefing",
     category: "ops",
-    description: "7am: cross-system briefing — what changed overnight and what needs you first.",
+    description: "7am: today's Field status and the 3 things that need Thomas first, from real data.",
     trigger: { kind: "cron", expression: "0 12 * * *" }, // 12:00 UTC ~ 7am ET
-    deliverTo: ["deck", "slack"],
+    deliverTo: ["deck", "discord"],
     requires: [],
     prompt:
-      "Give me a situational briefing for the day: what changed overnight across the business, the 3 things that " +
-      "need my attention first, and anything you already handled. Lead with the single most important item.",
-  },
-  {
-    id: "competitor-watch",
-    name: "Competitor Watch",
-    category: "ops",
-    description: "Weekly: research named competitors and summarize what changed (pricing, launches, hiring).",
-    trigger: { kind: "cron", expression: "0 13 * * 1" }, // Mondays 13:00 UTC
-    deliverTo: ["deck", "email"],
-    requires: [],
-    prompt:
-      "Research our competitors: {{competitors}}. Summarize notable changes in the last week (pricing, product launches, " +
-      "positioning, hiring signals) and what it means for us. Cite sources.",
-  },
-
-  // ── Added round: more per-domain automations ──
-  {
-    id: "comp-analysis",
-    name: "Instant Comp Analysis",
-    category: "real-estate",
-    description: "Address in → ARV, repair band, and a wholesale max-offer with the math shown.",
-    trigger: { kind: "manual" },
-    deliverTo: ["deck", "slack"],
-    requires: [],
-    prompt:
-      "Run a comp analysis for {{address}}. Estimate ARV from comparable sales, a light/medium/heavy repair band, " +
-      "and a wholesale max offer (target margin {{margin}}). Show the formula and state every assumption.",
-  },
-  {
-    id: "premarket-prep",
-    name: "Pre-Market Trading Prep",
-    category: "trading",
-    description: "Weekday 6am: watchlist key levels, overnight news, and sentiment — before the open.",
-    trigger: { kind: "cron", expression: "0 10 * * 1-5" }, // 10:00 UTC ~ 6am ET
-    deliverTo: ["slack", "deck"],
-    requires: [],
-    prompt:
-      "Pre-market prep for my watchlist {{watchlist}}. For each: key support/resistance, any overnight news, and a " +
-      "one-line bias. Flag the single highest-probability setup for the session. Be concise.",
-  },
-  {
-    id: "content-calendar",
-    name: "Weekly Content Calendar",
-    category: "content",
-    description: "Monday: a full week of post ideas per platform, mapped to your niche and goals.",
-    trigger: { kind: "cron", expression: "0 14 * * 1" }, // Mondays 14:00 UTC
-    deliverTo: ["deck", "slack"],
-    requires: [],
-    prompt:
-      "Build a 7-day content calendar for {{niche}} across {{platforms}}. For each day give a hook, format, and CTA, " +
-      "balanced across educate/entertain/convert. Keep it native to each platform.",
-  },
-  {
-    id: "review-responder",
-    name: "Google Review Responder",
-    category: "social",
-    description: "New review lands → draft an on-brand reply (recover the 1-stars, amplify the 5-stars).",
-    trigger: { kind: "webhook", secretRef: "WEBHOOK_SECRET_REVIEWS" },
-    deliverTo: ["slack"],
-    requires: ["webhook"],
-    prompt:
-      "A new Google review came in: {{review}}. Draft a warm, on-brand reply. If it's negative, acknowledge, take it " +
-      "offline, and offer a fix; if positive, thank them specifically and reinforce what they liked. Keep it human.",
+      "Today's Gates Technologies Field snapshot (real data, JSON): {{field}}\nRecent activity: {{activity}}\n\n" +
+      "Write Thomas's morning briefing: lead with the single most important item, then the 3 things that need him first, " +
+      "then anything already handled. Use only numbers from the snapshot; if something is unknown, say so. Under 150 words.",
   },
   {
     id: "eod-recap",
     name: "End-of-Day Recap",
     category: "ops",
-    description: "6pm: what got done, what slipped, and the top 3 for tomorrow — so nothing falls through.",
+    description: "6pm: what got done, what slipped, and the top 3 for tomorrow, from real data.",
     trigger: { kind: "cron", expression: "0 23 * * 1-5" }, // 23:00 UTC ~ 6pm ET
-    deliverTo: ["slack", "deck"],
+    deliverTo: ["deck", "discord"],
     requires: [],
     prompt:
-      "Give me an end-of-day recap: what got done today, what slipped and why, anything waiting on someone else, and " +
-      "the top 3 priorities for tomorrow ranked by impact.",
+      "Today's Field snapshot (real data, JSON): {{field}}\nToday's activity: {{activity}}\n\n" +
+      "Write the end-of-day recap: what got done, what slipped (and why, if the data shows it), and the top 3 for tomorrow. " +
+      "Only use numbers that appear above. Under 150 words.",
+  },
+  {
+    id: "speed-to-lead",
+    name: "Speed-to-Lead Responder",
+    category: "clients",
+    description: "Missed call or new lead → draft the text-back and a one-line summary. Draft only until approved.",
+    trigger: { kind: "webhook", secretRef: "WEBHOOK_SECRET_LEADS" },
+    deliverTo: ["deck", "discord"],
+    requires: ["speed-to-lead"],
+    inputs: ["lead"],
+    prompt:
+      "A new lead or missed call came in for a Gates Technologies client: {{lead}}\n" +
+      "Draft a short, warm text-back that helps them book, plus a one-line internal summary (who, what they want, urgency). " + DRAFT_ONLY,
+  },
+  {
+    id: "dead-lead-reactivation",
+    name: "Dead-Lead Reactivation",
+    category: "clients",
+    description: "Re-engage dormant leads with short, consent-aware follow-ups. Draft only.",
+    trigger: { kind: "cron", expression: "0 15 * * 1" }, // Mondays 15:00 UTC
+    deliverTo: ["deck"],
+    requires: [],
+    inputs: ["leads"],
+    prompt:
+      "Dormant leads for a Gates Technologies client: {{leads}}\n" +
+      "Pick up to 10 worth re-engaging, rank them with a one-line reason, and draft a short, consent-aware follow-up for each " +
+      "that references their original inquiry. Skip anyone who opted out. " + DRAFT_ONLY,
+  },
+  {
+    id: "review-responder",
+    name: "Google Review Responder",
+    category: "clients",
+    description: "New review → draft an on-brand reply for the client to post. Draft only.",
+    trigger: { kind: "webhook", secretRef: "WEBHOOK_SECRET_REVIEWS" },
+    deliverTo: ["deck"],
+    requires: [],
+    inputs: ["business", "review"],
+    prompt:
+      "A new Google review came in for {{business}}: {{review}}\n" +
+      "Draft a warm, specific reply. Negative: acknowledge, take it offline, offer a fix. Positive: thank them for exactly what they " +
+      "praised. Never discuss medical outcomes or private details. " + DRAFT_ONLY,
+  },
+  {
+    id: "competitor-watch",
+    name: "Competitor Watch",
+    category: "ops",
+    description: "Research named competitors (web search) and summarize what changed and what it means for Gates.",
+    trigger: { kind: "cron", expression: "0 13 * * 1" }, // Mondays 13:00 UTC
+    deliverTo: ["deck", "discord"],
+    requires: [],
+    inputs: ["competitors"],
+    webSearch: true,
+    prompt:
+      "Gates Technologies sells a call-recovery system (after-hours AI phone agent, missed-call text-back, booking into the client's " +
+      "existing calendar) to local service businesses, med spas first. Research these competitors: {{competitors}}. " +
+      "Summarize notable recent changes (pricing, launches, positioning) and what each means for Gates. Cite sources. Under 250 words.",
+  },
+  {
+    id: "weekly-client-report",
+    name: "Weekly Client Report",
+    category: "clients",
+    description: "Friday: turn a client's metrics into a plain-spoken report. Draft only.",
+    trigger: { kind: "cron", expression: "0 16 * * 5" }, // Fridays 16:00 UTC
+    deliverTo: ["deck"],
+    requires: [],
+    inputs: ["client", "metrics"],
+    prompt:
+      "Write this period's report for Gates Technologies client {{client}} from these metrics and notes: {{metrics}}\n" +
+      "Cover what we shipped, results versus last period (only figures provided above), wins, and next steps. Flag anything that " +
+      "needs the client's decision. Plain-spoken, under 250 words. " + DRAFT_ONLY,
   },
 ];
+
+export function getAutomation(id: string): AutomationTemplate | undefined {
+  const key = id.toLowerCase().replace(/[\s_]+/g, "-");
+  return AUTOMATIONS.find((a) => a.id === key || a.name.toLowerCase() === id.toLowerCase());
+}
 
 export function listAutomations(category?: AutomationCategory): AutomationTemplate[] {
   return category ? AUTOMATIONS.filter((a) => a.category === category) : AUTOMATIONS;
 }
 
-export function getAutomation(id: string): AutomationTemplate | undefined {
-  return AUTOMATIONS.find((a) => a.id === id);
-}
-
-/** Fill {{placeholders}} in a template prompt from a vars map. */
-export function fillPrompt(prompt: string, vars: Record<string, string> = {}): string {
-  return prompt.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? `(${k} not provided)`);
+/** Fill {{var}} placeholders; unfilled ones become "(not provided)". */
+export function fillPrompt(prompt: string, vars: Record<string, string>): string {
+  return prompt.replace(/\{\{(\w+)\}\}/g, (_, k: string) => vars[k] ?? "(not provided)");
 }

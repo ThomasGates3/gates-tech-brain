@@ -1,6 +1,6 @@
 /**
  * POST /api/dev-task { repo, task } — dispatch a coding agent to a target repo.
- * repo ∈ { moby, ad-system }. Returns the agent's output (or a plan if
+ * repo ∈ { brain }. Returns the agent's output (or a plan if
  * DEV_AGENT_ENABLED isn't set).
  */
 import { z } from "zod";

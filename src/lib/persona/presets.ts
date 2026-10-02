@@ -17,6 +17,7 @@ export interface BriefingHighlight {
   value: string;
   delta?: string; // e.g. "+12%" or "−2 hrs"
   urgent?: boolean;
+  detail?: string;
 }
 
 export interface BriefingContext {

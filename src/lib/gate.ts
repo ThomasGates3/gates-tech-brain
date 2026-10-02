@@ -6,8 +6,8 @@
  * ACCESS_PASSWORD        → operator "team" (the deck; no Field Console greenlight)
  * FIELD_THOMAS_PASSWORD  → operator "thomas" (Field Console Approve / Send)
  * FIELD_ACE_PASSWORD     → operator "ace" (Field Console ops, browser sign-in)
- * FIELD_ACE_API_KEY      → operator "ace" via `Authorization: Bearer <key>` on
- *                          /api/field/* only (Ace is a bot — no cookie needed)
+ * API keys (FIELD_ACE_API_KEY or DB keys, lib/api-keys) are verified per route on
+ *                          /api/field/*, /api/mcp, /api/v1/* (bots need no cookie)
  * The gate turns on when any of them is set. Cookies are signed with AUTH_SECRET.
  * With none set, the gate is OFF (open) — fine for local dev only.
  */
@@ -54,12 +54,6 @@ function sameString(input: string, expected: string): boolean {
 export function operatorForPassword(input: string): Operator | null {
   for (const [op, env] of PASSWORDS) if (sameString(input, process.env[env] ?? "")) return op;
   return null;
-}
-
-/** Ace's bot API key, from an `Authorization: Bearer` header. Field API only. */
-export function operatorForBearer(header: string | null | undefined): Operator | null {
-  const m = header?.match(/^Bearer\s+(.+)$/i);
-  return m && sameString(m[1].trim(), process.env.FIELD_ACE_API_KEY ?? "") ? "ace" : null;
 }
 
 function secret(): string {

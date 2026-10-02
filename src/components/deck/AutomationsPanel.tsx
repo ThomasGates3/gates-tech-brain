@@ -5,18 +5,12 @@ import { listAutomations, type AutomationCategory } from "@/lib/automations/cata
 
 const CATS: { id: AutomationCategory | "all"; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "real-estate", label: "Real Estate" },
-  { id: "trading", label: "Trading" },
-  { id: "content", label: "Content" },
-  { id: "social", label: "Social" },
   { id: "ops", label: "Ops" },
+  { id: "clients", label: "Clients" },
 ];
 
 const TRIGGER_BADGE: Record<string, string> = { cron: "scheduled", webhook: "on-event", manual: "on-demand" };
 
-function placeholders(prompt: string): string[] {
-  return [...new Set([...prompt.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]))];
-}
 
 interface RunState {
   loading: boolean;
@@ -34,13 +28,13 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
 
   const shown = cat === "all" ? all : all.filter((a) => a.category === cat);
 
-  const run = async (id: string) => {
+  const run = async (id: string, dryRun: boolean) => {
     setRuns((r) => ({ ...r, [id]: { loading: true } }));
     try {
       const res = await fetch("/api/automations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, vars }),
+        body: JSON.stringify({ id, vars, dryRun }),
       });
       const data = await res.json();
       setRuns((r) => ({ ...r, [id]: { loading: false, output: data.output, error: data.error } }));
@@ -81,7 +75,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
       {/* cards */}
       <div className="grid gap-2.5 sm:grid-cols-2">
         {shown.map((a) => {
-          const ph = placeholders(a.prompt);
+          const ph = a.inputs ?? [];
           const isOpen = openId === a.id;
           const st = runs[a.id];
           return (
@@ -122,14 +116,26 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                     Configure & run
                   </button>
                 ) : (
-                  <button
-                    data-testid={`auto-run-${a.id}`}
-                    onClick={() => run(a.id)}
-                    disabled={st?.loading}
-                    className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black transition-colors hover:bg-[var(--accent-bright)] disabled:opacity-50"
-                  >
-                    {st?.loading ? "Running…" : "Run now"}
-                  </button>
+                  <>
+                    <button
+                      data-testid={`auto-dry-${a.id}`}
+                      onClick={() => run(a.id, true)}
+                      disabled={st?.loading}
+                      title="Generate only. Nothing is delivered."
+                      className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[12px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
+                    >
+                      {st?.loading ? "Running…" : "Dry run"}
+                    </button>
+                    <button
+                      data-testid={`auto-run-${a.id}`}
+                      onClick={() => run(a.id, false)}
+                      disabled={st?.loading}
+                      title="Generate and deliver the draft to its channels (deck, Discord). Never sends outreach."
+                      className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black transition-colors hover:bg-[var(--accent-bright)] disabled:opacity-50"
+                    >
+                      Run + deliver
+                    </button>
+                  </>
                 )}
               </div>
 

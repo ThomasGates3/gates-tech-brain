@@ -10,8 +10,9 @@ const TIER_MAP: Record<ModelTier, ModelId> = {
 export const OPS: ModelId = "claude-sonnet-5-5";
 /** Light work: read, summarize, format, notify (research, data, comms). Half Sonnet's price. */
 export const LIGHT: ModelId = "claude-haiku-4-5";
-/** Copy: Field Email 1 drafts ("Draft with Claude"). */
-export const COPY: ModelId = "claude-opus-5-5";
+/** Field Email 1 drafts: Sonnet by default, Opus only for hard drafts. */
+export const DRAFT: ModelId = "claude-sonnet-5-5";
+export const HARD_DRAFT: ModelId = "claude-opus-5-5";
 
 export function conductorModel(tier?: ModelTier): ModelId {
   const t = tier ?? ((process.env.MODEL_TIER ?? "standard") as ModelTier);

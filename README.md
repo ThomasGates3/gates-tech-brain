@@ -1,9 +1,36 @@
 # Gates Tech Brain
 
-Two surfaces in one Next.js app:
+Gates Technologies only. Three surfaces in one Next.js app:
 
-- **`/`**: the AI Brain command deck (see `PRD.md`).
-- **`/field`**: the **Field Console**, an internal ops console for Thomas + Ace to run Email 1 cold outreach (see `docs/field-console-PRD.md`).
+- **`/`**: the command deck, with real Field numbers, Operations (Connections · Agents · Access) and draft-only automations.
+- **`/field`**: the **Field Console**, where Thomas + Ace run Email 1 cold outreach (see `docs/field-console-PRD.md`).
+- **`/api/mcp`** + **`/api/v1`**: the MCP server and REST API that Ace and the Gates Grok bots call.
+
+Locked Field path: Ace queue → Darrell Email 1 → Nick PASS/REVISE/KILL → Thomas Approve → AgentMail (hello@gatesoutreach.com). Soft = Hold. No prices in cold copy. No autopilot.
+
+## MCP + API for Ace and the Grok bots
+
+- **MCP URL:** `https://brain.gatestech.solutions/api/mcp` (Streamable HTTP).
+- **OpenAPI:** `https://brain.gatestech.solutions/api/v1/openapi.json`; REST mirror at `POST /api/v1/tools/<tool name>`.
+- **Auth:** `Authorization: Bearer <key>`. Create a key in the deck under **Operations → Access** (Thomas signed in). It is shown once; only its hash is stored. `FIELD_ACE_API_KEY` also works.
+- **Grok:** grok.com/connectors → New Connector → Custom → paste the MCP URL → add the Authorization header.
+- Pass `agent` (roster id, e.g. `"darrell"`) on each call. Every call writes an Activity row, and that bot shows **active** on the roster for 30 minutes.
+
+| Tool | What it does |
+| --- | --- |
+| `brain_today` | Whole picture in one call: queue by stage, sends vs cap, Claude spend vs budget, gates, next actions. Start here. |
+| `brain_field_queue` | Today's High+Med contacts (Soft excluded); `load_from_notion: true` pulls the morning pack first. |
+| `brain_get_draft` / `brain_set_draft` | Read / write Email 1. `generate`: `template` (free), `sonnet` (default), `opus` (hard drafts only). Returns copy-lint issues. Any edit clears PASS. |
+| `brain_set_nick_status` | PASS / REVISE / KILL + note. PASS refused if the copy lint fails. |
+| `brain_hold` | Hold or release a contact. |
+| `brain_approve_send` | Approve + send one Email 1 via AgentMail, returns `send_id`. Needs Nick PASS on the exact draft. Thomas-only (Ace key only with `FIELD_ACE_CAN_SEND=true`). |
+| `brain_suppress` / `brain_send_log` | Opt-outs and the send log. |
+| `brain_chat` | Run a prompt on Claude instead of Grok tokens. `sonnet` default, `haiku` cheapest, `opus` hard copy. Copy agents get the outreach brief; Hermes gets web search. |
+| `brain_list_automations` / `brain_run_automation` | Draft-only Gates automations. `dry_run` defaults to true (nothing delivered); `false` posts the draft to deck/Discord. Never sends outreach. |
+| `brain_get_brief` | The outreach brief + Email 1 rules. |
+| `brain_list_agents` / `brain_report_activity` / `brain_activity` | Roster with real status, log finished work, recent activity. |
+
+All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.
 
 ## Field Console
 

@@ -3,15 +3,13 @@
  * New connector = new spec file + import here. No orchestrator changes needed.
  */
 import type { Connector, ConnectorStatus } from "@/lib/types";
-import { supabase } from "./specs/supabase";
-import { bigquery } from "./specs/bigquery";
 import { webhook } from "./specs/webhook";
 import { github } from "./specs/github";
 import { vercel } from "./specs/vercel";
-import { aws } from "./specs/aws";
 import { APP_CONNECTORS } from "./specs/apps";
 
-const ALL_CONNECTORS: Connector[] = [supabase, bigquery, webhook, github, vercel, aws, ...APP_CONNECTORS];
+// Gates only. AgentMail + Notion are Field connectors (status in /api/connectors, keys via env).
+const ALL_CONNECTORS: Connector[] = [webhook, github, vercel, ...APP_CONNECTORS];
 
 function validate(c: Connector): string[] {
   const errs: string[] = [];

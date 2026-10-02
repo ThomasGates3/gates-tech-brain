@@ -6,12 +6,14 @@
  * Unauthenticated → /sign-in (pages) or 401 (API).
  */
 import { apiRateLimiter, securityHeaders, corsHeaders } from "@/lib/security";
-import { GATE_COOKIE, gateEnabled, operatorForBearer, verifyToken } from "@/lib/gate";
+import { GATE_COOKIE, gateEnabled, verifyToken } from "@/lib/gate";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 // /api/cron is protected by CRON_SECRET (not the password gate) so Vercel Cron can reach it.
-const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron"];
+const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json"];
+// Machine APIs: a Bearer request is passed to the route, which verifies the key (env or DB) itself.
+const KEY_PATHS = ["/api/field/", "/api/mcp", "/api/v1/"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
 
 export default async function middleware(req: NextRequest) {
@@ -30,7 +32,7 @@ export default async function middleware(req: NextRequest) {
 
   // Password gate.
   if (gateEnabled() && !isPublic(pathname)) {
-    const bot = pathname.startsWith("/api/field/") && operatorForBearer(req.headers.get("authorization")) !== null;
+    const bot = KEY_PATHS.some((p) => pathname.startsWith(p)) && /^Bearer\s+\S+/i.test(req.headers.get("authorization") ?? "");
     const ok = bot || (await verifyToken(req.cookies.get(GATE_COOKIE)?.value));
     if (!ok) {
       if (pathname.startsWith("/api/")) {
