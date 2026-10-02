@@ -10,7 +10,8 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "brief:sync": "cp ../gates-outreach/OUTREACH-BRIEF.md docs/outreach-brief.md && node scripts/gen-brief.mjs"
+    "brief:sync": "cp ../gates-outreach/OUTREACH-BRIEF.md docs/outreach-brief.md && node scripts/gen-brief.mjs",
+    "website:sync": "node scripts/gen-brief.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.71",
