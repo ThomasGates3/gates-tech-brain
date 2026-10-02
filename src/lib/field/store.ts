@@ -100,6 +100,26 @@ export async function importRows(rows: SourceRow[], source: "notion" | "csv", fa
     const priority: Priority = row.priority === "High" || row.priority === "Med" ? row.priority : "Soft";
     const prev = existing.get(id);
 
+    // Same person already added by Ashley/Prospectacle/manual and not yet sent → attach, don't duplicate.
+    const twin = !prev && source === "notion" && row.email ? await unsentByEmail(row.email) : null;
+    if (twin) {
+      const hasDraft = Boolean(row.subject && row.body && !PLACEHOLDER.test(row.body));
+      const tier = conservativeTier(twin.priority, priority);
+      const patch: Partial<FieldContact> = {
+        notionPageId: row.pageId ?? null,
+        priority: tier,
+        packDate: row.date || fallbackDate,
+        ...(!twin.gap && row.gap && { gap: row.gap }),
+        ...(!twin.city && row.city && { city: row.city }),
+        ...(tier !== twin.priority && { notes: [twin.notes, `Notion tier ${priority}; Brain kept the more cautious ${tier}.`].filter(Boolean).join(" ") }),
+      };
+      if (hasDraft && !twin.draftHash && twin.stage === "new") Object.assign(patch, { subject: row.subject, body: row.body, draftSource: "notion", draftHash: draftHash(row.subject.trim(), row.body.trim()), stage: "drafted" });
+      if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(twin.stage)) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+      await patchContact(twin.id, patch);
+      summary.updated++;
+      continue;
+    }
+
     if (!prev) {
       const hasDraft = Boolean(row.subject && row.body && !PLACEHOLDER.test(row.body));
       await db.insert(fieldContacts).values({
@@ -248,6 +268,39 @@ export async function blockingSuppression(email: string, contactId: string): Pro
 export async function lastSent(contactId: string): Promise<SendLogEntry | null> {
   const [r] = await db.select().from(fieldSendLog).where(eq(fieldSendLog.contactId, contactId)).orderBy(desc(fieldSendLog.sentAt)).limit(1);
   return (r as SendLogEntry) ?? null;
+}
+
+const TIER_RANK: Record<Priority, number> = { Soft: 0, Med: 1, High: 2 };
+export const conservativeTier = (a: Priority, b: Priority): Priority => (TIER_RANK[a] <= TIER_RANK[b] ? a : b);
+
+/** An unsent, non-Notion contact with this email (attach target for Notion loads). */
+async function unsentByEmail(email: string): Promise<FieldContact | null> {
+  const rows = await db.select().from(fieldContacts).where(sql`lower(${fieldContacts.email}) = ${norm(email)} and ${fieldContacts.notionPageId} is null and ${fieldContacts.stage} not in ('sent','sending')`).orderBy(desc(fieldContacts.updatedAt)).limit(1);
+  return rows[0] ? toContact(rows[0]) : null;
+}
+
+/** Fold `dropId` into `keepId`: fill keep's gaps from drop, then delete drop. Both must be unsent. */
+export async function mergeContacts(keepId: string, dropId: string): Promise<FieldContact> {
+  if (keepId === dropId) throw new Error("keep_id and drop_id are the same contact.");
+  const [keep, drop] = await Promise.all([getContact(keepId), getContact(dropId)]);
+  if (!keep || !drop) throw new Error("Contact not found.");
+  if (["sent", "sending"].includes(drop.stage) || ["sent", "sending"].includes(keep.stage)) throw new Error("Can't merge a contact that was already sent.");
+  if ((await listSteps([dropId])).length) throw new Error("drop_id has sequence steps; merge refused.");
+  const tier = conservativeTier(keep.priority, drop.priority);
+  const patch: Partial<FieldContact> = {
+    priority: tier,
+    contactName: keep.contactName ?? drop.contactName,
+    siteUrl: keep.siteUrl ?? drop.siteUrl,
+    notes: [keep.notes, drop.notes, tier !== keep.priority ? `Merged: tier set to the more cautious ${tier}.` : null].filter(Boolean).join(" ") || null,
+    gap: keep.gap || drop.gap,
+    city: keep.city || drop.city,
+    notionPageId: keep.notionPageId ?? drop.notionPageId,
+  };
+  if (!keep.draftHash && drop.draftHash) Object.assign(patch, { subject: drop.subject, body: drop.body, draftSource: drop.draftSource, draftHash: drop.draftHash, stage: keep.stage === "new" ? "drafted" : keep.stage, nickVerdict: null, nickHash: null });
+  if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(patch.stage ?? keep.stage)) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+  const merged = await patchContact(keepId, patch);
+  await db.delete(fieldContacts).where(eq(fieldContacts.id, dropId));
+  return merged;
 }
 
 // ── Send (claim → AgentMail → record) ───────────────────────────────────────

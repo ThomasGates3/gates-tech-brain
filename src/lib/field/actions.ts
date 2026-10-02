@@ -157,7 +157,10 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
     if (n > 2 && (await getStep(id, (n - 1) as EmailN)).stage !== "sent") return fail(409, `Send Email ${n - 1} first.`);
   }
 
-  const cap = (await getGates()).dailyCap;
+  const gates = await getGates();
+  // Approve ≠ send: nothing goes out until Thomas confirms the cold domain is warmed (brain_set_gate).
+  if (!gates.domainWarmed) return fail(423, "Domain warm-up not confirmed. Approved emails wait until Thomas sets domainWarmed.");
+  const cap = gates.dailyCap;
   if ((await sentSince(startOfTodayIso())) >= cap) return fail(429, `Daily send cap reached (${cap}). Protecting the cold domain's reputation.`);
   if (!(await claimForSend(id, view.approvedHash!, n))) return fail(409, "This email is already being sent or was changed. Refresh.");
 

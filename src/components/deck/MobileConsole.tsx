@@ -18,36 +18,17 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
 
   return (
     <div className="lg:hidden">
-      {/* Full-screen launcher: greeting + centered reactive orb */}
+      {/* Floating launcher: the leads board is the phone's main screen; tap the orb to talk */}
       {!open && (
-        <div className="fixed inset-0 flex flex-col items-center justify-center gap-10 px-8 text-center">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.45em] text-slate-500">AI Brain</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-              {greeting}. I&apos;m <span className="text-[var(--accent)]">{personaName}</span>.
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">Tap the core to talk to me.</p>
-          </div>
-
-          <button
-            data-testid="mobile-orb"
-            aria-label={`Talk to ${personaName}`}
-            onClick={() => setOpen(true)}
-            className="relative grid h-64 w-64 place-items-center rounded-full transition-transform active:scale-95"
-          >
-            {/* one expanding ring only while active — the "live" pulse */}
-            {active && (
-              <span className="pointer-events-none absolute inset-8 rounded-full border border-[var(--accent)]/40" style={{ animation: "orb-ripple 1.4s ease-out infinite" }} />
-            )}
-            <div style={{ transform: `scale(${active ? 1.06 : 1})`, transition: "transform .3s ease" }}>
-              <CoreOrb state={active ? "thinking" : "idle"} className="h-56 w-56" />
-            </div>
-          </button>
-
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-600">
-            {active ? "listening…" : "core online"}
-          </span>
-        </div>
+        <button
+          data-testid="mobile-orb"
+          aria-label={`${greeting}. Talk to ${personaName}`}
+          onClick={() => setOpen(true)}
+          className="fixed bottom-5 right-5 z-40 grid h-16 w-16 place-items-center rounded-full bg-black/70 ring-1 ring-[var(--accent)]/40 backdrop-blur transition-transform active:scale-95"
+        >
+          {active && <span className="pointer-events-none absolute inset-0 rounded-full border border-[var(--accent)]/40" style={{ animation: "orb-ripple 1.4s ease-out infinite" }} />}
+          <CoreOrb state={active ? "thinking" : "idle"} className="h-14 w-14" />
+        </button>
       )}
 
       {/* Full-screen chat sheet */}

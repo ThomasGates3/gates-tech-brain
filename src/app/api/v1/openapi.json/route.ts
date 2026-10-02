@@ -19,6 +19,7 @@ export async function GET(req: Request) {
             "401": { description: "Missing or invalid API key" },
             "403": { description: "Not allowed for this key (e.g. send without FIELD_ACE_CAN_SEND)" },
             "409": { description: "Field gate (e.g. Approve needs Nick PASS on the current draft)" },
+            "423": { description: "Send blocked: domain warm-up not confirmed (brain_set_gate)" },
             "429": { description: "Daily Claude budget or daily send cap reached" },
           },
         },

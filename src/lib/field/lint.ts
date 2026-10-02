@@ -22,8 +22,13 @@ const RULES: { rule: string; re: RegExp }[] = [
   { rule: "Gates SKU", re: /\b(?:offer\s?1|speed[-\s]to[-\s]lead|google reviews desk|gates core|care plan)\b/gi },
   { rule: "Banned word", re: /\b(?:weak|week)\w*/gi },
   { rule: "Em dash", re: /—/g },
+  { rule: "En dash", re: /–/g },
+  // A hyphen standing alone between words is punctuation; real compounds (after-hours) have no spaces.
+  { rule: "Clause hyphen", re: /(?<=\S)\s+-\s+(?=\S)/g },
   { rule: "HIPAA claim", re: /\bHIPAA[-\s]+(?:compliant|compliance|certified|certification|approved)\b/gi },
   { rule: "Banned phrase", re: /\b(?:never miss (?:a|another) call|hope this (?:email )?finds you|quick question|circling back|just bumping|game[-\s]?changer|revolutionary|supercharge\w*|ai transformation|act now|guarantee[ds]?|free)\b|\b10x\b/gi },
+  // AI-isms (voice rules): sound templated, never how Thomas talks.
+  { rule: "AI-ism", re: /\b(?:one[-\s]?pagers?|tear[-\s]?downs?|pulled an?\b|quick question about|deep[-\s]?dive|touch(?:ing)? base|leverag(?:e|ing)|synerg\w*|streamlin\w*|unlock(?:ing)? (?:growth|revenue|potential))\b/gi },
   { rule: "Replaces staff", re: /\breplac\w*\s+(?:your\s+)?(?:staff|team|receptionists?|front desk)\b/gi },
   { rule: "Exclamation mark", re: /!/g },
   { rule: "Emoji", re: /\p{Extended_Pictographic}/gu },
