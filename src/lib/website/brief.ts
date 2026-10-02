@@ -5,6 +5,7 @@ import { WEBSITE_MASTER_PROMPT } from "./master-prompt";
 /** The master prompt's "Before you build" checklist; anything not known yet becomes a question. */
 export const BriefAnswers = z.object({
   what_they_sell: z.string().max(300).optional(),
+  offer: z.string().max(300).optional(),
   target_customer: z.string().max(300).optional(),
   desired_outcome: z.string().max(300).optional(),
   conversion_goal: z.string().max(200).optional(),
@@ -17,6 +18,7 @@ export type BriefAnswers = z.infer<typeof BriefAnswers>;
 
 const QUESTIONS: Record<keyof BriefAnswers, string> = {
   what_they_sell: "Business name and what they sell (product, service, or offer)",
+  offer: "Their primary offer (the main service or package a visitor should act on)",
   target_customer: "Target customer (who are they, what do they want, what are they afraid of?)",
   desired_outcome: "The outcome the customer wants from them",
   conversion_goal: "Primary conversion goal (book a call, buy now, sign up, get a quote?)",
@@ -35,7 +37,7 @@ export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
   const where = c.city ? ` in ${c.city}` : "";
   const message =
     `Build a website for ${c.name}${where}. They are a ${v("what_they_sell", "TYPE OF BUSINESS")} that helps ${v("target_customer", "TARGET CUSTOMER")} achieve ${v("desired_outcome", "DESIRED OUTCOME")}. ` +
-    `Their primary offer is ${v("what_they_sell", "OFFER")}. Their brand personality is ${v("brand_personality", "PERSONALITY")}. The main conversion goal is ${v("conversion_goal", "ACTION")}. ` +
+    `Their primary offer is ${v("offer", "OFFER")}. Their brand personality is ${v("brand_personality", "PERSONALITY")}. The main conversion goal is ${v("conversion_goal", "ACTION")}. ` +
     `Here's what I know about their social proof: ${v("social_proof", "PROOF")}.` +
     (a.differentiator ? `\nKey differentiator: ${a.differentiator}.` : "") +
     (a.pages ? `\nMust-have pages: ${a.pages}.` : "") +
