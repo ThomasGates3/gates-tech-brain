@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FieldConsole } from "@/components/field/FieldConsole";
+import { TopNav } from "@/components/deck/TopNav";
 
 export const metadata: Metadata = {
   title: "Field Console — Gates",
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function FieldPage() {
-  return <FieldConsole />;
+  return (
+    <>
+      <TopNav />
+      <FieldConsole />
+    </>
+  );
 }

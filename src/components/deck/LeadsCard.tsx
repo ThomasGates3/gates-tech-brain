@@ -11,7 +11,7 @@ interface Data { date: string; counts: Record<string, number>; leads: Lead[] }
 const RANK: Record<string, number> = { PASS: 0, approved: 1, atNick: 2, drafted: 3, undrafted: 4 };
 const btn = "min-h-[36px] rounded-md px-3 text-[12px] font-medium transition-colors disabled:opacity-40";
 
-export function LeadsCard() {
+export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topCount?: number }) {
   const [data, setData] = useState<Data | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function LeadsCard() {
   }, [load]);
 
   const undrafted = (data?.leads ?? []).filter((l) => l.email1_status === "undrafted" && l.tier !== "Soft");
-  const top = (data?.leads ?? []).filter((l) => l.email1_status in RANK).sort((a, b) => RANK[a.email1_status] - RANK[b.email1_status]).slice(0, 3);
+  const top = (data?.leads ?? []).filter((l) => l.email1_status in RANK).sort((a, b) => RANK[a.email1_status] - RANK[b.email1_status]).slice(0, topCount);
   const c = data?.counts ?? {};
 
   const act = async (label: string, fn: () => Promise<string>) => {
@@ -51,7 +51,7 @@ export function LeadsCard() {
   ];
 
   return (
-    <div data-testid="leads-card" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur">
+    <div data-testid="leads-card" className={`flex flex-col rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur ${fill ? "min-h-0 flex-1" : ""}`}>
       <div className="mb-3 flex items-center justify-between">
         <a href="/leads" data-testid="leads-open" className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
           <span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s leads →
@@ -66,13 +66,24 @@ export function LeadsCard() {
           </a>
         ))}
       </div>
-      <ul className="mb-3 space-y-1.5" data-testid="leads-top">
+      <ul className={`mb-3 space-y-1.5 ${fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`} data-testid="leads-top">
         {top.map((l) => (
-          <li key={l.contact_id}>
-            <a href={`/leads?status=${l.email1_status}`} className="flex items-baseline justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03]">
+          <li key={l.contact_id} className="flex items-center gap-2">
+            <a href={`/leads?status=${l.email1_status}`} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03]">
               <span className="truncate text-[13px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span></span>
               <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>
             </a>
+            {l.email1_status === "PASS" && (
+              <button
+                data-testid={`card-approve-${l.contact_id}`}
+                disabled={!!busy}
+                title="Approve (does not send)"
+                onClick={() => act(`approve-${l.contact_id}`, async () => { await callTool("brain_approve", { contact_id: l.contact_id }); return `Approved ${l.business}. It waits for warm-up before it can send.`; })}
+                className="min-h-[28px] shrink-0 rounded-md bg-[var(--accent)] px-2 text-[11px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40"
+              >
+                {busy === `approve-${l.contact_id}` ? "…" : "Approve"}
+              </button>
+            )}
           </li>
         ))}
         {data && !top.length && <li className="text-[12px] text-slate-500">Nothing waiting. Load the morning pack to start.</li>}
