@@ -53,14 +53,14 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
   return (
     <div data-testid="leads-card" className={`flex flex-col rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur ${fill ? "min-h-0 flex-1" : ""}`}>
       <div className="mb-3 flex items-center justify-between">
-        <a href="/leads" data-testid="leads-open" className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
+        <a href="/leads" data-testid="leads-open" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
           <span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s leads →
         </a>
         <span className="font-mono text-[10px] text-slate-500">{data ? `${c.total} · ${data.date}` : "…"}</span>
       </div>
       <div className="mb-3 grid grid-cols-4 gap-2">
         {mini.map(([label, value, href]) => (
-          <a key={label} href={href} className="rounded-lg border border-white/[0.06] bg-black/30 px-2 py-2 hover:border-[var(--accent)]/40">
+          <a key={label} href={href} className="min-h-[44px] rounded-lg border border-white/[0.06] bg-black/30 px-2 py-2 hover:border-[var(--accent)]/40">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
             <p className="mt-0.5 font-mono text-base leading-none text-slate-100">{value}</p>
           </a>
@@ -69,7 +69,7 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
       <ul className={`mb-3 space-y-1.5 ${fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`} data-testid="leads-top">
         {top.map((l) => (
           <li key={l.contact_id} className="flex items-center gap-2">
-            <a href={`/leads?status=${l.email1_status}`} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03]">
+            <a href={`/leads?status=${l.email1_status}`} className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03] lg:min-h-0">
               <span className="truncate text-[13px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span></span>
               <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>
             </a>
@@ -79,7 +79,7 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
                 disabled={!!busy}
                 title="Approve (does not send)"
                 onClick={() => act(`approve-${l.contact_id}`, async () => { await callTool("brain_approve", { contact_id: l.contact_id }); return `Approved ${l.business}. It waits for warm-up before it can send.`; })}
-                className="min-h-[28px] shrink-0 rounded-md bg-[var(--accent)] px-2 text-[11px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40"
+                className="min-h-[44px] shrink-0 rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40 lg:min-h-[28px] lg:px-2 lg:text-[11px]"
               >
                 {busy === `approve-${l.contact_id}` ? "…" : "Approve"}
               </button>

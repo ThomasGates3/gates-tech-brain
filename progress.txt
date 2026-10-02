@@ -56,3 +56,5 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ Top nav (Dashboard · Leads · Field · Activity · Automations · Operations · Settings) on every page; /automations, /operations, /settings pages
 ✓ One-screen dashboard (no page scroll): activity | next up + leads card (12 rows, inline Approve) + chat | scoreboard + Go-to links + system
 ✓ Activity in plain English (business names, agent names, no ids/tool names); lookups hidden unless asked
+✓ Phone pass: no sideways scroll on any page, 44px tap targets; Field queue min-w fix
+✓ Discord pings with on/off switches in Settings; 'all emails out' on by default; 6 suggested pings off until approved

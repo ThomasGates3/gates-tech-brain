@@ -7,6 +7,7 @@
 import { listThreads } from "./agentmail";
 import { fieldEnv } from "./config";
 import { addSuppression, contactsByEmail, markReplied } from "./store";
+import { notifyOnce } from "@/lib/notify";
 
 export type InboundAction = "reply_handoff_lisa" | "soft_hold" | "suppress_opt_out" | "ignore";
 
@@ -66,6 +67,8 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
       item.contact = { contact_id: c.id, name: c.name, lane: c.lane, stage: c.stage };
       await markReplied(c.id, t.lastAt); // ends the sequence for this contact
     }
+    if (item.unanswered && action === "reply_handoff_lisa")
+      void notifyOnce("hot_reply", t.threadId, `Reply from ${c?.name ?? from}`, `${item.snippet || t.subject}\nSuggested: hand to Lisa for a short answer.`);
     if (opts.confirmSuppress && action === "suppress_opt_out") {
       await addSuppression(from, "opt_out", opts.by);
       item.suppressed = true;

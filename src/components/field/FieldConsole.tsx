@@ -167,7 +167,7 @@ export function FieldConsole() {
         ) : (
           <div className="mt-5 grid gap-6 lg:grid-cols-[420px_1fr]">
             {/* Queue */}
-            <section className={cx(current && "hidden lg:block")} data-testid="queue">
+            <section className={cx("min-w-0", current && "hidden lg:block")} data-testid="queue">
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <input
                   type="date"
@@ -212,9 +212,9 @@ export function FieldConsole() {
                     >
                       <PriorityBadge priority={c.priority} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-slate-100">
-                          {c.name}
-                          {c.lane === "website" && <span data-testid="lane-website" className="ml-1.5 rounded bg-[var(--accent)]/15 px-1.5 py-0.5 align-middle font-mono text-[9px] uppercase tracking-wider text-[var(--accent-soft)]">web</span>}
+                        <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-100">
+                          <span className="truncate">{c.name}</span>
+                          {c.lane === "website" && <span data-testid="lane-website" className="shrink-0 rounded bg-[var(--accent)]/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[var(--accent-soft)]">web</span>}
                         </span>
                         <span className="block truncate text-[12px] text-slate-500">{c.batch || c.city || c.email}</span>
                       </span>
@@ -233,7 +233,7 @@ export function FieldConsole() {
             </section>
 
             {/* Detail */}
-            <section className={cx(!current && "hidden lg:block")}>
+            <section className={cx("min-w-0", !current && "hidden lg:block")}>
               {current && data ? (
                 <>
                   <Button variant="quiet" className="mb-3 lg:hidden" onClick={() => setSelected(null)}>← Queue</Button>

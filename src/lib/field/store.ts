@@ -242,6 +242,12 @@ export async function upsertContact(u: UpsertInput): Promise<{ contact: FieldCon
   return { contact: toContact(r), created: true };
 }
 
+/** Follow-up steps (Email 2–4) approved and not yet sent. */
+export async function approvedStepsCount(): Promise<number> {
+  const [r] = await db.select({ n: sql<number>`count(*)::int` }).from(fieldSteps).where(eq(fieldSteps.stage, "approved"));
+  return r?.n ?? 0;
+}
+
 export async function markReplied(contactId: string, at: string): Promise<void> {
   await db.update(fieldContacts).set({ repliedAt: at }).where(and(eq(fieldContacts.id, contactId), sql`${fieldContacts.repliedAt} is null`));
 }
