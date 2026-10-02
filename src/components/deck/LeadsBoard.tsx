@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LeadActions } from "./LeadActions";
 
 /** Control Center "Today's leads": every lead for a date with lane, state and next action (reads the Brain DB). */
 interface Lead {
@@ -24,11 +25,13 @@ function Badge({ children, className, testId }: { children: React.ReactNode; cla
   return <span data-testid={testId} className={`inline-block rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${className}`}>{children}</span>;
 }
 
-export function LeadsBoard() {
-  const [date, setDate] = useState("");
-  const [lane, setLane] = useState("");
-  const [status, setStatus] = useState("");
-  const [tier, setTier] = useState("");
+export type LeadFilters = { date?: string; lane?: string; status?: string; tier?: string };
+
+export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
+  const [date, setDate] = useState(initial.date ?? "");
+  const [lane, setLane] = useState(initial.lane ?? "");
+  const [status, setStatus] = useState(initial.status ?? "");
+  const [tier, setTier] = useState(initial.tier ?? "");
   const [data, setData] = useState<Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -52,6 +55,9 @@ export function LeadsBoard() {
   }, [load]);
 
   const c = data?.counts;
+  // Duplicate rows merge into their Notion twin (it has the draft + Notion link).
+  const notionTwin = (l: Lead) => data?.leads.find((x) => l.duplicate_of.includes(x.contact_id) && x.source === "notion")?.contact_id;
+  const warmed = Boolean(data?.gates.domainWarmed);
   const strip: [string, string, boolean?][] = c
     ? [
         ["Core / website", `${c.core} / ${c.website}`],
@@ -108,7 +114,7 @@ export function LeadsBoard() {
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-[12px]">
             <thead className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">
-              <tr>{["Lead", "Lane", "Source", "Tier", "Email 1", "Nick", "Subject", "Next action"].map((h) => <th key={h} className="px-2 py-1.5 font-normal">{h}</th>)}</tr>
+              <tr>{["Lead", "Lane", "Source", "Tier", "Email 1", "Nick", "Subject", "Next action", "Actions"].map((h) => <th key={h} className="px-2 py-1.5 font-normal">{h}</th>)}</tr>
             </thead>
             <tbody>
               {data.leads.map((l) => (
@@ -124,7 +130,8 @@ export function LeadsBoard() {
                   <td className="px-2 py-2"><Badge testId="lead-status" className={STATUS_STYLE[l.email1_status] ?? ""}>{l.email1_status}</Badge>{l.lint_issues > 0 && <span className="ml-1 font-mono text-[10px] text-red-300">lint {l.lint_issues}</span>}</td>
                   <td className="max-w-[180px] px-2 py-2 text-[11px] text-slate-400" title={l.nick_note ?? undefined}>{l.nick_verdict ? <><span className="text-slate-200">{l.nick_verdict}</span>{l.nick_note ? ` · ${l.nick_note.slice(0, 60)}` : ""}</> : "—"}</td>
                   <td className="max-w-[220px] truncate px-2 py-2 text-[11px] text-slate-400" title={l.subject ?? undefined}>{l.subject ?? "—"}</td>
-                  <td className={`px-2 py-2 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`} data-testid="lead-next">{l.next_action}</td>
+                  <td className={`max-w-[200px] px-2 py-2 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`} data-testid="lead-next">{l.next_action}</td>
+                  <td className="px-2 py-2"><LeadActions lead={l} warmed={warmed} notionTwin={notionTwin(l)} onDone={load} /></td>
                 </tr>
               ))}
             </tbody>
@@ -136,7 +143,7 @@ export function LeadsBoard() {
       {data && data.leads.length > 0 && (
         <div className="space-y-2 md:hidden">
           {data.leads.map((l) => (
-            <a key={l.contact_id} href="/field" data-testid={`leadcard-${l.contact_id}`} className="block rounded-lg border border-white/[0.06] bg-black/30 p-3">
+            <div key={l.contact_id} data-testid={`leadcard-${l.contact_id}`} className="block rounded-lg border border-white/[0.06] bg-black/30 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-100">{l.business}</p>
@@ -153,7 +160,8 @@ export function LeadsBoard() {
               </div>
               {l.subject && <p className="mt-2 truncate text-[12px] text-slate-400">{l.subject}</p>}
               <p className={`mt-1.5 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>→ {l.next_action}</p>
-            </a>
+              <div className="mt-2"><LeadActions lead={l} warmed={warmed} notionTwin={notionTwin(l)} onDone={load} /></div>
+            </div>
           ))}
         </div>
       )}

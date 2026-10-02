@@ -51,3 +51,4 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ One source of truth (lib/field/leads): brain_today.leads[] == board == brain_field_queue
 ✓ Upsert wiring (Ashley→core, Prospectacle→website), Notion load attaches instead of duplicating, duplicate flags + brain_merge_contacts
 ✓ Voice lint: en dash, clause hyphen, AI-isms; send blocked until domain warm-up confirmed
+✓ Dashboard: Today's leads card → /leads (filters + action buttons), scoreboard tiles → filtered /leads, warm-up confirm, Activity → /activity

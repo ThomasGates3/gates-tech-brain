@@ -11,7 +11,7 @@ import { NovaNoticed } from "@/components/deck/NovaNoticed";
 import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
 import { SystemStatPanel } from "@/components/deck/SystemStatPanel";
 import { Scoreboard, type ScoreboardData } from "@/components/deck/Scoreboard";
-import { LeadsBoard } from "@/components/deck/LeadsBoard";
+import { LeadsCard } from "@/components/deck/LeadsCard";
 import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset } from "@/lib/persona/presets";
@@ -51,12 +51,11 @@ export default function Home() {
   );
 
   // Real deck numbers, refreshed every 30s.
+  const loadDeck = () => { fetch("/api/deck").then((r) => r.json()).then((d) => d.briefing && setDeck(d)).catch(() => {}); };
   useEffect(() => {
-    let alive = true;
-    const load = () => fetch("/api/deck").then((r) => r.json()).then((d) => alive && d.briefing && setDeck(d)).catch(() => {});
-    load();
-    const t = setInterval(load, 30000);
-    return () => { alive = false; clearInterval(t); };
+    const first = setTimeout(loadDeck, 0);
+    const t = setInterval(loadDeck, 30000);
+    return () => { clearTimeout(first); clearInterval(t); };
   }, []);
 
   // Boot sequence once per session.
@@ -147,14 +146,11 @@ export default function Home() {
         {/* Proactive nudges */}
         <NovaNoticed name={preset.name} />
 
-        {/* Primary: today's leads (Brain DB is the source of truth) */}
-        <div className="mb-4">{isDesktop && <LeadsBoard />}</div>
-
         {/* 3-column JARVIS grid: activity | core+chat | stats */}
         <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_260px]">
           {/* Left — activity (real, DB-backed) */}
           <div className="order-3 lg:order-1">
-            <ActivityFeed />
+            <ActivityFeed limit={12} href="/activity" />
           </div>
 
           {/* Center — centered orb, briefing, compact chat pinned to bottom */}
@@ -190,6 +186,8 @@ export default function Home() {
               </div>
             </div>
 
+            {isDesktop && <LeadsCard />}
+
             {/* Compact chat pinned to the bottom */}
             <div className="mt-auto">
               <BrainChat personaName={preset.name} onSend={pulse} onVoiceActive={setVoiceActive} />
@@ -198,7 +196,7 @@ export default function Home() {
 
           {/* Right — stats (clickable) */}
           <div className="order-2 space-y-4 lg:order-3">
-            <Scoreboard data={deck?.scoreboard ?? null} />
+            <Scoreboard data={deck?.scoreboard ?? null} onChange={loadDeck} />
             <StatPanel title="Operations" stats={deck?.ops ?? []} onClick={() => setModal("connections")} />
             <SystemStatPanel onClick={() => setModal("settings")} />
           </div>
@@ -210,10 +208,16 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Phone: the leads board first */}
-      <div className="relative px-4 pb-28 pt-5 lg:hidden">
-        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">GATES TECH BRAIN · CONTROL CENTER</p>
-        {isDesktop === false && <LeadsBoard />}
+      {/* Phone: dashboard cards (each opens its own page) */}
+      <div className="relative space-y-4 px-4 pb-28 pt-5 lg:hidden">
+        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">GATES TECH BRAIN · CONTROL CENTER</p>
+        {isDesktop === false && (
+          <>
+            <LeadsCard />
+            <Scoreboard data={deck?.scoreboard ?? null} onChange={loadDeck} />
+            <ActivityFeed limit={5} href="/activity" />
+          </>
+        )}
       </div>
 
       {/* Mobile floating orb → chat sheet */}

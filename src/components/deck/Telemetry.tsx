@@ -81,15 +81,22 @@ const KIND_META: Record<ActivityKind, { verb: string; color: string; icon: strin
   alert:     { verb: "Flagged",   color: "#ff3b30",       icon: "!" },
 };
 
-export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "data-testid"?: string }) {
+export function ActivityFeed({
+  "data-testid": testId = "activity-feed",
+  limit = 20,
+  href,
+  filterable = false,
+}: { "data-testid"?: string; limit?: number; href?: string; filterable?: boolean }) {
   const [items, setItems] = useState<Activity[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [agent, setAgent] = useState("");
+  const [kind, setKind] = useState("");
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
-        const res = await fetch("/api/activity?limit=20");
+        const res = await fetch(`/api/activity?limit=${limit}`);
         const data = await res.json();
         if (alive) {
           setItems((data.activity ?? []).map((a: Activity) => ({ ...a, at: relAge(a.at) })));
@@ -102,7 +109,10 @@ export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "dat
     load();
     const t = setInterval(load, 15000); // keep it consistent/live
     return () => { alive = false; clearInterval(t); };
-  }, []);
+  }, [limit]);
+
+  const agents = [...new Set(items.map((a) => a.agent).filter(Boolean))] as string[];
+  const shown = items.filter((a) => (!agent || a.agent === agent) && (!kind || a.kind === kind));
 
   return (
     <div
@@ -112,15 +122,32 @@ export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "dat
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="h-1 w-4 bg-[var(--accent)]" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
+          {href ? (
+            <a href={href} data-testid="activity-open" className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">Activity →</a>
+          ) : (
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
+          )}
         </div>
         <span className="font-mono text-[10px] text-slate-600">live</span>
       </div>
+      {filterable && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          <select value={agent} onChange={(e) => setAgent(e.target.value)} data-testid="activity-agent" aria-label="Agent" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200">
+            <option value="">All agents</option>
+            {agents.map((a) => <option key={a}>{a}</option>)}
+          </select>
+          <select value={kind} onChange={(e) => setKind(e.target.value)} data-testid="activity-kind" aria-label="Kind" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200">
+            <option value="">All kinds</option>
+            {Object.keys(KIND_META).map((k) => <option key={k}>{k}</option>)}
+          </select>
+          <span className="self-center font-mono text-[10px] text-slate-500">{shown.length} shown</span>
+        </div>
+      )}
       {loaded && items.length === 0 && (
-        <p className="py-6 text-center text-[12px] text-slate-600">Nothing yet — run an automation or a dev task and it shows up here.</p>
+        <p className="py-6 text-center text-[12px] text-slate-600">Nothing yet. Bot calls, drafts and sends show up here.</p>
       )}
       <ul className="space-y-2.5">
-        {items.map((a) => {
+        {shown.map((a) => {
           const m = KIND_META[a.kind];
           return (
             <li key={a.id} data-testid={`activity-${a.id}`} className="flex gap-2.5">
@@ -131,7 +158,7 @@ export function ActivityFeed({ "data-testid": testId = "activity-feed" }: { "dat
                 <p className="text-[13px] leading-snug text-slate-300">
                   <span style={{ color: m.color }}>{m.verb}</span>{" "}
                   <span className="text-slate-100">{a.target}</span>
-                  {a.because && <span className="text-slate-500"> — because {a.because}</span>}
+                  {a.because && <span className="text-slate-500"> · {a.because}</span>}
                 </p>
                 <p className="mt-0.5 font-mono text-[10px] text-slate-600">
                   {a.agent ? `${a.agent} · ` : ""}{a.at}
