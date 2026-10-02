@@ -157,8 +157,11 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
               <Button variant="quiet" disabled={!!busy} onClick={() => run("template", { action: "generate", mode: "template" })} data-testid="draft-template">
                 {busy === "template" ? "…" : "Playbook template"}
               </Button>
-              <Button variant="quiet" disabled={!!busy || !config.claude} title={config.claude ? "" : "ANTHROPIC_API_KEY not set"} onClick={() => run("claude", { action: "generate", mode: "claude" })} data-testid="draft-claude">
+              <Button variant="quiet" disabled={!!busy || !config.claude} title={config.claude ? "Claude Sonnet 5.5" : "ANTHROPIC_API_KEY not set"} onClick={() => run("claude", { action: "generate", mode: "claude", model: "sonnet" })} data-testid="draft-claude">
                 {busy === "claude" ? "Drafting…" : "Draft with Claude"}
+              </Button>
+              <Button variant="quiet" disabled={!!busy || !config.claude} title="Claude Opus 5.5, for hard drafts only (about 3x the cost)" onClick={() => run("opus", { action: "generate", mode: "claude", model: "opus" })} data-testid="draft-opus">
+                {busy === "opus" ? "Drafting…" : "Opus (hard)"}
               </Button>
             </div>
           )}

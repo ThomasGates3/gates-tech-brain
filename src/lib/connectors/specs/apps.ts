@@ -1,5 +1,5 @@
 /**
- * Business-app connectors — the Brain's reach into your real /dev apps.
+ * Gates business-app connectors: Gates Tech site (bookings/intake) and Speed to Lead.
  * Each app's base URL + agent token come from env (set per deployment). Auth is
  * a bearer "agent access token": add a matching token check to each app's API so
  * the Brain can call it. Endpoints below are mapped from each app's real routes.
@@ -7,68 +7,6 @@
 import type { Connector } from "@/lib/types";
 
 const url = (key: string, fallback: string) => process.env[key] ?? fallback;
-
-// ── Twin Trading (content engine) ──────────────────────────────────────────
-export const twinTrading: Connector = {
-  id: "twin-trading",
-  label: "Twin Trading (content engine)",
-  auth: "bearer",
-  baseUrl: url("TWIN_TRADING_URL", "http://localhost:3001"),
-  credential: { vaultKey: "TWIN_TRADING_TOKEN" },
-  enabled: true,
-  tools: [
-    { name: "list_ideas", description: "List content ideas", method: "GET", path: "/api/ideas", risk: "read" },
-    { name: "create_idea", description: "Add a new content idea", method: "POST", path: "/api/ideas", risk: "write", params: { title: { type: "string", required: true, in: "body" }, notes: { type: "string", in: "body" } } },
-    { name: "generate_image", description: "Generate an image from a prompt", method: "POST", path: "/api/generate-image", risk: "write", params: { prompt: { type: "string", required: true, in: "body" } } },
-    { name: "generate_video", description: "Generate a video from a storyboard/prompt", method: "POST", path: "/api/generate-video", risk: "write", params: { prompt: { type: "string", required: true, in: "body" } } },
-    { name: "list_videos", description: "List generated videos", method: "GET", path: "/api/videos", risk: "read" },
-    { name: "stats", description: "Content pipeline stats", method: "GET", path: "/api/stats", risk: "read" },
-  ],
-};
-
-// ── Twin Trading — Link in Bio (Express) ────────────────────────────────────
-export const twinTradingBio: Connector = {
-  id: "twin-trading-bio",
-  label: "Twin Trading — Link in Bio",
-  auth: "bearer",
-  baseUrl: url("TWIN_TRADING_BIO_URL", "http://localhost:3002"),
-  credential: { vaultKey: "TWIN_TRADING_BIO_TOKEN" },
-  enabled: true,
-  tools: [
-    { name: "get_links", description: "Get the current link-in-bio links", method: "GET", path: "/api/links", risk: "read" },
-    { name: "update_links", description: "Update the link-in-bio links", method: "POST", path: "/api/links", risk: "write", params: { links: { type: "array", required: true, in: "body" } } },
-  ],
-};
-
-// ── Ad System (Veo + HeyGen video, leads) ───────────────────────────────────
-export const adSystem: Connector = {
-  id: "ad-system",
-  label: "Ad System (video + leads)",
-  auth: "bearer",
-  baseUrl: url("AD_SYSTEM_URL", "http://localhost:3003"),
-  credential: { vaultKey: "AD_SYSTEM_TOKEN" },
-  enabled: true,
-  tools: [
-    { name: "generate_veo_video", description: "Generate a video with Veo", method: "POST", path: "/api/veo", risk: "write", params: { prompt: { type: "string", required: true, in: "body" } } },
-    { name: "generate_heygen_video", description: "Generate an avatar/clone video with HeyGen", method: "POST", path: "/api/heygen/video", risk: "write", params: { script: { type: "string", required: true, in: "body" }, avatar: { type: "string", in: "body" } } },
-    { name: "list_leads", description: "List captured leads", method: "GET", path: "/api/leads", risk: "read" },
-    { name: "analytics", description: "Get analytics", method: "GET", path: "/api/analytics", risk: "read" },
-    { name: "results", description: "Get generation results/status", method: "GET", path: "/api/results", risk: "read" },
-  ],
-};
-
-// ── AI Link in Bio ──────────────────────────────────────────────────────────
-export const aiLinkBio: Connector = {
-  id: "ai-link-bio",
-  label: "AI Link in Bio",
-  auth: "bearer",
-  baseUrl: url("AI_LINK_BIO_URL", "http://localhost:3004"),
-  credential: { vaultKey: "AI_LINK_BIO_TOKEN" },
-  enabled: true,
-  tools: [
-    { name: "checkout", description: "Create a checkout session", method: "POST", path: "/api/checkout", risk: "write", params: { plan: { type: "string", required: true, in: "body" } } },
-  ],
-};
 
 // ── Gates Tech (GTV2 — agency site: bookings + intake) ───────────────────────
 export const gatesTech: Connector = {
@@ -101,4 +39,4 @@ export const speedToLead: Connector = {
   ],
 };
 
-export const APP_CONNECTORS: Connector[] = [twinTrading, twinTradingBio, adSystem, aiLinkBio, gatesTech, speedToLead];
+export const APP_CONNECTORS: Connector[] = [gatesTech, speedToLead];

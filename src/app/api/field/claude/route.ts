@@ -12,13 +12,13 @@
 import { generateText } from "ai";
 import { z } from "zod";
 import { error, json, requireOperator } from "@/lib/field/api";
-import { claude, COPY, LIGHT, OPS } from "@/lib/models";
+import { claude, HARD_DRAFT, LIGHT, OPS } from "@/lib/models";
 import { costUsd, recordUsage } from "@/lib/usage";
 import { budgetBlock, claudeBudget } from "@/lib/budget";
 
 export const maxDuration = 120;
 
-const MODELS = { light: LIGHT, standard: OPS, copy: COPY } as const;
+const MODELS = { light: LIGHT, standard: OPS, copy: HARD_DRAFT } as const;
 
 const Body = z.object({
   prompt: z.string().min(1).max(200_000),

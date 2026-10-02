@@ -131,3 +131,15 @@ export const fieldSuppressions = pgTable("field_suppressions", {
   by: text("by").notNull(),
   at: text("at").notNull(),
 });
+
+/** API keys for MCP / REST callers (e.g. "Ace"). Only a SHA-256 hash is stored; the key is shown once. */
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  label: text("label").notNull(),
+  operator: text("operator").notNull(), // "ace" | "thomas"
+  prefix: text("prefix").notNull(), // first chars, for recognising a key in the UI
+  hash: text("hash").notNull(),
+  createdAt: text("created_at").notNull(),
+  lastUsedAt: text("last_used_at"),
+  revokedAt: text("revoked_at"),
+});

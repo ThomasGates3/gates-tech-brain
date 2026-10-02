@@ -6,9 +6,8 @@
 import { z } from "zod";
 import { consoleConfig, error, json, requireOperator } from "@/lib/field/api";
 import { todayIn } from "@/lib/field/config";
-import { csvToRows } from "@/lib/field/csv";
-import { fetchPack } from "@/lib/field/notion";
-import { importRows, listQueue } from "@/lib/field/store";
+import { listQueue } from "@/lib/field/store";
+import { loadPack } from "@/lib/field/actions";
 import type { QueueResponse } from "@/lib/field/types";
 
 const DateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -39,11 +38,7 @@ export async function POST(req: Request) {
   const input = parsed.data;
 
   try {
-    const summary =
-      input.source === "notion"
-        ? await importRows(await fetchPack(input.date), "notion", input.date)
-        : // A pasted pack is "the pack for the selected day", whatever its Date column says.
-          await importRows(csvToRows(input.csv).map((r) => ({ ...r, date: null })), "csv", input.date);
+    const summary = await loadPack(input.source, input.date, input.source === "csv" ? input.csv : undefined);
     return json({ ok: true, ...summary });
   } catch (e) {
     return error(502, e instanceof Error ? e.message : String(e));

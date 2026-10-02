@@ -2,7 +2,8 @@
  * Field Console server config — env-driven, read per request. Server-only.
  */
 import { cookies, headers } from "next/headers";
-import { GATE_COOKIE, gateEnabled, operatorForBearer, readSession } from "@/lib/gate";
+import { GATE_COOKIE, gateEnabled, readSession } from "@/lib/gate";
+import { bearerToken, operatorForApiKey } from "@/lib/api-keys";
 import type { Operator } from "./types";
 import type { Signer } from "./playbook";
 
@@ -47,7 +48,7 @@ export function startOfTodayIso(tz = fieldEnv.timezone()): string {
 }
 
 /**
- * Who is operating. Ace's bearer API key first, then the signed session cookie. With the gate fully off
+ * Who is operating. A bearer API key (env Ace key or a DB key) first, then the signed session cookie. With the gate fully off
  * (local dev only), FIELD_DEV_OPERATOR can stand in — never in production.
  */
 export async function currentOperator(): Promise<Operator | null> {
@@ -55,7 +56,7 @@ export async function currentOperator(): Promise<Operator | null> {
     const dev = env("FIELD_DEV_OPERATOR") as Operator;
     return process.env.NODE_ENV !== "production" && (dev === "thomas" || dev === "ace") ? dev : null;
   }
-  const bot = operatorForBearer((await headers()).get("authorization"));
+  const bot = await operatorForApiKey(bearerToken((await headers()).get("authorization")));
   if (bot) return bot;
   const session = await readSession((await cookies()).get(GATE_COOKIE)?.value);
   return session?.operator ?? null;

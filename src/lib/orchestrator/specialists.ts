@@ -11,6 +11,9 @@ import { executeToolCall } from "@/lib/tools/router";
 import { registry } from "@/lib/connectors/registry";
 import { createNotebook, addSource, askNotebook, generateBriefing } from "@/lib/notebooklm";
 import { dispatchDevTask, DEV_TARGETS } from "@/lib/builder/dev-agent";
+import { fieldSnapshot } from "@/lib/field/snapshot";
+import { listLog, listQueue } from "@/lib/field/store";
+import { todayIn } from "@/lib/field/config";
 
 function makeConnectorTool(connectorId: string, toolName: string) {
   const connector = registry.get(connectorId);
@@ -53,6 +56,8 @@ function connectorTools(connectorIds: string[]) {
     const connector = registry.get(connId);
     if (!connector?.enabled) continue;
     for (const spec of connector.tools) {
+      // No autopilot: agents never get tools that send/spend. Those happen only via the Field path.
+      if (spec.risk === "destructive") continue;
       const t = makeConnectorTool(connId, spec.name);
       if (t) tools[`${connId}__${spec.name}`] = t;
     }
@@ -83,7 +88,7 @@ const notebooklmTools = {
   }),
 };
 
-/** Dev-agent: spins up a coding agent against a target repo (Moby, Ad System). */
+/** Dev-agent (Lynx builds): spins up a coding agent against a Gates repo, on a branch. Local only. */
 const devTool = tool({
   description:
     "Dispatch a coding agent to do a development task on one of the business apps (create a feature, fix a bug, refactor). Runs on a branch; returns the agent's output.",
@@ -103,35 +108,55 @@ function makeAgent(id: SpecialistId, system: string, tools: ToolSet, model = OPS
   });
 }
 
+/** Read-only Field data for the Data specialist (real Neon data, no connectors needed). */
+const fieldTools = {
+  field__snapshot: tool({
+    description: "Today's real Field status: queue counts by stage, sends today vs cap, Claude spend vs budget, gates, next actions.",
+    inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+    execute: async ({ date }) => fieldSnapshot(date),
+  }),
+  field__queue: tool({
+    description: "Contacts in a day's Field queue (name, priority, stage, Nick verdict, gap). Read-only.",
+    inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+    execute: async ({ date }) =>
+      (await listQueue(date ?? todayIn())).map(({ id, name, priority, stage, nickVerdict, gap, city, suppressed }) => ({ id, name, priority, stage, nickVerdict, gap, city, suppressed })),
+  }),
+  field__send_log: tool({
+    description: "Recent Email 1 sends (time, recipient, AgentMail id, operator). Read-only.",
+    inputSchema: z.object({ limit: z.number().int().min(1).max(100).default(20) }),
+    execute: async ({ limit }) => listLog(limit),
+  }),
+};
+
 export const specialists: Record<SpecialistId, Experimental_Agent> = {
   research: makeAgent(
     "research",
-    "You are the Research specialist. Use NotebookLM tools to create notebooks, ingest sources, and generate briefings. Return structured, cited answers.",
+    "You are the Research specialist (Hermes) for Gates Technologies. Use NotebookLM to ingest sources and build briefings; return structured, cited answers. NotebookLM is a creative assist only: never include prices in cold-outreach assets.",
     notebooklmTools,
     LIGHT
   ),
   data: makeAgent(
     "data",
-    "You are the Data specialist. Use database connectors (Supabase, BigQuery) to query, analyze, and summarize business data. Always show the SQL or query used.",
-    connectorTools(["supabase", "bigquery"]),
+    "You are the Data specialist for Gates Technologies. Use the Field tools to answer questions about today's outreach queue, stages, sends and budget. Report only what the tools return; never invent figures.",
+    fieldTools,
     LIGHT
   ),
   devops: makeAgent(
     "devops",
-    "You are the DevOps specialist. Use GitHub, Vercel, and AWS connectors to inspect deployments, repos, metrics, and workflows. Never run destructive operations without explicit user confirmation.",
-    connectorTools(["github", "vercel", "aws"])
+    "You are the DevOps specialist (supports Lynx). Use GitHub and Vercel to inspect the gatestech.solutions and Brain repos and deployments. Read and report; never run destructive operations.",
+    connectorTools(["github", "vercel"])
   ),
   comms: makeAgent(
     "comms",
-    "You are the Comms/Reporting specialist. Use webhook connectors to send notifications and deliver report artifacts to Slack, email, or other channels.",
+    "You are the Comms specialist. Use the webhook connector to deliver internal notifications and reports to Thomas. Never contact prospects or clients.",
     connectorTools(["webhook"]),
     LIGHT
   ),
   operator: makeAgent(
     "operator",
-    "You are the Operator specialist — you run the business's own apps. Use the connectors for Twin Trading (content), Twin Trading Link-in-Bio, Ad System (Veo/HeyGen video + leads), AI Link in Bio, Gates Tech (bookings/intake), and Speed to Lead (lead outreach) to perform real tasks. You can also dispatch a coding agent to the Moby app via moby_dev_task for development work. Confirm before anything destructive (sending outreach, spending).",
+    "You are the Operator specialist for Gates Technologies. Use the Gates Tech site (bookings/intake) and Speed to Lead connectors to look things up and prepare drafts. You cannot send outreach: anything outbound goes through the Field path (Nick PASS, then Thomas approves). For build work, dispatch the coding agent to the Brain repo on a branch.",
     {
-      ...connectorTools(["twin-trading", "twin-trading-bio", "ad-system", "ai-link-bio", "gates-tech", "speed-to-lead"]),
+      ...connectorTools(["gates-tech", "speed-to-lead"]),
       dev_task: devTool,
     }
   ),

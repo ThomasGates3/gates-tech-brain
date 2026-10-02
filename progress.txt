@@ -29,3 +29,12 @@ AI BRAIN — Progress Tracker
      Agencies · Accounting/Bookkeeping · Law Firms · Dental/Medical · Insurance Brokerages
 
 Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, ApprovalRequest, Job, AuditEntry
+
+── 2026-10-01 · Gates-only Brain + MCP for Ace ─────────────────────────────
+✓ Trimmed to Gates: removed Twin Trading, Ad System, AI Link in Bio, BigQuery, AWS, Supabase connectors; trading/content automations; persona switcher; mock deck metrics; stale 80d activity
+✓ Draft-only automations (7): Morning Briefing, EOD Recap (real Field snapshot), Speed-to-Lead, Dead-Lead, Review Responder, Competitor Watch (web search), Weekly Client Report; dry run + deliver
+✓ Agents cannot call sending tools (destructive connector tools removed); outbound only via Field path
+✓ MCP server /api/mcp + REST /api/v1/tools/* + OpenAPI /api/v1/openapi.json (16 tools, one registry, activity on every call)
+✓ API keys: create (shown once, hashed) / revoke in Operations → Access (Thomas only)
+✓ Roster status real (active = activity in last 30 min); Connections show AgentMail/Notion live or needs-key with setup steps
+✓ Field drafts: Sonnet 5.5 default, Opus 5.5 for hard drafts only

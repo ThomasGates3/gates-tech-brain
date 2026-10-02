@@ -12,28 +12,37 @@ import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry"
 import { SystemStatPanel } from "@/components/deck/SystemStatPanel";
 import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
 import type { BriefingHighlight } from "@/lib/persona/presets";
-import { getPreset, getAllPresets, buildBriefing } from "@/lib/persona/presets";
+import { getPreset } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
-import type { Vertical } from "@/lib/types";
 
-// ── Mock telemetry (wired to /api/chat + connectors in integration pass) ────
-
-const OPS_STATS: Stat[] = [
-  { label: "Connectors", value: "5 / 6", bar: 83 },
-  { label: "Tool calls", value: "47", sub: "24h" },
-  { label: "Active agents", value: "3", bar: 60 },
-  { label: "Approvals", value: "1", sub: "pending" },
-];
+/** Live deck state from /api/deck (Field-real numbers only; "—" until loaded). */
+interface DeckState {
+  briefing: { lead: string; items: BriefingHighlight[]; next: string[] };
+  ops: Stat[];
+  readouts: { tier: string; activeAgents: number; sent: string; claude: string };
+}
 
 export default function Home() {
   const [orbState, setOrbState] = useState<OrbState>("idle");
   const [voiceActive, setVoiceActive] = useState(false);
   const [modal, setModal] = useState<"settings" | "connections" | null>(null);
   const [briefItem, setBriefItem] = useState<BriefingHighlight | null>(null);
-  const [vertical, setVertical] = useState<Vertical>("agency");
   const [booting, setBooting] = useState(true);
-  const preset = getPreset(vertical);
-  const briefing = useMemo(() => buildBriefing(preset, getGreeting()), [preset]);
+  const [deck, setDeck] = useState<DeckState | null>(null);
+  const preset = getPreset("agency"); // Gates Brain persona (NOVA)
+  const spoken = useMemo(
+    () => (deck ? `${getGreeting()}. I'm ${preset.name}. ${deck.briefing.lead} ${deck.briefing.items.map((i) => `${i.label}: ${i.value}`).slice(0, 3).join(". ")}.` : ""),
+    [deck, preset.name]
+  );
+
+  // Real deck numbers, refreshed every 30s.
+  useEffect(() => {
+    let alive = true;
+    const load = () => fetch("/api/deck").then((r) => r.json()).then((d) => alive && d.briefing && setDeck(d)).catch(() => {});
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
 
   // Boot sequence once per session.
   useEffect(() => {
@@ -46,17 +55,18 @@ export default function Home() {
     document.documentElement.style.setProperty("--accent", preset.accent);
   }, [preset.accent]);
 
-  // Spoken briefing after boot (respects a mute preference).
+  // Spoken briefing after boot, once real data is in (respects a mute preference).
+  const spokenOnce = useRef(false);
   useEffect(() => {
-    if (booting) return;
+    if (booting || !spoken || spokenOnce.current) return;
+    spokenOnce.current = true;
     if (localStorage.getItem("mute_briefing") === "1") return;
     if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(briefing.spoken);
+    const u = new SpeechSynthesisUtterance(spoken);
     u.rate = 1.02;
     const t = setTimeout(() => window.speechSynthesis.speak(u), 400);
     return () => { clearTimeout(t); window.speechSynthesis.cancel(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [booting]);
+  }, [booting, spoken]);
 
   // Live orb reactions — flash when new activity lands (success amber / error red).
   const lastActivityId = useRef<string | null>(null);
@@ -82,9 +92,9 @@ export default function Home() {
 
   const readouts = [
     { label: "CORE", value: "ONLINE", color: preset.accent },
-    { label: "TIER", value: "STANDARD" },
-    { label: "AGENTS", value: "3 ACTIVE" },
-    { label: "UPTIME", value: "99.98%" },
+    { label: "TIER", value: deck?.readouts.tier ?? "—" },
+    { label: "AGENTS", value: deck ? `${deck.readouts.activeAgents} ACTIVE` : "—" },
+    { label: "CLAUDE", value: deck?.readouts.claude ?? "—" },
   ];
 
   const pulse = () => { setOrbState("thinking"); setTimeout(() => setOrbState("idle"), 2600); };
@@ -105,24 +115,14 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" style={{ boxShadow: "0 0 10px var(--accent)" }} />
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">AI BRAIN</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">GATES TECH BRAIN</p>
               <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
                 {getGreeting()}. All systems online — I&apos;m <span className="text-[var(--accent)]">{preset.name}</span>.
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <select
-              data-testid="vertical-switcher"
-              value={vertical}
-              onChange={(e) => setVertical(e.target.value as Vertical)}
-              className="min-h-[36px] rounded-lg border border-white/10 bg-black/40 px-2.5 font-mono text-[11px] uppercase tracking-wider text-slate-300 outline-none focus:border-[var(--accent)]/60"
-              aria-label="Switch persona"
-            >
-              {getAllPresets().map((p) => (
-                <option key={p.id} value={p.id}>{p.name} · {p.id}</option>
-              ))}
-            </select>
+            <a href="/field" data-testid="open-field" className="grid min-h-[36px] place-items-center rounded-lg border border-[var(--accent)]/40 px-3 font-mono text-[11px] uppercase tracking-wider text-[var(--accent-soft)] hover:bg-[var(--accent)]/10">Field →</a>
             <button onClick={muteBriefing} data-testid="mute-briefing" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-400 hover:text-slate-200" aria-label="Mute voice">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="m23 9-6 6M17 9l6 6" /></svg>
             </button>
@@ -146,7 +146,7 @@ export default function Home() {
           <div className="order-1 flex flex-col gap-4 lg:order-2">
             {/* Centered core */}
             <div className="flex justify-center pt-1">
-              <HudFrame orbState={voiceActive ? "thinking" : orbState} readouts={readouts} uptime="99.98%" className="w-full max-w-[460px]" data-testid="deck-hud" />
+              <HudFrame orbState={voiceActive ? "thinking" : orbState} readouts={readouts} uptime={deck ? `SENT TODAY ${deck.readouts.sent}` : "—"} className="w-full max-w-[460px]" data-testid="deck-hud" />
             </div>
 
             <div>
@@ -155,25 +155,22 @@ export default function Home() {
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
                   <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Briefing</span>
                 </div>
-                <p className="mb-3 text-sm text-slate-200">{briefing.lead}</p>
+                <p className="mb-3 text-sm text-slate-200" data-testid="briefing-lead">{deck?.briefing.lead ?? "Loading today's Field status…"}</p>
                 <ul className="space-y-1.5">
-                  {briefing.items.slice(0, 4).map((it) => (
+                  {(deck?.briefing.items ?? []).map((it) => (
                     <li key={it.label} onClick={() => setBriefItem(it)} data-testid={`briefing-item-${it.label}`} className="flex cursor-pointer items-baseline justify-between gap-3 rounded border-b border-white/[0.04] pb-1.5 transition-colors last:border-0 hover:bg-white/[0.03]">
                       <span className={`text-[13px] ${it.urgent ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>
                         {it.urgent && <span className="mr-1.5 text-[var(--accent)]">!</span>}
                         {it.label}
                       </span>
-                      <span className="shrink-0 font-mono text-[13px] text-slate-100">
-                        {it.value}
-                        {it.delta && <span className="ml-1.5 text-[11px] text-emerald-400/80">{it.delta}</span>}
-                      </span>
+                      <span className="shrink-0 font-mono text-[13px] text-slate-100">{it.value}</span>
                     </li>
                   ))}
                 </ul>
-                {briefing.urgent && (
-                  <p className="mt-3 rounded-lg bg-[var(--accent)]/10 px-3 py-2 text-[12px] leading-5 text-[var(--accent-soft)] ring-1 ring-[var(--accent)]/20">
-                    {briefing.urgent}
-                  </p>
+                {deck && deck.briefing.next.length > 1 && (
+                  <ul className="mt-3 space-y-1 rounded-lg bg-[var(--accent)]/10 px-3 py-2 text-[12px] leading-5 text-[var(--accent-soft)] ring-1 ring-[var(--accent)]/20">
+                    {deck.briefing.next.slice(1, 4).map((n) => <li key={n}>{n}</li>)}
+                  </ul>
                 )}
               </div>
             </div>
@@ -187,7 +184,7 @@ export default function Home() {
           {/* Right — stats (clickable) */}
           <div className="order-2 space-y-4 lg:order-3">
             <SystemStatPanel onClick={() => setModal("settings")} />
-            <StatPanel title="Operations" stats={OPS_STATS} onClick={() => setModal("connections")} />
+            <StatPanel title="Operations" stats={deck?.ops ?? []} onClick={() => setModal("connections")} />
           </div>
         </div>
 

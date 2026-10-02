@@ -1,65 +1,79 @@
 /**
- * Run an automation on demand. Executes the Conductor with the (filled) prompt,
- * captures the result text, and records it to the audit log. Returns the output
- * so a caller (API route / deck) can display or deliver it.
+ * Run an automation. DRAFT-ONLY by construction: the model gets no connector or
+ * sending tools (web search only, where the template allows it), so a run can
+ * produce text but never act. {{field}} / {{activity}} are filled with real data.
+ *
+ * dryRun: true  → generate only (nothing delivered anywhere).
+ * dryRun: false → generate, then deliver the text to the template's channels
+ *                 (deck activity + Discord/Slack). Still never sends outreach.
  */
-import { createConductor } from "@/lib/orchestrator/conductor";
+import { generateText, stepCountIs } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import audit from "@/lib/audit";
 import { deliver } from "./deliver";
-import { recordActivity } from "@/lib/activity";
-import { resolveModelTier } from "@/lib/settings";
-import { conductorModel } from "@/lib/models";
-import { budgetBlock } from "@/lib/budget";
+import { recordActivity, recentActivity } from "@/lib/activity";
+import { claude, OPS } from "@/lib/models";
+import { claudeBudget } from "@/lib/budget";
 import { recordUsage } from "@/lib/usage";
+import { fieldSnapshot } from "@/lib/field/snapshot";
 import { getAutomation, fillPrompt, type AutomationTemplate } from "./catalog";
 
 export interface AutomationRun {
   id: string;
   name: string;
   status: "success" | "error";
+  dryRun: boolean;
+  delivered: string[];
   output: string;
   ranAt: string;
   error?: string;
 }
 
+const SYSTEM =
+  "You are the Gates Technologies Brain, writing internal drafts for Thomas Gates III. Be precise and plain-spoken. " +
+  "Never invent numbers, clients or results; use only what you are given (or cite web sources when searching). " +
+  "You cannot send or post anything; your output is a draft for a human.";
+
 export async function runAutomation(
   idOrTemplate: string | AutomationTemplate,
   vars: Record<string, string> = {},
-  actor = "system"
+  actor = "system",
+  opts: { dryRun?: boolean } = {}
 ): Promise<AutomationRun> {
+  const dryRun = opts.dryRun ?? false;
   const tpl = typeof idOrTemplate === "string" ? getAutomation(idOrTemplate) : idOrTemplate;
   const ranAt = new Date().toISOString();
-
-  if (!tpl) {
-    return { id: String(idOrTemplate), name: "unknown", status: "error", output: "", ranAt, error: "Automation not found" };
-  }
-
-  const prompt = fillPrompt(tpl.prompt, vars);
+  const base = { dryRun, delivered: [] as string[], output: "", ranAt };
+  if (!tpl) return { ...base, id: String(idOrTemplate), name: "unknown", status: "error", error: "Automation not found" };
+  if ((await claudeBudget()).status === "blocked") return { ...base, id: tpl.id, name: tpl.name, status: "error", error: "Daily Claude budget reached" };
 
   try {
-    if (await budgetBlock()) return { id: tpl.id, name: tpl.name, status: "error", output: "", ranAt, error: "Daily Claude budget reached" };
-    const tier = await resolveModelTier();
-    const conductor = createConductor(tier);
+    const filled = { ...vars };
+    if (tpl.prompt.includes("{{field}}")) filled.field = JSON.stringify(await fieldSnapshot());
+    if (tpl.prompt.includes("{{activity}}")) {
+      const acts = await recentActivity(25);
+      filled.activity = acts.map((a) => `${a.at} ${a.agent ?? ""} ${a.kind}: ${a.target}`).join("\n") || "(none)";
+    }
     const started = Date.now();
-    const result = await conductor.generate({ prompt });
-    const output = result.text ?? "(no output)";
-    void recordUsage({ model: conductorModel(tier), inputTokens: result.usage?.inputTokens, outputTokens: result.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
-
-    audit.record({
-      action: "job_run",
-      actor,
-      target: tpl.id,
-      detail: { name: tpl.name, deliverTo: tpl.deliverTo, chars: output.length },
+    const r = await generateText({
+      model: claude(OPS),
+      system: SYSTEM,
+      prompt: fillPrompt(tpl.prompt, filled),
+      maxOutputTokens: 4000,
+      ...(tpl.webSearch && { tools: { web_search: anthropic.tools.webSearch_20260209({ maxUses: 5 }) }, stopWhen: stepCountIs(3) }),
     });
+    void recordUsage({ model: OPS, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
+    const output = r.text || "(no output)";
 
-    // Push the result to its channels (Slack/email). Never blocks the run.
-    await deliver(tpl.deliverTo, { title: tpl.name, body: output });
-    await recordActivity({ kind: "generated", target: tpl.name, agent: tpl.category, because: tpl.deliverTo.includes("slack") ? "delivered to chat" : undefined });
+    audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, dryRun, chars: output.length } });
+    const delivered = dryRun ? [] : tpl.deliverTo;
+    if (!dryRun) await deliver(tpl.deliverTo.filter((c) => c !== "deck"), { title: tpl.name, body: output });
+    await recordActivity({ kind: "generated", target: `${tpl.name}${dryRun ? " (dry run)" : ""}`, because: dryRun ? "dry run: not delivered" : `delivered: ${delivered.join(", ")}`, agent: actor });
 
-    return { id: tpl.id, name: tpl.name, status: "success", output, ranAt };
+    return { ...base, id: tpl.id, name: tpl.name, status: "success", delivered, output };
   } catch (e) {
     const error = e instanceof Error ? e.message : "Unknown error";
     audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, error } });
-    return { id: tpl.id, name: tpl.name, status: "error", output: "", ranAt, error };
+    return { ...base, id: tpl.id, name: tpl.name, status: "error", error };
   }
 }
