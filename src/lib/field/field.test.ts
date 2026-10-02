@@ -22,7 +22,7 @@ function contact(over: Partial<FieldContact> = {}): FieldContact {
     priority: "High", packDate: "2026-10-01", stage: "new", subject: "", body: "", draftSource: null, draftHash: null,
     nickVerdict: null, nickNote: null, nickHash: null, nickAt: null, nickBy: null, approvedHash: null, approvedAt: null,
     approvedBy: null, sentAt: null, lastError: null, updatedAt: now,
-    lane: "core", contactName: null, siteUrl: null, notes: null, repliedAt: null, ...over,
+    lane: "core", contactName: null, siteUrl: null, notes: null, repliedAt: null, holdReason: null, ...over,
   };
 }
 
@@ -274,7 +274,7 @@ test("website Email 1: exactly three numbered fixes, no links, no attachments", 
   assert.ok(websiteEmail1Lint(good + "\nSee https://example.org/audit").some((i) => i.rule === "Link in website Email 1"));
   assert.ok(websiteEmail1Lint(good + "\nI attached a PDF.").some((i) => i.rule === "Attachment mention"));
   // core lane and follow-ups don't need the three fixes
-  assert.deepEqual(lintDraft("calls after you close", "Worth a look?", { lane: "core" }), []);
+  assert.deepEqual(lintDraft("calls after you close", "Your listing shows Wednesday 9 to 4 and Thursday 10 to 5.\n\nWorth a look?", { lane: "core" }), []);
   assert.deepEqual(lintDraft("x", "Following up. Worth a look?", { lane: "website", emailN: 2 }), []);
 });
 
@@ -282,4 +282,28 @@ test("business-name matching for duplicates", () => {
   assert.equal(normBusiness("Heaven's Handyman (Heavens Handyman LLC)"), "heaven s handyman");
   assert.equal(normBusiness("All Trades Inc. (All Trades General Contracting)"), "all trades");
   assert.equal(normBusiness("Kulani Spa & Wellness"), "kulani spa wellness");
+});
+
+import { coreEmail1Lint, hasConcreteHours } from "./lint";
+
+test("core hours honesty: concrete times in the opener, no vague hours, no Friday contradiction", () => {
+  const rules = (b: string) => coreEmail1Lint(b).map((i) => i.rule);
+  assert.deepEqual(rules("Your site lists Wednesday 9 to 4 and Thursday 10 to 5.\n\nWorth a look?"), []);
+  assert.deepEqual(rules("Published hours end Monday to Thursday at 6 pm and Friday at 3 pm.\n\nWorth a look?"), []);
+  assert.deepEqual(rules("Rabah,\n\nYour site lists Tuesday 10 to 6 and Saturday 9 to 2.\n\nWorth a look?"), []);
+  assert.deepEqual(rules("Hi Nina,\n\nYour hours show Monday 9 am to 5 pm and Friday until 3.\n\nWorth a look?"), []);
+  assert.ok(rules("Your hours look limited.\n\nWorth a look?").includes("Hours opener"));
+  assert.ok(rules("Open Tuesday 10 to 6.\n\nThere are limited blocks on Saturday.").includes("Vague hours"));
+  assert.ok(rules("Monday to Friday ends at 5 and Friday closes at 3.\n\nWorth a look?").includes("Friday contradiction"));
+  assert.equal(hasConcreteHours("Published hours close Monday and Sunday entirely and end Saturday at 4"), true);
+  assert.equal(hasConcreteHours("Published hours are appointment-only all week"), false);
+  assert.equal(hasConcreteHours("Open Wednesday only"), false);
+});
+
+test("website plain speech: jargon and put-downs fail the lint", () => {
+  const body = (opener: string) => `${opener}\n\nThree things I'd fix:\n1. Add a Book Now button.\n2. List your services.\n3. Put your hours under the phone number.\n\nWant me to walk you through them?`;
+  assert.deepEqual(websiteEmail1Lint(body("Your homepage headline says \"Proffesional plumbing\".")), []);
+  assert.ok(websiteEmail1Lint(body("Your site runs on a classic-mobile XHTML template.")).some((i) => i.rule === "Website jargon"));
+  assert.ok(websiteEmail1Lint(body("Your site reads as generic SEO filler with a thin brand.")).some((i) => i.rule === "Put-down"));
+  assert.ok(websiteEmail1Lint(body("It reads as unfinished for a hauling business.")).some((i) => i.rule === "Put-down"));
 });

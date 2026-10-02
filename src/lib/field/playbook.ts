@@ -147,10 +147,20 @@ export function playbookPrompt(
           "Lane: website (Prospectacle). Email 1's value is three concrete fixes for their site, written inside the body.",
           "Structure: one short line on what you noticed; the line \"Three things I'd fix:\"; then exactly three lines numbered \"1.\", \"2.\", \"3.\" (each one short sentence: what's wrong and what to do); one line that Gates rebuilds sites with booking built in; a soft ask such as \"Want me to walk you through them?\"; the signature.",
           "Every fix must come from the observed facts below. Never invent a fact. No links, no URLs, no attachments or files, no prices.",
+          "Plain speech an owner would use. Never write XHTML, classic-mobile, legacy table HTML, CMS, SEO, Webador or other builder names; say \"old HomeAdvisor phone-site template\", \"outdated mobile template\", \"old table-layout contact page\", \"DIY builder site\".",
+          "Open with a checkable defect (an exact typo in quotes, an empty homepage, a .mobi address, badges dated 2013 to 2020). Never open with a put-down like generic filler, thin brand, unfinished for, or junk site.",
           "Mention the after-hours call add-on only if the facts show limited published hours, and only as an optional later step in one short clause.",
         ].join("\n")
       : "Lane: website. Follow up on the three site fixes from Email 1; don't repeat them word for word."
-    : "Lane: core (missed-call text-back and after-hours booking).";
+    : n === 1
+      ? [
+          "Lane: core (missed-call text-back and after-hours booking).",
+          "The opener MUST quote the concrete published open and close times from the gap note or observed facts, for example \"Your site lists Wednesday 9 to 4 and Thursday 10 to 5.\"",
+          "Never infer a gap from missing hours and never invent a scenario (no \"a call at 9pm on Sunday\" unless those hours are published as closed).",
+          "Never write vague hours talk: limited blocks, sparse Saturday, depending on when the desk closes, unclear who answers, after-close coverage depends.",
+          "If Friday closes earlier than Monday to Thursday, write \"Monday to Thursday … and Friday …\", never \"Monday to Friday ends at X and Friday closes at Y\".",
+        ].join("\n")
+      : "Lane: core (missed-call text-back and after-hours booking).";
   const step = n === 1 ? "Write Email 1 (subject + body)." : `${STEP_JOBS[n]} It is sent as a reply in the same thread, so reuse this subject exactly: "${c.subject ?? ""}". Don't repeat earlier emails.`;
   return [
     lane,

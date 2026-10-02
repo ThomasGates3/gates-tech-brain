@@ -97,6 +97,7 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
 
     case "submit_nick": {
       if (c.stage !== "drafted") return fail(409, "Only a saved draft can go to Nick.");
+      if (c.nickVerdict === "REVISE" && c.nickHash && c.nickHash === c.draftHash) return fail(409, "Nick already asked for changes to this exact draft. Rewrite it first.");
       const lint = lintError(c, ctx.extraLint);
       if (lint) return fail(422, lint);
       return { ok: true, patch: { stage: "nick", nickVerdict: null, nickHash: null } };
@@ -111,7 +112,8 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
         if (lint) return fail(422, `Can't PASS: ${lint}`);
         return { ok: true, patch: { ...base, stage: "nick", nickHash: c.draftHash } };
       }
-      if (action.verdict === "REVISE") return { ok: true, patch: { ...base, stage: "drafted", nickHash: null } };
+      // Remember which exact draft Nick sent back, so an unchanged body isn't re-queued to him.
+      if (action.verdict === "REVISE") return { ok: true, patch: { ...base, stage: "drafted", nickHash: c.draftHash } };
       return { ok: true, patch: { ...base, stage: "kill", nickHash: null, approvedHash: null } };
     }
 
@@ -127,13 +129,13 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
     case "hold": {
       if (c.stage === "hold") return fail(409, "Already on hold.");
       if (!OPEN.includes(c.stage)) return fail(409, `Can't hold: this email is already ${c.stage}.`);
-      return { ok: true, patch: { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null } };
+      return { ok: true, patch: { stage: "hold", holdReason: ctx.operator === "thomas" ? "thomas" : "other", approvedHash: null, approvedAt: null, approvedBy: null } };
     }
 
     case "release": {
       if (c.stage !== "hold") return fail(409, "Contact isn't on hold.");
       if (c.priority === "Soft") return fail(409, "Soft contacts are Hold-only.");
-      return { ok: true, patch: { stage: c.draftHash ? "drafted" : "new", nickVerdict: null, nickHash: null } };
+      return { ok: true, patch: { stage: c.draftHash ? "drafted" : "new", holdReason: null, nickVerdict: null, nickHash: null } };
     }
   }
 }

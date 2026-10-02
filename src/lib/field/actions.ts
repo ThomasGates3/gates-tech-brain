@@ -9,8 +9,8 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { syncNotion, type SyncResult } from "./api";
-import { lintDraft, websiteEmail1Lint, type LintIssue } from "./lint";
-import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, followupTemplate, canSpamFooter, composeOutgoing, type Draft } from "./playbook";
+import { lintDraft, websiteEmail1Lint, coreEmail1Lint, hasConcreteHours, type LintIssue } from "./lint";
+import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, followupTemplate, canSpamFooter, composeOutgoing, cleanGap, type Draft } from "./playbook";
 import { fetchPack } from "./notion";
 import { csvToRows } from "./csv";
 import { replyEmail, sendEmail } from "./agentmail";
@@ -64,7 +64,19 @@ async function observeSite(c: FieldContact): Promise<string> {
   }
 }
 
-async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN = 1, previous: string[] = []): Promise<Draft> {
+/**
+ * Core Email 1 needs real published hours. Look in the gap note + scout notes, then the
+ * lead's own site. Returns the checkable hours text, or null (→ hold no_published_hours).
+ */
+async function publishedHours(c: FieldContact): Promise<string | null> {
+  const known = [cleanGap(c.gap || ""), c.notes ?? ""].join(" ");
+  if (hasConcreteHours(known)) return "";
+  if (!c.siteUrl) return null;
+  const seen = await observeSite(c);
+  return hasConcreteHours(seen) ? seen : null;
+}
+
+async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN = 1, previous: string[] = [], hoursSeen = ""): Promise<Draft> {
   const model = tier === "opus" ? HARD_DRAFT : DRAFT;
   const ask = async (prompt: string) => {
     const started = Date.now();
@@ -79,7 +91,7 @@ async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN =
     void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
     return r.output;
   };
-  const observed = c.lane === "website" && n === 1 ? await observeSite(c) : "";
+  const observed = c.lane === "website" && n === 1 ? await observeSite(c) : hoursSeen;
   const prompt = playbookPrompt(c, fieldEnv.signer(), n, previous, observed);
   const draft = await ask(prompt);
   const issues = lintDraft(draft.subject, draft.body, { lane: c.lane, emailN: n });
@@ -108,7 +120,7 @@ async function previousBodies(contact: FieldContact, n: EmailN): Promise<string[
 }
 
 /** One workflow step on one contact for Email n (draft, Nick, approve, hold, release). */
-export async function contactStep(id: string, raw: StepInput, operator: Operator, n: EmailN = 1): Promise<Result<{ contact: FieldContact; lint: LintIssue[]; notion: SyncResult; email_n: EmailN }>> {
+export async function contactStep(id: string, raw: StepInput, operator: Operator, n: EmailN = 1): Promise<Result<{ contact: FieldContact; lint: LintIssue[]; notion: SyncResult; email_n: EmailN; held?: "no_published_hours" }>> {
   const parsed = StepInput.safeParse(raw);
   if (!parsed.success) return fail(400, parsed.error.issues[0]?.message ?? "Invalid step.");
   const input = parsed.data;
@@ -124,9 +136,23 @@ export async function contactStep(id: string, raw: StepInput, operator: Operator
     }
     if (input.mode === "template" && n === 1 && contact.lane === "website")
       return fail(422, "Website Email 1 needs three real fixes from the site. Use generate \"sonnet\" (reads the site) or brain_import_draft with Prospectacle's copy.");
+    // Hours honesty: no checkable published hours → don't draft, hold with a reason.
+    let hoursSeen = "";
+    if (n === 1 && contact.lane === "core") {
+      const h = await publishedHours(contact);
+      if (h === null) {
+        const held = await patchContact(id, {
+          stage: "hold", holdReason: "no_published_hours", approvedHash: null, approvedAt: null, approvedBy: null,
+          notes: [contact.notes, "no_published_hours: no checkable desk hours on the site or in the gap note; not drafted."].filter(Boolean).join(" "),
+        });
+        void recordActivity({ kind: "updated", target: `${held.name} put on hold: needs published hours`, because: "No checkable desk hours, so no Email 1 was drafted.", agent: "brain" });
+        return { ok: true, data: { contact: held, lint: [], notion: await syncNotion(held, { status: "Hold" }), email_n: n, held: "no_published_hours" } };
+      }
+      hoursSeen = h;
+    }
     const draft =
       input.mode === "claude"
-        ? await claudeDraft(view, input.model, n, n > 1 ? await previousBodies(contact, n) : [])
+        ? await claudeDraft(view, input.model, n, n > 1 ? await previousBodies(contact, n) : [], hoursSeen)
         : n === 1
           ? templateDraft(contact, fieldEnv.signer())
           : followupTemplate(n, { name: contact.name, subject: contact.subject, lane: contact.lane }, fieldEnv.signer());
@@ -144,7 +170,7 @@ export async function contactStep(id: string, raw: StepInput, operator: Operator
     aceCanSend: fieldEnv.aceCanSend(),
     suppressed: action.type === "approve" ? Boolean(await blockingSuppression(contact.email, contact.id)) : false,
     now: new Date().toISOString(),
-    extraLint: contact.lane === "website" && n === 1 ? websiteEmail1Lint(view.body) : [],
+    extraLint: n === 1 ? (contact.lane === "website" ? websiteEmail1Lint(view.body) : coreEmail1Lint(view.body)) : [],
   });
   if (!result.ok) return fail(result.status, result.error);
 
@@ -178,7 +204,7 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   if (!sv.ok) return sv;
   const { contact, view } = sv.data;
   const suppressed = Boolean(await blockingSuppression(contact.email, contact.id));
-  const gate = sendError(view, { operator, aceCanSend: fieldEnv.aceCanSend(), suppressed, now: new Date().toISOString(), extraLint: contact.lane === "website" && n === 1 ? websiteEmail1Lint(view.body) : [] });
+  const gate = sendError(view, { operator, aceCanSend: fieldEnv.aceCanSend(), suppressed, now: new Date().toISOString(), extraLint: n === 1 ? (contact.lane === "website" ? websiteEmail1Lint(view.body) : coreEmail1Lint(view.body)) : [] });
   if (gate) return fail(gate.status, gate.error);
   if (draftHash !== view.approvedHash) return fail(409, "The draft you reviewed isn't the approved draft. Refresh and review.");
   if (n > 1) {

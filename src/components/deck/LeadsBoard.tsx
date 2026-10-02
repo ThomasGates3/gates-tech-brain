@@ -10,7 +10,7 @@ import { callTool } from "@/lib/ux/tools";
 interface Lead {
   contact_id: string; business: string; contact_name: string | null; email: string; lane: "core" | "website"; source: string; tier: "High" | "Med" | "Soft";
   email1_status: string; nick_verdict: string | null; nick_note: string | null; approved: boolean; sent_at: string | null; subject: string | null;
-  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[];
+  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[]; hold_reason: string | null; revise_pending: boolean;
   duplicates: { contact_id: string; source: string; tier: string; email1_status: string }[]; next_action: string;
 }
 interface Counts { core: number; website: number; drafted: number; awaitingNick: number; passAwaitingApprove: number; approvedUnsent: number; softHold: number; total: number; duplicates: number }
@@ -22,6 +22,7 @@ const STATUS_STYLE: Record<string, string> = {
   PASS: "bg-[var(--accent)]/15 text-[var(--accent)]", approved: "bg-emerald-400/15 text-emerald-300", sent: "bg-emerald-400/5 text-emerald-200/70",
   hold: "bg-amber-400/10 text-amber-200", kill: "bg-red-500/10 text-red-300",
 };
+const HOLD_LABEL: Record<string, string> = { soft: "soft", no_published_hours: "needs hours", thomas: "Thomas", other: "other" };
 const ACTION_HOT = /Approve|Nick audit|draft|Fix copy|send|Duplicate/i;
 const sel = "min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200 outline-none focus:border-[var(--accent)]/60";
 
@@ -74,7 +75,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
 
   const c = data?.counts;
   const warmed = Boolean(data?.gates.domainWarmed);
-  const nickReady = (data?.leads ?? []).filter((l) => l.email1_status === "drafted" && l.lint_issues === 0).length;
+  const nickReady = (data?.leads ?? []).filter((l) => l.email1_status === "drafted" && l.lint_issues === 0 && !l.revise_pending).length;
   const [nickBusy, setNickBusy] = useState(false);
   const [nickMsg, setNickMsg] = useState<string | null>(null);
   const sendToNick = async () => {
@@ -162,7 +163,11 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                   <td className="px-2 py-2"><Badge testId="lead-lane" className={l.lane === "website" ? "bg-[var(--accent)]/15 text-[var(--accent-soft)]" : "bg-white/5 text-slate-300"}>{l.lane}</Badge></td>
                   <td className="px-2 py-2 font-mono text-[11px] text-slate-400">{l.source}</td>
                   <td className="px-2 py-2 font-mono text-[11px] text-slate-300">{l.tier}</td>
-                  <td className="px-2 py-2"><Badge testId="lead-status" className={STATUS_STYLE[l.email1_status] ?? ""}>{l.email1_status}</Badge>{l.lint_issues > 0 && <span className="ml-1 font-mono text-[10px] text-red-300">lint {l.lint_issues}</span>}</td>
+                  <td className="px-2 py-2">
+                    <Badge testId="lead-status" className={STATUS_STYLE[l.email1_status] ?? ""}>{l.email1_status}</Badge>
+                    {l.hold_reason && <Badge testId="lead-hold-reason" className="ml-1 bg-amber-400/10 text-amber-200/90">{HOLD_LABEL[l.hold_reason] ?? l.hold_reason}</Badge>}
+                    {l.lint_issues > 0 && <span className="ml-1 font-mono text-[10px] text-red-300">lint {l.lint_issues}</span>}
+                  </td>
                   <td className="max-w-[180px] px-2 py-2 text-[11px] text-slate-400" title={l.nick_note ?? undefined}>{l.nick_verdict ? <><span className="text-slate-200">{l.nick_verdict}</span>{l.nick_note ? ` · ${l.nick_note.slice(0, 60)}` : ""}</> : "—"}</td>
                   <td className="max-w-[220px] px-2 py-2 text-[11px]">
                     {l.subject ? <button onClick={() => toggle(l.contact_id)} className="max-w-full truncate text-left text-slate-300 underline decoration-white/20 underline-offset-2 hover:text-[var(--accent-soft)]" title="Read the email">{l.subject}</button> : <span className="text-slate-500">—</span>}
@@ -170,6 +175,11 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                   <td className={`max-w-[200px] px-2 py-2 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`} data-testid="lead-next">{l.next_action}</td>
                   <td className="px-2 py-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></td>
                 </tr>
+                {l.nick_verdict === "REVISE" && l.nick_note && l.email1_status !== "sent" && (
+                  <tr data-testid={`nick-note-${l.contact_id}`}><td colSpan={9} className="px-2 pb-2 pt-0">
+                    <p className="rounded-md border border-amber-400/20 bg-amber-400/5 px-2.5 py-1.5 text-[12px] text-amber-100/90"><span className="font-medium">Nick REVISE{l.revise_pending ? " (not rewritten yet)" : " (rewritten)"}:</span> {l.nick_note}</p>
+                  </td></tr>
+                )}
                 {openId === l.contact_id && (
                   <tr className="bg-white/[0.02]"><td colSpan={9} className="px-2 pb-4 pt-1"><DraftPreview contactId={l.contact_id} version={version} /></td></tr>
                 )}
@@ -197,6 +207,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                 <Badge className="bg-white/5 text-slate-400">{l.source}</Badge>
                 <Badge className="bg-white/5 text-slate-400">{l.tier}</Badge>
                 {l.nick_verdict && <Badge className="bg-white/5 text-slate-300">Nick {l.nick_verdict}</Badge>}
+                {l.hold_reason && <Badge className="bg-amber-400/10 text-amber-200/90">{HOLD_LABEL[l.hold_reason] ?? l.hold_reason}</Badge>}
                 {l.duplicate_of.length > 0 && <Badge className="bg-amber-400/15 text-amber-200">dup</Badge>}
               </div>
               {l.subject && (
@@ -206,6 +217,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
               )}
               {openId === l.contact_id && <div className="mt-2"><DraftPreview contactId={l.contact_id} version={version} /></div>}
               <p className={`mt-1.5 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>→ {l.next_action}</p>
+              {l.nick_verdict === "REVISE" && l.nick_note && <p className="mt-1.5 rounded-md bg-amber-400/5 px-2 py-1 text-[12px] text-amber-100/90">Nick: {l.nick_note}</p>}
               <div className="mt-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></div>
             </div>
           ))}

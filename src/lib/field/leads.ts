@@ -30,6 +30,9 @@ export interface Lead {
   lint_issues: number;
   suppressed: boolean;
   replied: boolean;
+  hold_reason: string | null;
+  /** Nick sent this exact draft back (REVISE) and it hasn't been rewritten yet. */
+  revise_pending: boolean;
   duplicate_of: string[];
   duplicates: { contact_id: string; source: string; tier: Priority; email1_status: Email1Status }[];
   next_action: string;
@@ -56,8 +59,9 @@ export function nextAction(c: FieldContact & { suppressed?: boolean }, status: E
   switch (status) {
     case "undrafted": return c.lane === "website" ? "Prospectacle draft" : "Darrell draft";
     case "drafted":
+      if (c.nickVerdict === "REVISE" && c.nickHash && c.nickHash === c.draftHash) return "Rewrite per Nick's note";
       if (lint) return `Fix copy lint (${lint} issue${lint > 1 ? "s" : ""})`;
-      return c.nickVerdict === "REVISE" ? "Revise per Nick, then Nick audit" : "Nick audit";
+      return c.nickVerdict === "REVISE" ? "Rewritten: Nick audit" : "Nick audit";
     case "atNick": return "Nick audit";
     case "PASS": return "Thomas Approve";
     case "approved":
@@ -66,7 +70,9 @@ export function nextAction(c: FieldContact & { suppressed?: boolean }, status: E
     case "sent":
       if (c.repliedAt) return "Replied: Lisa handoff";
       return ctx.nextStepDue ? `Follow-up due ${ctx.nextStepDue}` : "Sequence complete";
-    case "hold": return c.priority === "Soft" ? "Soft hold" : "On hold";
+    case "hold":
+      if (c.holdReason === "no_published_hours") return "Hold: needs published hours";
+      return c.priority === "Soft" ? "Soft hold" : c.holdReason === "thomas" ? "Held by Thomas" : "On hold";
     case "kill": return "Killed";
   }
 }
@@ -108,6 +114,8 @@ export async function leadsFor(f: LeadFilter = {}) {
       email1_status: status, nick_verdict: c.nickVerdict, nick_note: c.nickNote,
       approved: Boolean(c.approvedHash && c.approvedHash === c.draftHash), sent_at: c.sentAt, subject: c.draftHash ? c.subject : null,
       lint_issues: lint, suppressed: c.suppressed && status !== "sent", replied: Boolean(c.repliedAt),
+      hold_reason: c.stage === "hold" ? (c.holdReason ?? (c.priority === "Soft" ? "soft" : "other")) : null,
+      revise_pending: c.nickVerdict === "REVISE" && Boolean(c.nickHash) && c.nickHash === c.draftHash,
       duplicate_of: [], duplicates: [],
       next_action: nextAction(c, status, lint, { ...ctxBase, nextStepDue }), pack_date: c.packDate,
     };
