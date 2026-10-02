@@ -59,3 +59,4 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ Phone pass: no sideways scroll on any page, 44px tap targets; Field queue min-w fix
 ✓ Discord pings with on/off switches in Settings; 'all emails out' on by default; 6 suggested pings off until approved
 ✓ Read the email: /leads rows expand to the full draft (subject, body, footer, Nick, copy check); dashboard leads open /leads?open=<id>
+✓ Field harden: core hours honesty (opener needs day+time, vague-hours ban, Friday contradiction, no_published_hours auto-hold), website plain speech (jargon/put-down ban), scout same-day auto-draft, Nick queue skips unchanged REVISE, hold reason badges, Nick note on REVISE rows

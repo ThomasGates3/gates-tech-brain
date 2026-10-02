@@ -8,6 +8,7 @@
  * Activity row; pass `agent` (roster id) so that bot shows as active.
  */
 import { generateText, stepCountIs } from "ai";
+import { after } from "next/server";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { contactStep, sendContact, loadPack, addSuppression } from "@/lib/field/actions";
@@ -109,6 +110,19 @@ async function runBatch<T extends { contact_id: string }>(items: T[], fn: (item:
     }
   }
   return { total: items.length, succeeded: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results };
+}
+
+/** Run work after the response is sent (Next `after`), or inline outside a request. */
+function runAfter(fn: () => Promise<void>) {
+  try { after(fn); } catch { void fn(); }
+}
+
+/** Same-day scout draft: Claude (Sonnet) in the lead's lane; core holds itself if no published hours. */
+async function autoDraftLead(id: string, name: string): Promise<void> {
+  const r = await contactStep(id, { action: "generate", mode: "claude", model: "sonnet" }, "ace");
+  if (!r.ok) { await recordActivity({ kind: "alert", target: `Auto-draft for ${name} didn't go through`, because: r.error.slice(0, 200), agent: "brain" }); return; }
+  if (r.data.held) return; // hold already logged
+  await recordActivity({ kind: "updated", target: `Brain drafted Email 1 for ${name}`, because: r.data.lint.length ? `${r.data.lint.length} copy issue(s) to fix` : "same-day scout draft, copy check clean", agent: "darrell" });
 }
 
 const PLACEHOLDER_EMAIL = /@(example\.(com|org|net)|test\.com|domain\.com|email\.com)$|^(test|noreply|no-reply|placeholder|unknown|n\/?a)@/i;
@@ -331,6 +345,7 @@ export const TOOLS = [
       notes: z.string().max(2000).optional(),
       source: z.enum(["ashley", "prospectacle", "notion", "manual"]).optional().describe("Default: your agent id if ashley/prospectacle, else manual"),
       date: DateStr,
+      auto_draft: z.boolean().default(true).describe("Scout High/Med leads get a same-day Brain draft (core: hours check first; website: three fixes). false to skip."),
     }),
     kind: "updated",
     run: async (a) => {
@@ -341,7 +356,9 @@ export const TOOLS = [
       if (source === "ashley" && lane !== "core") throw new ToolError(400, "Ashley leads are the core lane (missed-call Field).");
       if (source === "prospectacle" && lane !== "website") throw new ToolError(400, "Prospectacle leads are the website lane.");
       const { contact, created } = await upsertContact({ contactId: a.contact_id, business: a.business, contactName: a.contact_name, email: a.email, tier: a.tier, lane, siteUrl: a.site_url, gap: a.gap, city: a.city, notes: a.notes, source, date: a.date ?? todayIn() });
-      return { created, contact_id: contact.id, name: contact.name, email: contact.email, lane: contact.lane, source: contact.source, priority: contact.priority, stage: contact.stage, pack_date: contact.packDate, on_queue: contact.priority !== "Soft" };
+      const autoDraft = a.auto_draft && (source === "ashley" || source === "prospectacle") && contact.priority !== "Soft" && contact.stage === "new";
+      if (autoDraft) runAfter(() => autoDraftLead(contact.id, contact.name));
+      return { created, contact_id: contact.id, name: contact.name, email: contact.email, lane: contact.lane, source: contact.source, priority: contact.priority, stage: contact.stage, pack_date: contact.packDate, on_queue: contact.priority !== "Soft", auto_draft: autoDraft ? "queued" : "skipped" };
     },
   }),
   tool({
@@ -438,8 +455,9 @@ export const TOOLS = [
     kind: "queried",
     run: async ({ date, lane, submit }, ctx) => {
       const l = await leadsFor({ date: date ?? todayIn(), lane });
-      const clean = l.leads.filter((x) => x.email1_status === "drafted" && x.lint_issues === 0);
-      const blocked = l.leads.filter((x) => x.email1_status === "drafted" && x.lint_issues > 0).map((x) => ({ contact_id: x.contact_id, business: x.business, lint_issues: x.lint_issues }));
+      // Only first-time drafts or rewrites since Nick's last verdict; never re-queue an unchanged REVISE.
+      const clean = l.leads.filter((x) => x.email1_status === "drafted" && x.lint_issues === 0 && !x.revise_pending);
+      const blocked = l.leads.filter((x) => x.email1_status === "drafted" && (x.lint_issues > 0 || x.revise_pending)).map((x) => ({ contact_id: x.contact_id, business: x.business, lint_issues: x.lint_issues, revise_pending: x.revise_pending, nick_note: x.nick_note }));
       const submitted: string[] = [];
       if (submit) for (const x of clean) if ((await contactStep(x.contact_id, { action: "submit_nick" }, ctx.operator)).ok) submitted.push(x.contact_id);
       const ids = [...new Set([...clean.map((x) => x.contact_id), ...l.leads.filter((x) => x.email1_status === "atNick").map((x) => x.contact_id)])];

@@ -114,7 +114,7 @@ export async function importRows(rows: SourceRow[], source: "notion" | "csv", fa
         ...(priority !== twin.priority && { notes: [twin.notes, `Notion tier ${priority}; kept ${tier}.`].filter(Boolean).join(" ") }),
       };
       if (hasDraft && !twin.draftHash && twin.stage === "new") Object.assign(patch, { subject: row.subject, body: row.body, draftSource: "notion", draftHash: draftHash(row.subject.trim(), row.body.trim()), stage: "drafted" });
-      if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(twin.stage)) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+      if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(twin.stage)) Object.assign(patch, { stage: "hold", holdReason: "soft", approvedHash: null, approvedAt: null, approvedBy: null });
       await patchContact(twin.id, patch);
       summary.updated++;
       continue;
@@ -134,6 +134,7 @@ export async function importRows(rows: SourceRow[], source: "notion" | "csv", fa
         priority,
         packDate: row.date || fallbackDate,
         stage: initialStage(row, priority, hasDraft),
+        holdReason: initialStage(row, priority, hasDraft) === "hold" ? (priority === "Soft" ? "soft" : "other") : null,
         subject: hasDraft ? row.subject : "",
         body: hasDraft ? row.body : "",
         draftSource: hasDraft ? (source as DraftSource) : null,
@@ -150,7 +151,7 @@ export async function importRows(rows: SourceRow[], source: "notion" | "csv", fa
     if (open) {
       if (row.status === "Sent") patch.stage = "sent"; // sent outside the console — never send twice
       else if (row.status === "Kill") patch.stage = "kill";
-      else if (row.status === "Hold" || priority === "Soft") patch.stage = "hold";
+      else if (row.status === "Hold" || priority === "Soft") Object.assign(patch, { stage: "hold", holdReason: priority === "Soft" ? "soft" : "other" });
       if (norm(prev.email) !== norm(row.email) && (prev.stage === "nick" || prev.stage === "approved")) {
         // Recipient changed under an audit/approval — both must be redone.
         Object.assign(patch, { stage: patch.stage ?? "drafted", nickVerdict: null, nickHash: null, approvedHash: null, approvedAt: null, approvedBy: null });
@@ -230,14 +231,14 @@ export async function upsertContact(u: UpsertInput): Promise<{ contact: FieldCon
     const c = toContact(prev);
     const unsent = c.stage !== "sent" && c.stage !== "sending";
     const patch: Partial<FieldContact> = { ...facts, ...(unsent && { packDate: u.date }) };
-    if (u.tier === "Soft" && (c.stage === "new" || c.stage === "drafted" || c.stage === "nick" || c.stage === "approved")) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+    if (u.tier === "Soft" && (c.stage === "new" || c.stage === "drafted" || c.stage === "nick" || c.stage === "approved")) Object.assign(patch, { stage: "hold", holdReason: "soft", approvedHash: null, approvedAt: null, approvedBy: null });
     if (norm(c.email) !== email && (c.stage === "nick" || c.stage === "approved")) Object.assign(patch, { stage: "drafted", nickVerdict: null, nickHash: null, approvedHash: null, approvedAt: null, approvedBy: null });
     return { contact: await patchContact(c.id, patch), created: false };
   }
   const id = u.contactId ?? `${u.source}_${createHash("sha1").update(`${email}|${u.business.toLowerCase()}`).digest("hex").slice(0, 16)}`;
   const [r] = await db
     .insert(fieldContacts)
-    .values({ id, source: u.source, notionPageId: null, city: u.city ?? "", batch: `${u.date} ${u.lane}`, gap: u.gap ?? "", packDate: u.date, stage: u.tier === "Soft" ? "hold" : "new", updatedAt: now, ...facts })
+    .values({ id, source: u.source, notionPageId: null, city: u.city ?? "", batch: `${u.date} ${u.lane}`, gap: u.gap ?? "", packDate: u.date, stage: u.tier === "Soft" ? "hold" : "new", holdReason: u.tier === "Soft" ? "soft" : null, updatedAt: now, ...facts })
     .returning();
   return { contact: toContact(r), created: true };
 }
@@ -300,7 +301,7 @@ export async function mergeContacts(keepId: string, dropId: string): Promise<Fie
     notionPageId: keep.notionPageId ?? drop.notionPageId,
   };
   if (!keep.draftHash && drop.draftHash) Object.assign(patch, { subject: drop.subject, body: drop.body, draftSource: drop.draftSource, draftHash: drop.draftHash, stage: keep.stage === "new" ? "drafted" : keep.stage, nickVerdict: null, nickHash: null });
-  if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(patch.stage ?? keep.stage)) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+  if (tier === "Soft" && ["new", "drafted", "nick", "approved"].includes(patch.stage ?? keep.stage)) Object.assign(patch, { stage: "hold", holdReason: "soft", approvedHash: null, approvedAt: null, approvedBy: null });
   const merged = await patchContact(keepId, patch);
   await db.delete(fieldContacts).where(eq(fieldContacts.id, dropId));
   return merged;

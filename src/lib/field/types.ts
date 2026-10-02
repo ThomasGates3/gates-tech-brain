@@ -51,7 +51,10 @@ export interface FieldContact {
   siteUrl: string | null;
   notes: string | null;
   repliedAt: string | null;
+  holdReason: HoldReason | null;
 }
+
+export type HoldReason = "soft" | "no_published_hours" | "thomas" | "other";
 
 export interface SendLogEntry {
   id: string;

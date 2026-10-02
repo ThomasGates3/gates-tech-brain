@@ -113,6 +113,7 @@ export const fieldContacts = pgTable("field_contacts", {
   siteUrl: text("site_url"),
   notes: text("notes"),
   repliedAt: text("replied_at"), // any inbound reply ends the sequence
+  holdReason: text("hold_reason"), // soft | no_published_hours | thomas | other (null when not on hold)
 });
 
 /** Sequence steps Email 2–4 (Email 1 lives on field_contacts). One row per contact × step. */
