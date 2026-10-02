@@ -69,7 +69,7 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
       <ul className={`mb-3 space-y-1.5 ${fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`} data-testid="leads-top">
         {top.map((l) => (
           <li key={l.contact_id} className="flex items-center gap-2">
-            <a href={`/leads?status=${l.email1_status}`} className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03] lg:min-h-0">
+            <a href={`/leads?open=${encodeURIComponent(l.contact_id)}`} title="Read the email" className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03] lg:min-h-0">
               <span className="truncate text-[13px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span></span>
               <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>
             </a>
