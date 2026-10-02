@@ -5,16 +5,10 @@
  * DELETE ?id= → revoke
  */
 import { z } from "zod";
-import { cookies } from "next/headers";
-import { GATE_COOKIE, gateEnabled, readSession } from "@/lib/gate";
+import { isThomasSession as isThomas } from "@/lib/session";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/api-keys";
 import { recordActivity } from "@/lib/activity";
 
-async function isThomas() {
-  if (!gateEnabled()) return process.env.NODE_ENV !== "production";
-  const s = await readSession((await cookies()).get(GATE_COOKIE)?.value);
-  return s?.operator === "thomas";
-}
 const deny = () => Response.json({ ok: false, error: "Only Thomas (signed in) can manage API keys." }, { status: 403 });
 
 export async function GET() {

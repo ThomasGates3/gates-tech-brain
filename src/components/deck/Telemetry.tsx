@@ -125,7 +125,7 @@ export function ActivityFeed({
         <div className="flex items-center gap-2">
           <span className="h-1 w-4 bg-[var(--accent)]" />
           {href ? (
-            <a href={href} data-testid="activity-open" className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">Activity →</a>
+            <a href={href} data-testid="activity-open" className="inline-flex min-h-[44px] items-center font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">Activity →</a>
           ) : (
             <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
           )}

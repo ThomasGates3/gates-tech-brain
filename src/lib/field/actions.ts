@@ -15,6 +15,7 @@ import { fetchPack } from "./notion";
 import { csvToRows } from "./csv";
 import { replyEmail, sendEmail } from "./agentmail";
 import { getGates } from "./gates";
+import { pingCapReached, pingIfDayDone, pingSendFailed } from "./pings";
 import { dueDate } from "./sequence";
 import { addSuppression, blockingSuppression, claimForSend, getContact, getStep, importRows, lastSent, patchContact, patchStep, recordSend, releaseSend, sentSince } from "./store";
 import { apply, sendError, type Action } from "./workflow";
@@ -190,7 +191,10 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   // Approve ≠ send: nothing goes out until Thomas confirms the cold domain is warmed (brain_set_gate).
   if (!gates.domainWarmed) return fail(423, "Domain warm-up not confirmed. Approved emails wait until Thomas sets domainWarmed.");
   const cap = gates.dailyCap;
-  if ((await sentSince(startOfTodayIso())) >= cap) return fail(429, `Daily send cap reached (${cap}). Protecting the cold domain's reputation.`);
+  if ((await sentSince(startOfTodayIso())) >= cap) {
+    void pingCapReached(cap);
+    return fail(429, `Daily send cap reached (${cap}). Protecting the cold domain's reputation.`);
+  }
   if (!(await claimForSend(id, view.approvedHash!, n))) return fail(409, "This email is already being sent or was changed. Refresh.");
 
   let sent;
@@ -205,6 +209,7 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await releaseSend(id, msg, n);
+    void pingSendFailed(contact.name, n, msg);
     return fail(502, msg);
   }
 
@@ -213,6 +218,7 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
     const log = await recordSend({ ...contact, subject: view.subject }, { ...sent, inbox: fieldEnv.agentmailInbox(), operator }, n);
     audit.record({ action: "email_send", actor: operator, target: contact.email, detail: { contactId: contact.id, emailN: n, messageId: sent.messageId } });
     void recordActivity({ kind: "sent", target: `Email ${n} → ${contact.name}`, because: `Nick PASS + ${view.approvedBy ?? "thomas"} approve`, agent: "ace" });
+    void pingIfDayDone();
     return { ok: true, data: { log, notion: n === 1 ? await syncNotion(contact, { status: "Sent" }) : "skipped" } };
   } catch (e) {
     return fail(500, `SENT via AgentMail (message ${sent.messageId}) but logging failed: ${e instanceof Error ? e.message : String(e)}. Do NOT resend; add the log row manually.`);

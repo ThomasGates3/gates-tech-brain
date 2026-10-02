@@ -106,6 +106,10 @@ Ace answers "what came in today for website vs core, and what's drafted?" from `
 
 **Navigation (2026-10-02):** a top bar on every page: Dashboard · Leads · Field · Activity · Automations · Operations · Settings. The dashboard fits one screen with no page scroll (activity left; next up, today's leads with inline Approve, and chat center; scoreboard, Go-to links and system right). Activity reads in plain English ("Darrell drafted Email 1 for Gizel Atlanta"); bot lookups are hidden unless you tick "Show lookups" on /activity.
 
+**Discord pings (Settings → Discord pings):** each can be switched on/off and fires at most once per day (or once per reply). On by default: **All of today's emails are out** (right after the last approved email sends). Off until Thomas switches them on: daily send cap hit, a send failed, someone replied wanting to talk, drafts waiting on approval (7am), follow-ups due (7am), approved emails left unsent (6pm weekdays). Budget warnings ($3 / $5.50) stay as before.
+
+**Phone:** every page works at phone width (no sideways scroll; 44px tap targets).
+
 **Control Center pages:** the dashboard shows a compact **Today's leads** card (counts, three most urgent leads, Load Notion pack, Template-draft undrafted) that opens **`/leads`**: the full board with filters and per-lead buttons (draft, Nick PASS/REVISE/KILL, Approve, Send once warmed, Hold/Release, Merge duplicate). Scoreboard tiles open `/leads` pre-filtered; the scoreboard has a two-click **Confirm warm-up** (Thomas only). The Activity card opens **`/activity`** (filter by agent and kind). Every button calls the same `/api/v1/tools` the bots use, so the same gates apply and each click is logged.
 
 All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.

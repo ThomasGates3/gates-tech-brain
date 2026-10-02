@@ -38,7 +38,7 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
   };
   return (
     <div data-testid="scoreboard" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur">
-      <a href="/leads" className="mb-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
+      <a href="/leads" className="mb-3 flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
         <span className="h-1 w-4 bg-[var(--accent)]" />Field scoreboard →
       </a>
       <div className="grid grid-cols-2 gap-2">
