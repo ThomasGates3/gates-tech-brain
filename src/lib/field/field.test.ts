@@ -73,7 +73,7 @@ test("Claude prompt carries the full outreach brief", () => {
 
 test("CAN-SPAM footer (address + opt-out) is appended to the outgoing body", () => {
   const out = composeOutgoing("Hi.\n", canSpamFooter("3800 Camp Creek Pkwy, Atlanta, GA 30331"));
-  assert.equal(out, `Hi.\n\n3800 Camp Creek Pkwy, Atlanta, GA 30331\nReply "stop" and I won't write again.`);
+  assert.equal(out, `Hi.\n\n3800 Camp Creek Pkwy, Atlanta, GA 30331\nReply "no" and I won't write again.`);
 });
 
 // ── Copy lint (outreach brief "never assert") ───────────────────────────────
@@ -260,4 +260,26 @@ test("inbound classifier: opt-out, not-now, auto-reply, bounce, real reply", () 
   assert.equal(classifyReply("Delivery Status Notification (Failure)", "mailer-daemon@googlemail.com").action, "ignore");
   assert.equal(classifyReply("Yes, how does the text-back work with Boulevard?", "a@b.com").action, "reply_handoff_lisa");
   assert.equal(firstWords("Sounds good\n> quoted\nOn Mon, X wrote:\nold"), "Sounds good");
+});
+
+import { websiteEmail1Lint, lintDraft } from "./lint";
+import { normBusiness } from "./leads";
+
+test("website Email 1: exactly three numbered fixes, no links, no attachments", () => {
+  const good = "Your site only has a contact page.\n\nThree things I'd fix:\n1. Add a Book Now button at the top.\n2. List your services on the homepage.\n3. Put your hours under the phone number.\n\nWorth a look?\n\nThomas Gates III\nGates Technologies · gatestech.solutions";
+  assert.deepEqual(websiteEmail1Lint(good), []);
+  assert.deepEqual(lintDraft("three fixes for your site", good, { lane: "website" }), []);
+  assert.ok(websiteEmail1Lint(good.replace("3. Put your hours under the phone number.\n", "")).some((i) => i.rule === "Website fixes"));
+  assert.ok(websiteEmail1Lint(good + "\n4. One more.").some((i) => i.rule === "Website fixes"));
+  assert.ok(websiteEmail1Lint(good + "\nSee https://example.org/audit").some((i) => i.rule === "Link in website Email 1"));
+  assert.ok(websiteEmail1Lint(good + "\nI attached a PDF.").some((i) => i.rule === "Attachment mention"));
+  // core lane and follow-ups don't need the three fixes
+  assert.deepEqual(lintDraft("calls after you close", "Worth a look?", { lane: "core" }), []);
+  assert.deepEqual(lintDraft("x", "Following up. Worth a look?", { lane: "website", emailN: 2 }), []);
+});
+
+test("business-name matching for duplicates", () => {
+  assert.equal(normBusiness("Heaven's Handyman (Heavens Handyman LLC)"), "heaven s handyman");
+  assert.equal(normBusiness("All Trades Inc. (All Trades General Contracting)"), "all trades");
+  assert.equal(normBusiness("Kulani Spa & Wellness"), "kulani spa wellness");
 });

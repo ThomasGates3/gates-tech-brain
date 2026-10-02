@@ -5,7 +5,7 @@
  */
 import { todayIn, fieldEnv } from "./config";
 import { listQueue, listSteps } from "./store";
-import { lintCopy } from "./lint";
+import { lintDraft } from "./lint";
 import { getGates } from "./gates";
 import { dueDate } from "./sequence";
 import type { FieldContact, Lane, Priority } from "./types";
@@ -31,6 +31,7 @@ export interface Lead {
   suppressed: boolean;
   replied: boolean;
   duplicate_of: string[];
+  duplicates: { contact_id: string; source: string; tier: Priority; email1_status: Email1Status }[];
   next_action: string;
   pack_date: string;
 }
@@ -70,6 +71,20 @@ export function nextAction(c: FieldContact & { suppressed?: boolean }, status: E
   }
 }
 
+/** Business name for matching: lowercase, no parentheticals, punctuation or company suffixes. */
+export function normBusiness(name: string): string {
+  return name.toLowerCase().replace(/\(.*?\)/g, " ").replace(/&/g, " ").replace(/[^a-z0-9 ]+/g, " ")
+    .split(/\s+/).filter((w) => w && !["llc", "inc", "co", "corp", "ltd", "pllc", "the", "and"].includes(w)).join(" ");
+}
+const sameBusiness = (a: string, b: string) => {
+  const x = normBusiness(a), y = normBusiness(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [s, l] = x.length <= y.length ? [x, y] : [y, x];
+  return s.split(" ").length >= 2 && l.startsWith(`${s} `);
+};
+const PROGRESS: Record<Email1Status, number> = { sent: 7, approved: 6, PASS: 5, atNick: 4, drafted: 3, undrafted: 2, hold: 1, kill: 0 };
+
 export interface LeadFilter { date?: string; lane?: Lane; status?: Email1Status; tier?: Priority }
 
 export async function leadsFor(f: LeadFilter = {}) {
@@ -79,11 +94,9 @@ export async function leadsFor(f: LeadFilter = {}) {
   const steps = await listSteps(sentIds);
   const ctxBase = { domainWarmed: gates.domainWarmed, aceCanSend: fieldEnv.aceCanSend() };
 
-  const byEmail = new Map<string, string[]>();
-  for (const c of contacts) byEmail.set(c.email.toLowerCase(), [...(byEmail.get(c.email.toLowerCase()) ?? []), c.id]);
-  const all: Lead[] = contacts.map((c) => {
+  const rows: Lead[] = contacts.map((c) => {
     const status = email1Status(c);
-    const lint = c.draftHash ? lintCopy(c.subject, c.body).length : 0;
+    const lint = c.draftHash ? lintDraft(c.subject, c.body, { lane: c.lane, emailN: 1 }).length : 0;
     let nextStepDue: string | null = null;
     if (status === "sent" && c.sentAt) {
       const done = new Set(steps.filter((s) => s.contactId === c.id && s.stage === "sent").map((s) => s.n));
@@ -95,10 +108,30 @@ export async function leadsFor(f: LeadFilter = {}) {
       email1_status: status, nick_verdict: c.nickVerdict, nick_note: c.nickNote,
       approved: Boolean(c.approvedHash && c.approvedHash === c.draftHash), sent_at: c.sentAt, subject: c.draftHash ? c.subject : null,
       lint_issues: lint, suppressed: c.suppressed && status !== "sent", replied: Boolean(c.repliedAt),
-      duplicate_of: (byEmail.get(c.email.toLowerCase()) ?? []).filter((id) => id !== c.id),
+      duplicate_of: [], duplicates: [],
       next_action: nextAction(c, status, lint, { ...ctxBase, nextStepDue }), pack_date: c.packDate,
     };
   });
+
+  // Group duplicates (same email or same business), keep one primary per group:
+  // High/Med beats Soft (Soft never hides a real lead), then pipeline progress, then the Notion row.
+  const parent = rows.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let i = 0; i < rows.length; i++)
+    for (let j = i + 1; j < rows.length; j++)
+      if (rows[i].email.toLowerCase() === rows[j].email.toLowerCase() || sameBusiness(rows[i].business, rows[j].business)) parent[find(j)] = find(i);
+  const groups = new Map<number, Lead[]>();
+  rows.forEach((r, i) => groups.set(find(i), [...(groups.get(find(i)) ?? []), r]));
+  const score = (l: Lead) => (l.tier !== "Soft" ? 100 : 0) + PROGRESS[l.email1_status] * 10 + (l.source === "notion" ? 1 : 0);
+  const all: Lead[] = [...groups.values()].map((g) => {
+    const [primary, ...dups] = [...g].sort((a, b) => score(b) - score(a));
+    if (!dups.length) return primary;
+    primary.duplicate_of = dups.map((d) => d.contact_id);
+    primary.duplicates = dups.map((d) => ({ contact_id: d.contact_id, source: d.source, tier: d.tier, email1_status: d.email1_status }));
+    if (primary.email1_status !== "sent") primary.next_action = `Merge ${dups.length} duplicate${dups.length > 1 ? "s" : ""}, then ${primary.next_action}`;
+    return primary;
+  });
+  all.sort((a, b) => contacts.findIndex((c) => c.id === a.contact_id) - contacts.findIndex((c) => c.id === b.contact_id));
 
   const by = (fn: (l: Lead) => boolean) => all.filter(fn).length;
   const counts = {
@@ -116,7 +149,6 @@ export async function leadsFor(f: LeadFilter = {}) {
     kill: by((l) => l.email1_status === "kill"),
     duplicates: by((l) => l.duplicate_of.length > 0),
   };
-  for (const l of all) if (l.duplicate_of.length && l.email1_status !== "sent") l.next_action = `Duplicate email: merge (brain_merge_contacts), then ${l.next_action}`;
   const leads = all.filter((l) => (!f.lane || l.lane === f.lane) && (!f.status || l.email1_status === f.status) && (!f.tier || l.tier === f.tier));
   return { date, counts, gates: { domainWarmed: gates.domainWarmed, warmNote: gates.warmNote, dailyCap: gates.dailyCap, aceCanSend: ctxBase.aceCanSend }, leads };
 }

@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { LeadActions } from "./LeadActions";
+import { callTool } from "@/lib/ux/tools";
 
 /** Control Center "Today's leads": every lead for a date with lane, state and next action (reads the Brain DB). */
 interface Lead {
   contact_id: string; business: string; contact_name: string | null; email: string; lane: "core" | "website"; source: string; tier: "High" | "Med" | "Soft";
   email1_status: string; nick_verdict: string | null; nick_note: string | null; approved: boolean; sent_at: string | null; subject: string | null;
-  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[]; next_action: string;
+  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[];
+  duplicates: { contact_id: string; source: string; tier: string; email1_status: string }[]; next_action: string;
 }
 interface Counts { core: number; website: number; drafted: number; awaitingNick: number; passAwaitingApprove: number; approvedUnsent: number; softHold: number; total: number; duplicates: number }
 interface Data { date: string; counts: Counts; sentToday: number; gates: { domainWarmed: boolean; warmNote: string; dailyCap: number }; leads: Lead[] }
@@ -55,9 +57,18 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
   }, [load]);
 
   const c = data?.counts;
-  // Duplicate rows merge into their Notion twin (it has the draft + Notion link).
-  const notionTwin = (l: Lead) => data?.leads.find((x) => l.duplicate_of.includes(x.contact_id) && x.source === "notion")?.contact_id;
   const warmed = Boolean(data?.gates.domainWarmed);
+  const nickReady = (data?.leads ?? []).filter((l) => l.email1_status === "drafted" && l.lint_issues === 0).length;
+  const [nickBusy, setNickBusy] = useState(false);
+  const [nickMsg, setNickMsg] = useState<string | null>(null);
+  const sendToNick = async () => {
+    setNickBusy(true); setNickMsg(null);
+    try {
+      const r = await callTool<{ submitted: number; count: number; needs_fix: unknown[] }>("brain_nick_queue", { agent: "ace", submit: true, ...(lane && { lane }), ...(date && { date }) });
+      setNickMsg(`${r.submitted} sent to Nick (${r.count} in his pack)${r.needs_fix.length ? `; ${r.needs_fix.length} need copy fixes first` : ""}.`);
+      await load();
+    } catch (e) { setNickMsg(e instanceof Error ? e.message : String(e)); } finally { setNickBusy(false); }
+  };
   const strip: [string, string, boolean?][] = c
     ? [
         ["Core / website", `${c.core} / ${c.website}`],
@@ -95,6 +106,10 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
         <select value={tier} onChange={(e) => setTier(e.target.value)} data-testid="board-tier" aria-label="Tier" className={sel}>
           <option value="">All tiers</option><option>High</option><option>Med</option><option>Soft</option>
         </select>
+        <button onClick={sendToNick} disabled={nickBusy || !nickReady} data-testid="board-send-nick" title="Moves every clean draft to Nick's queue (brain_nick_queue)" className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40">
+          {nickBusy ? "Sending…" : `Send ${nickReady} drafted to Nick`}
+        </button>
+        {nickMsg && <span className="self-center text-[12px] text-slate-300" data-testid="board-nick-msg">{nickMsg}</span>}
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8" data-testid="board-counts">
@@ -123,6 +138,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                     <a href="/field" className="text-slate-100 hover:text-[var(--accent-soft)]">{l.business}</a>
                     {l.duplicate_of.length > 0 && <Badge testId="lead-dup" className="ml-1.5 bg-amber-400/15 text-amber-200">dup</Badge>}
                     <p className="text-[11px] text-slate-500">{[l.contact_name, l.email].filter(Boolean).join(" · ")}</p>
+                    {l.duplicates.length > 0 && <p className="text-[10px] text-amber-200/80">also: {l.duplicates.map((d) => `${d.source} ${d.tier} ${d.email1_status}`).join(", ")}</p>}
                   </td>
                   <td className="px-2 py-2"><Badge testId="lead-lane" className={l.lane === "website" ? "bg-[var(--accent)]/15 text-[var(--accent-soft)]" : "bg-white/5 text-slate-300"}>{l.lane}</Badge></td>
                   <td className="px-2 py-2 font-mono text-[11px] text-slate-400">{l.source}</td>
@@ -131,7 +147,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                   <td className="max-w-[180px] px-2 py-2 text-[11px] text-slate-400" title={l.nick_note ?? undefined}>{l.nick_verdict ? <><span className="text-slate-200">{l.nick_verdict}</span>{l.nick_note ? ` · ${l.nick_note.slice(0, 60)}` : ""}</> : "—"}</td>
                   <td className="max-w-[220px] truncate px-2 py-2 text-[11px] text-slate-400" title={l.subject ?? undefined}>{l.subject ?? "—"}</td>
                   <td className={`max-w-[200px] px-2 py-2 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`} data-testid="lead-next">{l.next_action}</td>
-                  <td className="px-2 py-2"><LeadActions lead={l} warmed={warmed} notionTwin={notionTwin(l)} onDone={load} /></td>
+                  <td className="px-2 py-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></td>
                 </tr>
               ))}
             </tbody>
@@ -160,7 +176,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
               </div>
               {l.subject && <p className="mt-2 truncate text-[12px] text-slate-400">{l.subject}</p>}
               <p className={`mt-1.5 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>→ {l.next_action}</p>
-              <div className="mt-2"><LeadActions lead={l} warmed={warmed} notionTwin={notionTwin(l)} onDone={load} /></div>
+              <div className="mt-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></div>
             </div>
           ))}
         </div>

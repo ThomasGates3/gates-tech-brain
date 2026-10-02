@@ -4,11 +4,12 @@
  * workflow.ts; this layer adds Claude drafting, Notion write-back, sending and
  * activity. Server-only.
  */
-import { generateText, Output } from "ai";
+import { generateText, Output, stepCountIs } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { syncNotion, type SyncResult } from "./api";
-import { lintCopy, type LintIssue } from "./lint";
+import { lintDraft, websiteEmail1Lint, type LintIssue } from "./lint";
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, followupTemplate, canSpamFooter, composeOutgoing, type Draft } from "./playbook";
 import { fetchPack } from "./notion";
 import { csvToRows } from "./csv";
@@ -18,7 +19,7 @@ import { dueDate } from "./sequence";
 import { addSuppression, blockingSuppression, claimForSend, getContact, getStep, importRows, lastSent, patchContact, patchStep, recordSend, releaseSend, sentSince } from "./store";
 import { apply, sendError, type Action } from "./workflow";
 import type { EmailN, FieldContact, Operator, SendLogEntry } from "./types";
-import { claude, DRAFT, HARD_DRAFT } from "@/lib/models";
+import { claude, DRAFT, HARD_DRAFT, LIGHT } from "@/lib/models";
 import { recordUsage } from "@/lib/usage";
 import { recordActivity } from "@/lib/activity";
 import { claudeBudget } from "@/lib/budget";
@@ -38,6 +39,30 @@ export const StepInput = z.discriminatedUnion("action", [
 ]);
 export type StepInput = z.input<typeof StepInput>;
 
+/** Read the lead's own site (Haiku + web fetch, that domain only) and list what's observably there. */
+async function observeSite(c: FieldContact): Promise<string> {
+  if (!c.siteUrl) return "";
+  let host = "";
+  try { host = new URL(c.siteUrl).hostname.replace(/^www\./, ""); } catch { return ""; }
+  const started = Date.now();
+  try {
+    const r = await generateText({
+      model: claude(LIGHT),
+      prompt:
+        `Fetch ${c.siteUrl} and list 6 to 10 short, concrete, observable facts about the site that matter for a local business getting booked: ` +
+        "how someone books or contacts them, phone placement, hours shown, page count and navigation, mobile layout clues, broken or placeholder pages, outdated elements, missing basics (services, reviews, location). " +
+        "Facts only, one per line, no advice. If the page fails to load, say so.",
+      tools: { web_fetch: anthropic.tools.webFetch_20260209({ maxUses: 2, allowedDomains: [host, `www.${host}`] }) },
+      stopWhen: stepCountIs(4),
+      maxOutputTokens: 1200,
+    });
+    void recordUsage({ model: LIGHT, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
+    return r.text.trim().slice(0, 3000);
+  } catch {
+    return "";
+  }
+}
+
 async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN = 1, previous: string[] = []): Promise<Draft> {
   const model = tier === "opus" ? HARD_DRAFT : DRAFT;
   const ask = async (prompt: string) => {
@@ -53,9 +78,10 @@ async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN =
     void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
     return r.output;
   };
-  const prompt = playbookPrompt(c, fieldEnv.signer(), n, previous);
+  const observed = c.lane === "website" && n === 1 ? await observeSite(c) : "";
+  const prompt = playbookPrompt(c, fieldEnv.signer(), n, previous, observed);
   const draft = await ask(prompt);
-  const issues = lintCopy(draft.subject, draft.body);
+  const issues = lintDraft(draft.subject, draft.body, { lane: c.lane, emailN: n });
   if (!issues.length) return draft;
   // One self-correction pass; whatever comes back is still linted at Nick/Approve/Send.
   return ask(`${prompt}\n\nYour previous draft broke these rules: ${issues.map((i) => `"${i.match}" (${i.rule})`).join(", ")}.\nPrevious draft:\nSubject: ${draft.subject}\n\n${draft.body}\n\nRewrite it to fix every issue.`);
@@ -95,6 +121,8 @@ export async function contactStep(id: string, raw: StepInput, operator: Operator
       if (!fieldEnv.claude()) return fail(503, "Claude drafting needs ANTHROPIC_API_KEY. Use the playbook template instead.");
       if ((await claudeBudget()).status === "blocked") return fail(429, "Daily Claude budget reached. Use the playbook template until midnight.");
     }
+    if (input.mode === "template" && n === 1 && contact.lane === "website")
+      return fail(422, "Website Email 1 needs three real fixes from the site. Use generate \"sonnet\" (reads the site) or brain_import_draft with Prospectacle's copy.");
     const draft =
       input.mode === "claude"
         ? await claudeDraft(view, input.model, n, n > 1 ? await previousBodies(contact, n) : [])
@@ -115,6 +143,7 @@ export async function contactStep(id: string, raw: StepInput, operator: Operator
     aceCanSend: fieldEnv.aceCanSend(),
     suppressed: action.type === "approve" ? Boolean(await blockingSuppression(contact.email, contact.id)) : false,
     now: new Date().toISOString(),
+    extraLint: contact.lane === "website" && n === 1 ? websiteEmail1Lint(view.body) : [],
   });
   if (!result.ok) return fail(result.status, result.error);
 
@@ -135,7 +164,7 @@ export async function contactStep(id: string, raw: StepInput, operator: Operator
     void recordActivity({ kind: "updated", target: `Field: killed ${updated.name}${n > 1 ? ` (Email ${n})` : ""}`, because: updated.nickNote ?? "Nick KILL", agent: "nick" });
   }
 
-  return { ok: true, data: { contact: updated, lint: lintCopy(updated.subject, updated.body), notion, email_n: n } };
+  return { ok: true, data: { contact: updated, lint: lintDraft(updated.subject, updated.body, { lane: contact.lane, emailN: n }), notion, email_n: n } };
 }
 
 /** Send ONE email (step n) via AgentMail. Every gate re-checked; atomic claim prevents double sends. */
@@ -148,7 +177,7 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   if (!sv.ok) return sv;
   const { contact, view } = sv.data;
   const suppressed = Boolean(await blockingSuppression(contact.email, contact.id));
-  const gate = sendError(view, { operator, aceCanSend: fieldEnv.aceCanSend(), suppressed, now: new Date().toISOString() });
+  const gate = sendError(view, { operator, aceCanSend: fieldEnv.aceCanSend(), suppressed, now: new Date().toISOString(), extraLint: contact.lane === "website" && n === 1 ? websiteEmail1Lint(view.body) : [] });
   if (gate) return fail(gate.status, gate.error);
   if (draftHash !== view.approvedHash) return fail(409, "The draft you reviewed isn't the approved draft. Refresh and review.");
   if (n > 1) {

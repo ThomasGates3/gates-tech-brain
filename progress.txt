@@ -52,3 +52,4 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ Upsert wiring (Ashley→core, Prospectacle→website), Notion load attaches instead of duplicating, duplicate flags + brain_merge_contacts
 ✓ Voice lint: en dash, clause hyphen, AI-isms; send blocked until domain warm-up confirmed
 ✓ Dashboard: Today's leads card → /leads (filters + action buttons), scoreboard tiles → filtered /leads, warm-up confirm, Activity → /activity
+✓ Field finish: website 3-fix generate mode + lint, brain_import_draft, brain_nick_queue + Send to Nick, name/email dedupe with primary rows, warm-up hard block copy, opt-out reply no
