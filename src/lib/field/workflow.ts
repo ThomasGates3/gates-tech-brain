@@ -125,7 +125,8 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
     }
 
     case "hold": {
-      if (!OPEN.includes(c.stage)) return fail(409, `Can't hold while ${c.stage}.`);
+      if (c.stage === "hold") return fail(409, "Already on hold.");
+      if (!OPEN.includes(c.stage)) return fail(409, `Can't hold: this email is already ${c.stage}.`);
       return { ok: true, patch: { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null } };
     }
 

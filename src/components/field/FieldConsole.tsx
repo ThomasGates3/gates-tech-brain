@@ -125,7 +125,6 @@ export function FieldConsole() {
           </div>
           <div className="flex items-center gap-2">
             {operatorLabel && <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300" data-testid="operator">{operatorLabel}</span>}
-            <Link href="/" className="min-h-[44px] content-center rounded-xl px-3 text-sm text-slate-400 hover:bg-white/5">Deck</Link>
             <Button
               variant="quiet"
               onClick={async () => {

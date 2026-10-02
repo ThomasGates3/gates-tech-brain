@@ -6,7 +6,7 @@ export const metadata = { title: "Today's leads · Gates Tech Brain" };
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const { date, lane, status, tier } = await searchParams;
   return (
-    <PageShell title="Today's leads">
+    <PageShell title="Leads" subtitle="Every lead for the day with its lane, status and next step. Buttons run the same rules as the bots.">
       <LeadsBoard initial={{ date, lane, status, tier }} />
     </PageShell>
   );

@@ -26,6 +26,7 @@ import { AGENTS, AGENT_IDS, agentStatuses } from "@/lib/agents";
 import { AUTOMATIONS } from "@/lib/automations/catalog";
 import { runAutomation } from "@/lib/automations/runner";
 import { recentActivity, recordActivity, type ActivityKind } from "@/lib/activity";
+import { describeCall, describeFailure } from "@/lib/activity/describe";
 import { claude, HARD_DRAFT, LIGHT, OPS } from "@/lib/models";
 import { claudeBudget } from "@/lib/budget";
 import { costUsd, recordUsage } from "@/lib/usage";
@@ -456,17 +457,23 @@ export async function callTool(name: string, raw: unknown, ctx: ToolCtx): Promis
   if (!parsed.success) return { ok: false, status: 400, error: parsed.error.issues.map((i) => `${i.path.join(".") || "input"}: ${i.message}`).join("; ") };
   const args = parsed.data as Record<string, unknown>;
   const agent = (args.agent as string | undefined) ?? (ctx.operator === "thomas" ? "thomas" : "ace");
+  const businessOf = async (result?: unknown) => {
+    const r = (result ?? {}) as Record<string, unknown>;
+    const fromResult = typeof r.name === "string" ? r.name : typeof r.business === "string" ? r.business : "";
+    if (fromResult) return fromResult;
+    const id = (args.contact_id ?? args.keep_id) as string | undefined;
+    return id ? ((await getContact(id).catch(() => null))?.name ?? "") : "";
+  };
   try {
     const result = await t.run(args as never, ctx);
-    const items = Array.isArray(args.items) ? `${(args.items as unknown[]).length} items` : null;
-    const step = args.email_n && args.email_n !== 1 ? `Email ${args.email_n}` : null;
-    const summary = [args.contact_id, args.business, args.name, step, args.verdict, args.action, items].filter(Boolean).join(" · ");
-    void recordActivity({ kind: t.kind, target: `${t.title}${summary ? `: ${summary}` : ""}`, because: `${ctx.via.toUpperCase()} ${t.name}${args.detail ? ` · ${String(args.detail).slice(0, 200)}` : ""}`, agent });
+    const d = describeCall(name, args, result, agent, await businessOf(result));
+    void recordActivity({ kind: d.kind ?? t.kind, target: d.target, because: d.because, agent });
     return { ok: true, result };
   } catch (e) {
     const status = e instanceof ToolError ? e.status : 500;
     const error = e instanceof Error ? e.message : String(e);
-    void recordActivity({ kind: "alert", target: `${t.title} failed`, because: `${ctx.via.toUpperCase()} ${t.name}: ${error.slice(0, 200)}`, agent });
+    const f = describeFailure(t.title, await businessOf(), error);
+    void recordActivity({ kind: "alert", target: f.target, because: f.because, agent });
     return { ok: false, status, error };
   }
 }

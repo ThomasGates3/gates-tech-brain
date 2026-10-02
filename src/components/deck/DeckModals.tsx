@@ -34,6 +34,15 @@ export function Modal({ title, onClose, children, "data-testid": testId }: { tit
 interface ModelOption { tier: "standard" | "flagship"; label: string; model: string; note: string }
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal title="System · Model & Voice" onClose={onClose} data-testid="settings-modal">
+      <SettingsPanel />
+    </Modal>
+  );
+}
+
+/** Model tier + deck voice. Used in the System modal and on /settings. */
+export function SettingsPanel() {
   const [tier, setTier] = useState<string>("");
   const [options, setOptions] = useState<ModelOption[]>([]);
   const [saving, setSaving] = useState(false);
@@ -52,7 +61,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="System · Model & Voice" onClose={onClose} data-testid="settings-modal">
+    <div data-testid="settings-panel">
       <p className="mb-3 text-sm text-slate-400">Choose which model runs the Conductor. Applies live to chat and automations.</p>
       <div className="space-y-2">
         {options.map((o) => {
@@ -76,7 +85,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <VoicePicker />
-    </Modal>
+    </div>
   );
 }
 
@@ -129,13 +138,22 @@ interface Status { connectorId: string; reachable: boolean; message?: string }
 interface AgentRow { id: string; label: string; role: string; optional?: boolean; status: "idle" | "active"; lastSeen: string | null; lastAction: string | null }
 interface KeyRow { id: string; label: string; operator: string; prefix: string; createdAt: string; lastUsedAt: string | null; revokedAt: string | null }
 
-const TABS = ["connections", "agents", "access"] as const;
+export const TABS = ["connections", "agents", "access"] as const;
 const card = "rounded-lg border border-white/[0.06] bg-black/30 p-2.5";
 const smallBtn = "min-h-[32px] shrink-0 rounded-md border border-white/10 px-2.5 text-[11px] text-slate-300 hover:border-[var(--accent)]/50 disabled:opacity-50";
 const ago = (iso: string | null) => (iso ? `${Math.max(1, Math.round((Date.now() - Date.parse(iso)) / 60000))}m ago` : "never");
 
 export function ConnectionsModal({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<(typeof TABS)[number]>("connections");
+  return (
+    <Modal title="Operations · Connections, Agents & Access" onClose={onClose} data-testid="connections-modal">
+      <OperationsPanel scroll />
+    </Modal>
+  );
+}
+
+/** Connections · Agents · Access. Used in the Operations modal and on /operations. */
+export function OperationsPanel({ initialTab = "connections", scroll = false }: { initialTab?: (typeof TABS)[number]; scroll?: boolean }) {
+  const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
   const [rows, setRows] = useState<ConnRow[]>([]);
   const [field, setField] = useState<FieldConn[]>([]);
   const [statuses, setStatuses] = useState<Record<string, Status>>({});
@@ -157,14 +175,14 @@ export function ConnectionsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="Operations · Connections, Agents & Access" onClose={onClose} data-testid="connections-modal">
+    <div data-testid="operations-panel">
       <div className="mb-3 flex gap-1.5">
         {TABS.map((t) => (
           <button key={t} data-testid={`conntab-${t}`} onClick={() => setTab(t)} className={`min-h-[32px] rounded-full px-3 text-[11px] capitalize ${tab === t ? "bg-[var(--accent)] text-black" : "bg-white/5 text-slate-400 hover:text-slate-200"}`}>{t}</button>
         ))}
       </div>
 
-      <div className="max-h-[55vh] space-y-2 overflow-y-auto">
+      <div className={`space-y-2 ${scroll ? "max-h-[55vh] overflow-y-auto" : ""}`}>
         {tab === "connections" && (
           <>
             <p className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Field</p>
@@ -226,7 +244,7 @@ export function ConnectionsModal({ onClose }: { onClose: () => void }) {
 
         {tab === "access" && <AccessPanel />}
       </div>
-    </Modal>
+    </div>
   );
 }
 

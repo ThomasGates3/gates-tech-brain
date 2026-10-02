@@ -86,17 +86,19 @@ export function ActivityFeed({
   limit = 20,
   href,
   filterable = false,
-}: { "data-testid"?: string; limit?: number; href?: string; filterable?: boolean }) {
+  className = "",
+}: { "data-testid"?: string; limit?: number; href?: string; filterable?: boolean; className?: string }) {
   const [items, setItems] = useState<Activity[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [agent, setAgent] = useState("");
   const [kind, setKind] = useState("");
+  const [lookups, setLookups] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
-        const res = await fetch(`/api/activity?limit=${limit}`);
+        const res = await fetch(`/api/activity?limit=${limit}&lookups=${lookups ? 1 : 0}`);
         const data = await res.json();
         if (alive) {
           setItems((data.activity ?? []).map((a: Activity) => ({ ...a, at: relAge(a.at) })));
@@ -109,7 +111,7 @@ export function ActivityFeed({
     load();
     const t = setInterval(load, 15000); // keep it consistent/live
     return () => { alive = false; clearInterval(t); };
-  }, [limit]);
+  }, [limit, lookups]);
 
   const agents = [...new Set(items.map((a) => a.agent).filter(Boolean))] as string[];
   const shown = items.filter((a) => (!agent || a.agent === agent) && (!kind || a.kind === kind));
@@ -117,7 +119,7 @@ export function ActivityFeed({
   return (
     <div
       data-testid={testId}
-      className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur"
+      className={`flex min-h-0 flex-col rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur ${className}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -140,13 +142,16 @@ export function ActivityFeed({
             <option value="">All kinds</option>
             {Object.keys(KIND_META).map((k) => <option key={k}>{k}</option>)}
           </select>
+          <label className="flex items-center gap-1.5 self-center text-[12px] text-slate-400">
+            <input type="checkbox" checked={lookups} onChange={(e) => setLookups(e.target.checked)} data-testid="activity-lookups" /> Show lookups
+          </label>
           <span className="self-center font-mono text-[10px] text-slate-500">{shown.length} shown</span>
         </div>
       )}
       {loaded && items.length === 0 && (
         <p className="py-6 text-center text-[12px] text-slate-600">Nothing yet. Bot calls, drafts and sends show up here.</p>
       )}
-      <ul className="space-y-2.5">
+      <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
         {shown.map((a) => {
           const m = KIND_META[a.kind];
           return (
@@ -155,13 +160,12 @@ export function ActivityFeed({
                 {m.icon}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] leading-snug text-slate-300">
-                  <span style={{ color: m.color }}>{m.verb}</span>{" "}
-                  <span className="text-slate-100">{a.target}</span>
-                  {a.because && <span className="text-slate-500"> · {a.because}</span>}
+                <p className="text-[13px] leading-snug" style={a.kind === "alert" ? { color: m.color } : undefined}>
+                  <span className={a.kind === "alert" ? "" : "text-slate-100"}>{a.target}</span>
                 </p>
+                {a.because && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{a.because}</p>}
                 <p className="mt-0.5 font-mono text-[10px] text-slate-600">
-                  {a.agent ? `${a.agent} · ` : ""}{a.at}
+                  {a.agent ? `${a.agent.charAt(0).toUpperCase()}${a.agent.slice(1)} · ` : ""}{a.at}
                 </p>
               </div>
             </li>

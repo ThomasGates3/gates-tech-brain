@@ -53,10 +53,10 @@ export async function fieldSnapshot(date = todayIn()) {
   if (queue.undrafted) next.push(`${queue.undrafted} High/Med contact${queue.undrafted > 1 ? "s" : ""} not drafted yet (Darrell).`);
   if (queue.drafted) next.push(`${queue.drafted} draft${queue.drafted > 1 ? "s" : ""} not yet with Nick.`);
   if (queue.atNick) next.push(`${queue.atNick} draft${queue.atNick > 1 ? "s" : ""} waiting on Nick's verdict.`);
-  if (passAwaitingApprove) next.push(`${passAwaitingApprove} PASSed draft${passAwaitingApprove > 1 ? "s" : ""} waiting on Thomas's approval.`);
+  if (passAwaitingApprove) next.push(`${passAwaitingApprove} draft${passAwaitingApprove > 1 ? "s" : ""} passed by Nick, waiting on Thomas to approve.`);
   if (queue.approved) next.push(`${queue.approved} approved email${queue.approved > 1 ? "s" : ""} ready to send.`);
-  if (inboundUnanswered) next.push(`${inboundUnanswered} inbound repl${inboundUnanswered > 1 ? "ies" : "y"} unanswered (brain_inbound → Lisa).`);
-  if (sequenceDue.total) next.push(`${sequenceDue.total} follow-up${sequenceDue.total > 1 ? "s" : ""} due (Email 2: ${sequenceDue.byStep[2]}, 3: ${sequenceDue.byStep[3]}, 4: ${sequenceDue.byStep[4]}). See brain_next_due.`);
+  if (inboundUnanswered) next.push(`${inboundUnanswered} repl${inboundUnanswered > 1 ? "ies" : "y"} waiting for an answer (Lisa).`);
+  if (sequenceDue.total) next.push(`${sequenceDue.total} follow-up${sequenceDue.total > 1 ? "s" : ""} due (Email 2: ${sequenceDue.byStep[2]}, 3: ${sequenceDue.byStep[3]}, 4: ${sequenceDue.byStep[4]}).`);
   if (!gates.domainWarmed) next.push(g.warmNote);
   if (budget.status !== "ok") next.push(budget.status === "blocked" ? "Claude budget hit: Claude paused until midnight." : `Claude spend past the $${budget.warnUsd} warning.`);
   return { date, queue, approvedUnsent: queue.approved, sentToday, dailyCap: g.dailyCap, sequenceDue, inboundUnanswered, claudeBudget: budget, gates, next };
