@@ -307,3 +307,17 @@ test("website plain speech: jargon and put-downs fail the lint", () => {
   assert.ok(websiteEmail1Lint(body("Your site reads as generic SEO filler with a thin brand.")).some((i) => i.rule === "Put-down"));
   assert.ok(websiteEmail1Lint(body("It reads as unfinished for a hauling business.")).some((i) => i.rule === "Put-down"));
 });
+
+import { websiteBrief } from "../website/brief";
+import { WEBSITE_MASTER_PROMPT } from "../website/master-prompt";
+
+test("website brief: master prompt verbatim, filled message, unknowns become questions", () => {
+  const c = contact({ name: "Plumber Local Pros", city: "Atlanta", siteUrl: "https://plumberlocalpros.com" });
+  const b = websiteBrief(c, { what_they_sell: "plumbing repair company", conversion_goal: "call for a same-day quote" });
+  assert.equal(b.master_prompt, WEBSITE_MASTER_PROMPT);
+  assert.match(b.master_prompt, /^# \*\*Master Website PROMPT/);
+  assert.match(b.build_message, /^Build a website for Plumber Local Pros in Atlanta\. They are a plumbing repair company/);
+  assert.match(b.build_message, /\[PROOF\]/);
+  assert.equal(b.ready, false);
+  assert.ok(b.ask.some((q) => q.field === "social_proof") && !b.ask.some((q) => q.field === "conversion_goal"));
+});

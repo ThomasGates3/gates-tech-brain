@@ -9,6 +9,7 @@
  */
 import { generateText, stepCountIs } from "ai";
 import { after } from "next/server";
+import { websiteBrief, BriefAnswers } from "@/lib/website/brief";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { contactStep, sendContact, loadPack, addSuppression } from "@/lib/field/actions";
@@ -249,6 +250,18 @@ export const TOOLS = [
     input: z.object({ agent: Agent, contact_id: ContactId, email_n: EmailNum }),
     kind: "queried",
     run: ({ contact_id, email_n }) => draftView(contact_id, asN(email_n)),
+  }),
+  tool({
+    name: "brain_website_brief",
+    title: "Website build brief",
+    description: "The Gates master website prompt (Premium Website Architect, verbatim) plus the filled \"Build a website for…\" message for a lead. Paste master_prompt first, then build_message. Pass what you know in answers; everything still unknown comes back in ask as the checklist questions to answer before building. For building the prospect's site, never for cold email copy.",
+    input: z.object({ agent: Agent, contact_id: ContactId, answers: BriefAnswers.optional() }),
+    kind: "queried",
+    run: async ({ contact_id, answers }) => {
+      const c = await getContact(contact_id);
+      if (!c) throw new ToolError(404, "No lead with that contact_id.");
+      return { contact_id, business: c.name, lane: c.lane, ...websiteBrief(c, answers) };
+    },
   }),
   tool({
     name: "brain_set_draft",
