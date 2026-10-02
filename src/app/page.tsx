@@ -14,6 +14,7 @@ import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/componen
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
+import { speak, cancelSpeech } from "@/lib/ux/speak";
 
 /** Live deck state from /api/deck (Field-real numbers only; "—" until loaded). */
 interface DeckState {
@@ -61,11 +62,8 @@ export default function Home() {
     if (booting || !spoken || spokenOnce.current) return;
     spokenOnce.current = true;
     if (localStorage.getItem("mute_briefing") === "1") return;
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const u = new SpeechSynthesisUtterance(spoken);
-    u.rate = 1.02;
-    const t = setTimeout(() => window.speechSynthesis.speak(u), 400);
-    return () => { clearTimeout(t); window.speechSynthesis.cancel(); };
+    const t = setTimeout(() => void speak(spoken), 400);
+    return () => { clearTimeout(t); cancelSpeech(); };
   }, [booting, spoken]);
 
   // Live orb reactions — flash when new activity lands (success amber / error red).
@@ -98,7 +96,7 @@ export default function Home() {
   ];
 
   const pulse = () => { setOrbState("thinking"); setTimeout(() => setOrbState("idle"), 2600); };
-  const muteBriefing = () => { localStorage.setItem("mute_briefing", "1"); window.speechSynthesis?.cancel(); };
+  const muteBriefing = () => { localStorage.setItem("mute_briefing", "1"); cancelSpeech(); };
 
   return (
     <div className="min-h-screen bg-black text-slate-100 font-sans">

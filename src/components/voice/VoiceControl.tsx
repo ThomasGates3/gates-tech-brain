@@ -1,4 +1,5 @@
 "use client";
+import { speak, cancelSpeech } from "@/lib/ux/speak";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
@@ -17,29 +18,9 @@ export interface TTSAdapter {
   cancel(): void;
 }
 
-/** Built-in SpeechSynthesis adapter — zero dependencies. */
-const webSpeechAdapter: TTSAdapter = {
-  speak(text, _voiceId) {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined" || !window.speechSynthesis) {
-        resolve();
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.rate = 0.95;
-      utt.pitch = 0.9;
-      utt.onend = () => resolve();
-      utt.onerror = () => resolve();
-      window.speechSynthesis.speak(utt);
-    });
-  },
-  cancel() {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-  },
-};
+/** ElevenLabs via /api/voice (falls back to Web Speech if the server voice is unavailable). */
+const elevenLabsAdapter: TTSAdapter = { speak: (text, voiceId) => speak(text, voiceId), cancel: cancelSpeech };
+
 
 // ─────────────────────────────────────────────────────────────────────────
 // Web Speech API types (not in all TS libs)
@@ -96,7 +77,7 @@ export type VoiceState = "idle" | "listening" | "processing" | "speaking" | "err
 export interface VoiceControlProps {
   /** Called with the final recognised transcript. */
   onTranscript: (text: string) => void;
-  /** Optional TTS adapter — defaults to Web Speech. Swap for ElevenLabs here. */
+  /** Optional TTS adapter — defaults to ElevenLabs (lib/ux/speak). */
   ttsAdapter?: TTSAdapter;
   /** If provided, speak this text immediately. */
   speakText?: string;
@@ -123,7 +104,7 @@ export interface VoiceControlProps {
  */
 export function VoiceControl({
   onTranscript,
-  ttsAdapter = webSpeechAdapter,
+  ttsAdapter = elevenLabsAdapter,
   speakText,
   voiceId,
   showTranscript = true,

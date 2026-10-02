@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { speak } from "@/lib/ux/speak";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 
 // ── Reusable modal shell ────────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="System · Model" onClose={onClose} data-testid="settings-modal">
+    <Modal title="System · Model & Voice" onClose={onClose} data-testid="settings-modal">
       <p className="mb-3 text-sm text-slate-400">Choose which model runs the Conductor. Applies live to chat and automations.</p>
       <div className="space-y-2">
         {options.map((o) => {
@@ -74,7 +75,49 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           );
         })}
       </div>
+      <VoicePicker />
     </Modal>
+  );
+}
+
+interface VoiceOpt { id: string; name: string; category: string; description: string }
+
+function VoicePicker() {
+  const [state, setState] = useState<{ configured: boolean; voiceId: string | null; voices: VoiceOpt[] } | null>(null);
+  const [pick, setPick] = useState("");
+  const [busy, setBusy] = useState<"preview" | "save" | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/voice").then((r) => r.json()).then((d) => { setState(d); setPick(d.voiceId ?? ""); }).catch(() => {});
+  }, []);
+  if (!state) return null;
+  if (!state.configured) return <p className="mt-4 text-[12px] text-slate-500">Voice: set ELEVENLABS_API_KEY to use an ElevenLabs voice.</p>;
+
+  const mine = state.voices.filter((v) => v.category !== "premade");
+  const stock = state.voices.filter((v) => v.category === "premade");
+  const preview = async () => { setBusy("preview"); try { await speak("Good morning, Thomas. Ten contacts are ready for Darrell, and nothing is waiting on you yet.", pick); } finally { setBusy(null); } };
+  const save = async () => {
+    setBusy("save");
+    try {
+      const d = await (await fetch("/api/voice", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ voiceId: pick }) })).json();
+      if (d.ok) { setState({ ...state, voiceId: d.voiceId }); setSaved(true); setTimeout(() => setSaved(false), 1500); }
+    } finally { setBusy(null); }
+  };
+  const option = (v: VoiceOpt) => <option key={v.id} value={v.id}>{v.name}{v.description ? ` (${v.description})` : ""}</option>;
+
+  return (
+    <div className="mt-5 border-t border-white/10 pt-4" data-testid="voice-picker">
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Voice (ElevenLabs)</p>
+      <select value={pick} onChange={(e) => setPick(e.target.value)} data-testid="voice-select" aria-label="Voice" className="min-h-[40px] w-full rounded-lg border border-white/10 bg-black/40 px-2.5 text-[13px] text-slate-100 outline-none focus:border-[var(--accent)]/60">
+        {mine.length > 0 && <optgroup label="Your voices">{mine.map(option)}</optgroup>}
+        <optgroup label="ElevenLabs voices">{stock.map(option)}</optgroup>
+      </select>
+      <div className="mt-2 flex gap-2">
+        <button onClick={preview} disabled={!!busy || !pick} data-testid="voice-preview" className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[12px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10 disabled:opacity-50">{busy === "preview" ? "Playing…" : "Preview"}</button>
+        <button onClick={save} disabled={!!busy || !pick || pick === state.voiceId} data-testid="voice-save" className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black disabled:opacity-50">{saved ? "Saved" : busy === "save" ? "Saving…" : pick === state.voiceId ? "Current voice" : "Use this voice"}</button>
+      </div>
+    </div>
   );
 }
 
