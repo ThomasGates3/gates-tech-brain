@@ -71,7 +71,7 @@ brain_set_gate {"domain_warmed":true,"daily_cap":30}
   "lead_counts": { "total": 35, "core": 22, "website": 6, "undrafted": 13, "drafted": 12, "awaitingNick": 0,
                    "passAwaitingApprove": 0, "approvedUnsent": 0, "sent": 0, "softHold": 10, "duplicates": 8 },
   "sentToday": 0, "dailyCap": 20,
-  "gates": { "domainWarmed": false, "warmNote": "Domain not warmed: keep volume low until Thomas confirms warm-up." },
+  "gates": { "domainWarmed": false, "warmNote": "Warm-up not confirmed: approved emails wait until Thomas confirms it." },
   "leads": [
     { "contact_id": "ashley_…", "business": "Plumber Local Pros", "email": "experts@plumberlocalpros.com", "lane": "website",
       "source": "prospectacle", "tier": "Med", "email1_status": "undrafted", "nick_verdict": null, "approved": false,
@@ -83,6 +83,8 @@ brain_set_gate {"domain_warmed":true,"daily_cap":30}
 }
 ```
 Ace answers "what came in today for website vs core, and what's drafted?" from `lead_counts` + `leads[].lane / email1_status` in this one call.
+
+**Control Center pages:** the dashboard shows a compact **Today's leads** card (counts, three most urgent leads, Load Notion pack, Template-draft undrafted) that opens **`/leads`**: the full board with filters and per-lead buttons (draft, Nick PASS/REVISE/KILL, Approve, Send once warmed, Hold/Release, Merge duplicate). Scoreboard tiles open `/leads` pre-filtered; the scoreboard has a two-click **Confirm warm-up** (Thomas only). The Activity card opens **`/activity`** (filter by agent and kind). Every button calls the same `/api/v1/tools` the bots use, so the same gates apply and each click is logged.
 
 All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.
 

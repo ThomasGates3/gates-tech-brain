@@ -17,7 +17,7 @@ export async function getGates(): Promise<Gates> {
   return {
     domainWarmed,
     dailyCap,
-    warmNote: domainWarmed ? `Warm-up confirmed${by ? ` by ${by}` : ""}.` : "Domain not warmed: keep volume low until Thomas confirms warm-up.",
+    warmNote: domainWarmed ? `Warm-up confirmed${by ? ` by ${by}` : ""}. Approved emails can send.` : "Warm-up not confirmed: approved emails wait until Thomas confirms it.",
     setBy: by ?? null,
     setAt: at ?? null,
   };
