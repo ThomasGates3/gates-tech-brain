@@ -14,7 +14,7 @@ const primary = `${btn} bg-[var(--accent)] text-black hover:bg-[var(--accent-bri
 const quiet = `${btn} border border-white/10 text-slate-300 hover:border-[var(--accent)]/50`;
 const danger = `${btn} border border-red-500/30 text-red-300 hover:bg-red-500/10`;
 
-export function LeadActions({ lead, warmed, notionTwin, onDone }: { lead: ActionLead; warmed: boolean; notionTwin?: string; onDone: () => void }) {
+export function LeadActions({ lead, warmed, onDone }: { lead: ActionLead; warmed: boolean; onDone: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [noteFor, setNoteFor] = useState<"REVISE" | "KILL" | null>(null);
@@ -45,8 +45,14 @@ export function LeadActions({ lead, warmed, notionTwin, onDone }: { lead: Action
 
   const s = lead.email1_status;
   const buttons: React.ReactNode[] = [];
-  if (lead.duplicate_of.length && notionTwin && lead.source !== "notion" && s !== "sent")
-    buttons.push(B("merge", "Merge into Notion row", primary, "brain_merge_contacts", { keep_id: notionTwin, drop_id: id, contact_id: undefined }));
+  if (lead.duplicate_of.length && s !== "sent")
+    buttons.push(
+      <button key="merge" data-testid={`act-merge-${id}`} className={primary} disabled={!!busy} onClick={async (e) => {
+        e.preventDefault(); setBusy("merge"); setErr(null);
+        try { for (const drop of lead.duplicate_of) await callTool("brain_merge_contacts", { keep_id: id, drop_id: drop }); onDone(); }
+        catch (x) { setErr(x instanceof Error ? x.message : String(x)); } finally { setBusy(null); }
+      }}>{busy === "merge" ? "…" : `Merge ${lead.duplicate_of.length} duplicate${lead.duplicate_of.length > 1 ? "s" : ""}`}</button>
+    );
   if (s === "undrafted") {
     buttons.push(B("tpl", "Template draft", quiet, "brain_set_draft", { generate: "template" }));
     buttons.push(B("claude", "Claude draft", primary, "brain_set_draft", { generate: "sonnet" }));

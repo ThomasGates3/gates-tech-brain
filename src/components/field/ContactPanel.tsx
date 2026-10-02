@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Modal } from "@/components/deck/DeckModals";
-import { lintCopy } from "@/lib/field/lint";
+import { lintDraft } from "@/lib/field/lint";
 import { composeOutgoing } from "@/lib/field/playbook";
 import type { ConsoleConfig, FieldContact, NickVerdict } from "@/lib/field/types";
 import { Button, Caption, PriorityBadge, StageBadge, cx } from "./ui";
@@ -47,7 +47,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
 
   const canGreenlight = config.canGreenlight;
   const dirty = subject !== c.subject || body !== c.body;
-  const lint = lintCopy(subject, body);
+  const lint = lintDraft(subject, body, { lane: c.lane, emailN: 1 });
   const editable = OPEN.includes(c.stage) && c.priority !== "Soft";
 
   const run = async (label: string, payload: Record<string, unknown>) => {

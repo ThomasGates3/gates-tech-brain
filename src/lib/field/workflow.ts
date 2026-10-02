@@ -11,7 +11,7 @@
  * the exact current draft; copy passes the outreach-brief lint.
  */
 import { createHash } from "crypto";
-import { lintCopy } from "./lint";
+import { lintCopy, type LintIssue } from "./lint";
 import type { DraftSource, FieldContact, NickVerdict, Operator, Stage } from "./types";
 
 export type Action =
@@ -27,6 +27,8 @@ export interface Ctx {
   suppressed: boolean;
   now: string;
   aceCanSend?: boolean;
+  /** Lane rules (website Email 1: three fixes, no links) computed by the caller. */
+  extraLint?: LintIssue[];
 }
 
 /** Who may Approve + Send: Thomas always, Ace only when FIELD_ACE_CAN_SEND=true. */
@@ -46,8 +48,8 @@ export function draftHash(subject: string, body: string): string {
 
 const fail = (status: number, error: string): Result => ({ ok: false, status, error });
 
-function lintError(c: Pick<FieldContact, "subject" | "body">): string | null {
-  const issues = lintCopy(c.subject, c.body);
+function lintError(c: Pick<FieldContact, "subject" | "body">, extra: LintIssue[] = []): string | null {
+  const issues = [...lintCopy(c.subject, c.body), ...extra];
   return issues.length ? `Copy lint failed: ${issues.map((i) => `"${i.match}" (${i.rule})`).join(", ")}. Rewrite per the outreach brief.` : null;
 }
 
@@ -57,7 +59,7 @@ function targetError(c: FieldContact, ctx: Ctx): string | null {
   if (ctx.suppressed) return `${c.email} is on the suppression list.`;
   if (!EMAIL.test(c.email)) return "Recipient email is missing or invalid.";
   if (!c.subject.trim() || !c.body.trim()) return "Draft subject and body are required.";
-  return lintError(c);
+  return lintError(c, ctx.extraLint);
 }
 
 export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
@@ -95,7 +97,7 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
 
     case "submit_nick": {
       if (c.stage !== "drafted") return fail(409, "Only a saved draft can go to Nick.");
-      const lint = lintError(c);
+      const lint = lintError(c, ctx.extraLint);
       if (lint) return fail(422, lint);
       return { ok: true, patch: { stage: "nick", nickVerdict: null, nickHash: null } };
     }
@@ -105,7 +107,7 @@ export function apply(c: FieldContact, action: Action, ctx: Ctx): Result {
       if (!c.draftHash) return fail(409, "No draft to audit.");
       const base = { nickVerdict: action.verdict, nickNote: action.note.trim() || null, nickAt: ctx.now, nickBy: ctx.operator ?? "unknown" };
       if (action.verdict === "PASS") {
-        const lint = lintError(c);
+        const lint = lintError(c, ctx.extraLint);
         if (lint) return fail(422, `Can't PASS: ${lint}`);
         return { ok: true, patch: { ...base, stage: "nick", nickHash: c.draftHash } };
       }

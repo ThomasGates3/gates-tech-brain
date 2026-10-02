@@ -51,3 +51,23 @@ export function lintCopy(subject: string, body = ""): LintIssue[] {
   if ((body.match(/https?:\/\/|www\./gi) ?? []).length > 1) add("Too many links", "max one link");
   return issues;
 }
+
+/**
+ * Website-lane Email 1 (Prospectacle): the "asset" is three concrete site fixes
+ * written inside the body as "1." "2." "3." lines. No links or attachments.
+ */
+export function websiteEmail1Lint(body: string): LintIssue[] {
+  const issues: LintIssue[] = [];
+  const nums = [...body.matchAll(/^\s*(\d+)[.)]\s+\S/gm)].map((m) => Number(m[1]));
+  const ok = nums.length === 3 && nums[0] === 1 && nums[1] === 2 && nums[2] === 3;
+  if (!ok) issues.push({ rule: "Website fixes", match: `needs exactly 3 numbered fixes (1. 2. 3.), found ${nums.length}` });
+  for (const m of body.matchAll(/https?:\/\/\S+|\bwww\.\S+/gi)) issues.push({ rule: "Link in website Email 1", match: m[0] });
+  if (/\b(attach(ed|ment)|see (the )?(file|pdf|deck)|download)\b/i.test(body)) issues.push({ rule: "Attachment mention", match: "no files or attachments in cold email" });
+  return issues;
+}
+
+/** All copy issues for a draft, including lane rules for website Email 1. */
+export function lintDraft(subject: string, body: string, opts: { lane?: string; emailN?: number } = {}): LintIssue[] {
+  const base = lintCopy(subject, body);
+  return opts.lane === "website" && (opts.emailN ?? 1) === 1 ? [...base, ...websiteEmail1Lint(body)] : base;
+}

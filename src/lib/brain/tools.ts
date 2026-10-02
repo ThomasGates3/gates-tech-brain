@@ -11,7 +11,7 @@ import { generateText, stepCountIs } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { contactStep, sendContact, loadPack, addSuppression } from "@/lib/field/actions";
-import { upsertContact, getStep, listSuppressions, mergeContacts } from "@/lib/field/store";
+import { upsertContact, getStep, listSuppressions, mergeContacts, contactsByEmail } from "@/lib/field/store";
 import { nextDue, dueDate } from "@/lib/field/sequence";
 import { fetchInbound } from "@/lib/field/inbound";
 import { getGates, setGates } from "@/lib/field/gates";
@@ -19,7 +19,7 @@ import { leadsFor, EMAIL1_STATUSES } from "@/lib/field/leads";
 import { fieldSnapshot } from "@/lib/field/snapshot";
 import { listLog, getContact } from "@/lib/field/store";
 import { todayIn } from "@/lib/field/config";
-import { lintCopy, MAX_WORDS } from "@/lib/field/lint";
+import { lintDraft, MAX_WORDS } from "@/lib/field/lint";
 import { OUTREACH_BRIEF } from "@/lib/field/brief";
 import type { EmailN, Operator } from "@/lib/field/types";
 import { AGENTS, AGENT_IDS, agentStatuses } from "@/lib/agents";
@@ -70,7 +70,7 @@ async function draftView(id: string, n: EmailN = 1) {
     nick: { verdict: v.nickVerdict, note: v.nickNote, on_current_draft: Boolean(v.nickHash && v.nickHash === v.draftHash) },
     approved: Boolean(v.approvedHash && v.approvedHash === v.draftHash), approved_by: v.approvedBy, sent_at: v.sentAt,
     due_date: n > 1 && c.sentAt ? dueDate(c.sentAt, n) : null, replied: Boolean(c.repliedAt),
-    lint: lintCopy(v.subject, v.body), last_error: v.lastError,
+    lint: lintDraft(v.subject, v.body, { lane: c.lane, emailN: n }), last_error: v.lastError,
   };
 }
 
@@ -388,7 +388,7 @@ export const TOOLS = [
   tool({
     name: "brain_merge_contacts",
     title: "Merge duplicate leads",
-    description: "Fold a duplicate lead (drop_id) into the one to keep (keep_id): fills keep's missing contact name, site, notes, gap and Notion link, takes drop's draft if keep has none, keeps the more cautious tier, then deletes drop. Both must be unsent. Use when brain_today/board shows duplicate_of.",
+    description: "Fold a duplicate lead (drop_id) into the primary (keep_id): fills the primary's missing contact name, site, notes, gap and Notion link, takes drop's draft if the primary has none, keeps the PRIMARY's tier (a Soft copy never pulls a High/Med lead onto Hold), then deletes drop. Both must be unsent. Use with leads[].duplicate_of (keep_id = the lead's contact_id).",
     input: z.object({ agent: Agent, keep_id: ContactId, drop_id: ContactId }),
     kind: "updated",
     run: async ({ keep_id, drop_id }) => {
@@ -407,6 +407,42 @@ export const TOOLS = [
     input: z.object({ agent: Agent, search: z.string().max(200).optional(), limit: z.number().int().min(1).max(500).default(100) }),
     kind: "queried",
     run: async ({ search, limit }) => (await listSuppressions(limit, search)).map((r) => ({ email: r.email, reason: r.reason, created_at: r.at, by: r.by, contact_id: r.contactId })),
+  }),
+  tool({
+    name: "brain_import_draft",
+    title: "Import a draft",
+    description: "Put copy you already wrote into the Brain (e.g. Prospectacle's Email 1 with its three in-body fixes, or Darrell's draft). Find the lead by contact_id, or by email (most recent match). Same as brain_set_draft with subject+body: clears any PASS/approval and returns copy-lint issues. A draft that only exists in your own files is not done until it is imported.",
+    input: z.object({
+      agent: Agent,
+      contact_id: z.string().optional(),
+      email: z.email().optional(),
+      email_n: EmailNum,
+      subject: z.string().min(1).max(200),
+      body: z.string().min(1).max(5000),
+    }),
+    kind: "updated",
+    run: async ({ contact_id, email, email_n, subject, body }, ctx) => {
+      const id = contact_id ?? (email ? (await contactsByEmail([email])).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id : undefined);
+      if (!id) throw new ToolError(404, "No lead found. Pass contact_id, or upsert the lead first (brain_upsert_contact).");
+      return setDraft({ contact_id: id, email_n, subject, body }, ctx);
+    },
+  }),
+  tool({
+    name: "brain_nick_queue",
+    title: "Nick's pack",
+    description: "The drafts waiting for Nick: every lead whose Email 1 is drafted with a clean copy lint (plus anything already atNick), with subject and body to audit. submit:true moves the clean drafted ones to atNick. Then record verdicts with brain_batch_nick. Drafts with lint issues are listed separately for Darrell/Prospectacle to fix.",
+    input: z.object({ agent: Agent, date: DateStr, lane: z.enum(["core", "website"]).optional(), submit: z.boolean().default(false) }),
+    kind: "queried",
+    run: async ({ date, lane, submit }, ctx) => {
+      const l = await leadsFor({ date: date ?? todayIn(), lane });
+      const clean = l.leads.filter((x) => x.email1_status === "drafted" && x.lint_issues === 0);
+      const blocked = l.leads.filter((x) => x.email1_status === "drafted" && x.lint_issues > 0).map((x) => ({ contact_id: x.contact_id, business: x.business, lint_issues: x.lint_issues }));
+      const submitted: string[] = [];
+      if (submit) for (const x of clean) if ((await contactStep(x.contact_id, { action: "submit_nick" }, ctx.operator)).ok) submitted.push(x.contact_id);
+      const ids = [...new Set([...clean.map((x) => x.contact_id), ...l.leads.filter((x) => x.email1_status === "atNick").map((x) => x.contact_id)])];
+      const pack = await Promise.all(ids.map(async (id) => { const v = await draftView(id, 1); return { contact_id: id, business: v.name, lane: v.lane, tier: v.priority, stage: v.stage, subject: v.subject, body: v.body, gap: v.gap, site_url: v.site_url, lint: v.lint }; }));
+      return { date: l.date, count: pack.length, submitted: submitted.length, pack, needs_fix: blocked };
+    },
   }),
 ];
 

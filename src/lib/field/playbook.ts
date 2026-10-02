@@ -138,15 +138,24 @@ export function playbookPrompt(
   c: Pick<FieldContact, "name" | "gap" | "batch"> & { lane?: Lane; siteUrl?: string | null; subject?: string },
   signer: Signer,
   n: EmailN = 1,
-  previous: string[] = []
+  previous: string[] = [],
+  observed = ""
 ): string {
   const lane = c.lane === "website"
-    ? "Lane: website. Gates rebuilds the business's site with booking built in and adds the core call-recovery system. Lead with the observed site gap (their problem), not with us."
+    ? n === 1
+      ? [
+          "Lane: website (Prospectacle). Email 1's value is three concrete fixes for their site, written inside the body.",
+          "Structure: one short line on what you noticed; the line \"Three things I'd fix:\"; then exactly three lines numbered \"1.\", \"2.\", \"3.\" (each one short sentence: what's wrong and what to do); one line that Gates rebuilds sites with booking built in; a soft ask such as \"Want me to walk you through them?\"; the signature.",
+          "Every fix must come from the observed facts below. Never invent a fact. No links, no URLs, no attachments or files, no prices.",
+          "Mention the after-hours call add-on only if the facts show limited published hours, and only as an optional later step in one short clause.",
+        ].join("\n")
+      : "Lane: website. Follow up on the three site fixes from Email 1; don't repeat them word for word."
     : "Lane: core (missed-call text-back and after-hours booking).";
   const step = n === 1 ? "Write Email 1 (subject + body)." : `${STEP_JOBS[n]} It is sent as a reply in the same thread, so reuse this subject exactly: "${c.subject ?? ""}". Don't repeat earlier emails.`;
   return [
     lane,
     ...(c.siteUrl ? [`Site: ${c.siteUrl}`] : []),
+    ...(observed ? [`Observed facts from the live site (the only facts you may use besides the gap note):\n${observed}`] : []),
     ...(previous.length ? [`Earlier emails in this sequence:\n${previous.map((p, i) => `--- Email ${i + 1} ---\n${p}`).join("\n")}`] : []),
     `Business: ${c.name}`,
     `Niche / batch: ${c.batch || "(unknown, do not assume a vertical)"}`,
@@ -159,7 +168,7 @@ export function playbookPrompt(
 
 /** CAN-SPAM footer appended at send time. Shown in the preview so Approve sees it. */
 export function canSpamFooter(address: string): string {
-  return `${address}\nReply "stop" and I won't write again.`;
+  return `${address}\nReply "no" and I won't write again.`;
 }
 
 export function composeOutgoing(body: string, footer: string | null): string {

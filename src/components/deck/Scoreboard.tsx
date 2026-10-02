@@ -52,6 +52,7 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
       {d && (
         <div data-testid="sb-warm" className={`mt-2 rounded-md px-2.5 py-1.5 text-[11px] ${d.domainWarmed ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
           <p>{d.warmNote}</p>
+          {!d.domainWarmed && <p className="mt-1 text-amber-100/80">Confirm warm-up = allow Field sends. Does not send mail by itself.</p>}
           {!d.domainWarmed && (
             <button onClick={confirmWarm} disabled={busy} data-testid="sb-warm-confirm" title="Thomas only. Opens sending for approved emails." className={`mt-1.5 min-h-[32px] rounded-md border px-2.5 text-[11px] font-medium ${armed ? "border-amber-300 bg-amber-300/20 text-amber-100" : "border-amber-400/40 text-amber-200 hover:bg-amber-400/10"} disabled:opacity-50`}>
               {busy ? "Saving…" : armed ? "Click again to confirm warm-up" : "Confirm warm-up"}

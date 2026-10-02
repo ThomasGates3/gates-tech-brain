@@ -84,6 +84,26 @@ brain_set_gate {"domain_warmed":true,"daily_cap":30}
 ```
 Ace answers "what came in today for website vs core, and what's drafted?" from `lead_counts` + `leads[].lane / email1_status` in this one call.
 
+**Changelog (2026-10-02, Field finish)**
+
+- **Website lane Email 1 = three fixes in the body.** `brain_set_draft {generate:"sonnet"}` on a website lead reads the lead's own site (Haiku + web fetch, that domain only), then writes Email 1 with exactly three numbered fixes from observed facts + the gap note, a soft ask, no links, no attachments, no prices; the after-hours add-on only if published hours show a gap, framed as optional later. The free template refuses website Email 1 (it can't know real fixes).
+- **Copy lint, website Email 1:** needs exactly `1.` `2.` `3.` fixes; blocks any link and attachment mentions. Nick PASS and Approve refused while it fails. Core lane and follow-ups are unaffected.
+- **`brain_import_draft {contact_id | email, subject, body, email_n?}`**: put copy you already wrote into the Brain. A draft that lives only in scout markdown is not done.
+- **`brain_nick_queue {lane?, submit?}`**: Nick's pack (clean drafts + atNick, with subject/body); `submit:true` moves clean drafts to atNick. `/leads` has **Send N drafted to Nick**.
+- **Duplicates:** grouped by email or business name; `leads[]` and `/leads` show one primary row (High/Med beats Soft, then most advanced draft, then Notion) with `duplicates[]`. Merging keeps the primary's tier.
+- **Warm-up is a hard send block.** Thomas can Approve into approved-unsent while not warmed; `brain_approve_send` returns 423 until Thomas hits **Confirm warm-up** (Ace can't). Opt-out footer now reads `Reply "no" and I won't write again.`
+
+**Ace morning routine (scouts):** Ashley / Prospectacle upsert High/Med leads with a verified email first (`brain_upsert_contact`, lane/source come from your agent id) → draft into the Brain (`brain_set_draft {generate:"sonnet"}` or `brain_import_draft`) → `brain_nick_queue {submit:true}` → Nick `brain_batch_nick` → Thomas approves on `/leads`.
+
+```jsonc
+// brain_today → leads[] row for a website lead after a real brain_set_draft (2026-10-02)
+{ "contact_id": "prospectacle_cc6def81fc73c9f9", "business": "2 Men A Truck And A Trailer LLC", "contact_name": null,
+  "email": "2matat21@gmail.com", "lane": "website", "source": "prospectacle", "tier": "High",
+  "email1_status": "drafted", "nick_verdict": null, "nick_note": null, "approved": false, "sent_at": null,
+  "subject": "three fixes for your site", "lint_issues": 0, "suppressed": false, "replied": false,
+  "duplicate_of": [], "duplicates": [], "next_action": "Nick audit", "pack_date": "2026-10-02" }
+```
+
 **Control Center pages:** the dashboard shows a compact **Today's leads** card (counts, three most urgent leads, Load Notion pack, Template-draft undrafted) that opens **`/leads`**: the full board with filters and per-lead buttons (draft, Nick PASS/REVISE/KILL, Approve, Send once warmed, Hold/Release, Merge duplicate). Scoreboard tiles open `/leads` pre-filtered; the scoreboard has a two-click **Confirm warm-up** (Thomas only). The Activity card opens **`/activity`** (filter by agent and kind). Every button calls the same `/api/v1/tools` the bots use, so the same gates apply and each click is logged.
 
 All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.
