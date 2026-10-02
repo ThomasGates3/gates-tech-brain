@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { Fragment } from "react";
 import { LeadActions } from "./LeadActions";
+import { DraftPreview } from "./DraftPreview";
 import { callTool } from "@/lib/ux/tools";
 
 /** Control Center "Today's leads": every lead for a date with lane, state and next action (reads the Brain DB). */
@@ -27,13 +29,26 @@ function Badge({ children, className, testId }: { children: React.ReactNode; cla
   return <span data-testid={testId} className={`inline-block rounded px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide ${className}`}>{children}</span>;
 }
 
-export type LeadFilters = { date?: string; lane?: string; status?: string; tier?: string };
+/** Render only the table (md+) or only the cards (phone), never both. */
+const MD = "(min-width: 768px)";
+const useWide = () =>
+  useSyncExternalStore(
+    (cb) => { const m = window.matchMedia(MD); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); },
+    () => window.matchMedia(MD).matches,
+    () => true
+  );
+
+export type LeadFilters = { date?: string; lane?: string; status?: string; tier?: string; open?: string };
 
 export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
   const [date, setDate] = useState(initial.date ?? "");
   const [lane, setLane] = useState(initial.lane ?? "");
   const [status, setStatus] = useState(initial.status ?? "");
   const [tier, setTier] = useState(initial.tier ?? "");
+  const [openId, setOpenId] = useState<string | null>(initial.open ?? null);
+  const wide = useWide();
+  const [version, setVersion] = useState(0); // bump to refresh an open preview after an action
+  const toggle = (id: string) => setOpenId((o) => (o === id ? null : id));
   const [data, setData] = useState<Data | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -45,6 +60,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       if (!r.ok) throw new Error(d.error ?? "Failed to load leads");
       setData(d);
       setErr(null);
+      setVersion((v) => v + 1);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     }
@@ -125,17 +141,20 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       {data && !data.leads.length && <p className="rounded-md bg-black/30 px-3 py-6 text-center text-[13px] text-slate-500">No leads for this filter. Ace loads the morning pack, Ashley and Prospectacle upsert leads.</p>}
 
       {/* Desktop table */}
-      {data && data.leads.length > 0 && (
-        <div className="hidden overflow-x-auto md:block">
+      {data && data.leads.length > 0 && wide && (
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-[12px]">
             <thead className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">
               <tr>{["Lead", "Lane", "Source", "Tier", "Email 1", "Nick", "Subject", "Next action", "Actions"].map((h) => <th key={h} className="px-2 py-1.5 font-normal">{h}</th>)}</tr>
             </thead>
             <tbody>
               {data.leads.map((l) => (
-                <tr key={l.contact_id} data-testid={`lead-${l.contact_id}`} data-status={l.email1_status} className="border-t border-white/[0.05] align-top hover:bg-white/[0.02]">
+                <Fragment key={l.contact_id}>
+                <tr data-testid={`lead-${l.contact_id}`} data-status={l.email1_status} className={`border-t border-white/[0.05] align-top hover:bg-white/[0.02] ${openId === l.contact_id ? "bg-white/[0.03]" : ""}`}>
                   <td className="px-2 py-2">
-                    <a href="/field" className="text-slate-100 hover:text-[var(--accent-soft)]">{l.business}</a>
+                    <button onClick={() => toggle(l.contact_id)} data-testid={`open-${l.contact_id}`} className="text-left text-slate-100 hover:text-[var(--accent-soft)]">
+                      <span className="mr-1 font-mono text-[10px] text-slate-500">{openId === l.contact_id ? "▾" : "▸"}</span>{l.business}
+                    </button>
                     {l.duplicate_of.length > 0 && <Badge testId="lead-dup" className="ml-1.5 bg-amber-400/15 text-amber-200">dup</Badge>}
                     <p className="text-[11px] text-slate-500">{[l.contact_name, l.email].filter(Boolean).join(" · ")}</p>
                     {l.duplicates.length > 0 && <p className="text-[10px] text-amber-200/80">also: {l.duplicates.map((d) => `${d.source} ${d.tier} ${d.email1_status}`).join(", ")}</p>}
@@ -145,10 +164,16 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                   <td className="px-2 py-2 font-mono text-[11px] text-slate-300">{l.tier}</td>
                   <td className="px-2 py-2"><Badge testId="lead-status" className={STATUS_STYLE[l.email1_status] ?? ""}>{l.email1_status}</Badge>{l.lint_issues > 0 && <span className="ml-1 font-mono text-[10px] text-red-300">lint {l.lint_issues}</span>}</td>
                   <td className="max-w-[180px] px-2 py-2 text-[11px] text-slate-400" title={l.nick_note ?? undefined}>{l.nick_verdict ? <><span className="text-slate-200">{l.nick_verdict}</span>{l.nick_note ? ` · ${l.nick_note.slice(0, 60)}` : ""}</> : "—"}</td>
-                  <td className="max-w-[220px] truncate px-2 py-2 text-[11px] text-slate-400" title={l.subject ?? undefined}>{l.subject ?? "—"}</td>
+                  <td className="max-w-[220px] px-2 py-2 text-[11px]">
+                    {l.subject ? <button onClick={() => toggle(l.contact_id)} className="max-w-full truncate text-left text-slate-300 underline decoration-white/20 underline-offset-2 hover:text-[var(--accent-soft)]" title="Read the email">{l.subject}</button> : <span className="text-slate-500">—</span>}
+                  </td>
                   <td className={`max-w-[200px] px-2 py-2 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`} data-testid="lead-next">{l.next_action}</td>
                   <td className="px-2 py-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></td>
                 </tr>
+                {openId === l.contact_id && (
+                  <tr className="bg-white/[0.02]"><td colSpan={9} className="px-2 pb-4 pt-1"><DraftPreview contactId={l.contact_id} version={version} /></td></tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -156,8 +181,8 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       )}
 
       {/* Phone cards */}
-      {data && data.leads.length > 0 && (
-        <div className="space-y-2 md:hidden">
+      {data && data.leads.length > 0 && !wide && (
+        <div className="space-y-2">
           {data.leads.map((l) => (
             <div key={l.contact_id} data-testid={`leadcard-${l.contact_id}`} className="block rounded-lg border border-white/[0.06] bg-black/30 p-3">
               <div className="flex items-start justify-between gap-2">
@@ -174,7 +199,12 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                 {l.nick_verdict && <Badge className="bg-white/5 text-slate-300">Nick {l.nick_verdict}</Badge>}
                 {l.duplicate_of.length > 0 && <Badge className="bg-amber-400/15 text-amber-200">dup</Badge>}
               </div>
-              {l.subject && <p className="mt-2 truncate text-[12px] text-slate-400">{l.subject}</p>}
+              {l.subject && (
+                <button onClick={() => toggle(l.contact_id)} data-testid={`open-card-${l.contact_id}`} className="mt-2 flex min-h-[44px] w-full items-center justify-between gap-2 rounded-md border border-white/[0.06] px-2 text-left text-[12px] text-slate-300">
+                  <span className="truncate">{l.subject}</span><span className="shrink-0 text-[var(--accent-soft)]">{openId === l.contact_id ? "Hide email" : "Read email"}</span>
+                </button>
+              )}
+              {openId === l.contact_id && <div className="mt-2"><DraftPreview contactId={l.contact_id} version={version} /></div>}
               <p className={`mt-1.5 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>→ {l.next_action}</p>
               <div className="mt-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></div>
             </div>

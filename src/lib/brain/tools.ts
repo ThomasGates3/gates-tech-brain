@@ -18,8 +18,9 @@ import { getGates, setGates } from "@/lib/field/gates";
 import { leadsFor, EMAIL1_STATUSES } from "@/lib/field/leads";
 import { fieldSnapshot } from "@/lib/field/snapshot";
 import { listLog, getContact } from "@/lib/field/store";
-import { todayIn } from "@/lib/field/config";
+import { fieldEnv, todayIn } from "@/lib/field/config";
 import { lintDraft, MAX_WORDS } from "@/lib/field/lint";
+import { canSpamFooter } from "@/lib/field/playbook";
 import { OUTREACH_BRIEF } from "@/lib/field/brief";
 import type { EmailN, Operator } from "@/lib/field/types";
 import { AGENTS, AGENT_IDS, agentStatuses } from "@/lib/agents";
@@ -72,6 +73,7 @@ async function draftView(id: string, n: EmailN = 1) {
     approved: Boolean(v.approvedHash && v.approvedHash === v.draftHash), approved_by: v.approvedBy, sent_at: v.sentAt,
     due_date: n > 1 && c.sentAt ? dueDate(c.sentAt, n) : null, replied: Boolean(c.repliedAt),
     lint: lintDraft(v.subject, v.body, { lane: c.lane, emailN: n }), last_error: v.lastError,
+    footer: fieldEnv.mailingAddress() ? canSpamFooter(fieldEnv.mailingAddress()) : null,
   };
 }
 
