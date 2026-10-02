@@ -247,6 +247,7 @@ function AccessPanel() {
   const [keys, setKeys] = useState<KeyRow[] | null>(null);
   const [denied, setDenied] = useState(false);
   const [label, setLabel] = useState("Ace");
+  const [keyOp, setKeyOp] = useState<"ace" | "thomas">("ace");
   const [fresh, setFresh] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -261,7 +262,7 @@ function AccessPanel() {
   const create = async () => {
     setBusy(true);
     try {
-      const d = await (await fetch("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label, operator: "ace" }) })).json();
+      const d = await (await fetch("/api/keys", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label, operator: keyOp }) })).json();
       if (d.key) setFresh(d.key);
       await load();
     } finally { setBusy(false); }
@@ -283,6 +284,10 @@ function AccessPanel() {
         <>
           <div className={`${card} flex items-center gap-2`}>
             <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} data-testid="key-label" aria-label="Key label" className="min-h-[36px] min-w-0 flex-1 rounded-md border border-white/10 bg-black/40 px-2.5 text-[13px] text-slate-100 outline-none focus:border-[var(--accent)]/60" />
+            <select value={keyOp} onChange={(e) => { const v = e.target.value as "ace" | "thomas"; setKeyOp(v); setLabel(v === "thomas" ? "Thomas" : "Ace"); }} data-testid="key-operator" aria-label="Key acts as" title="Ace keys can't approve, send or flip gates. Thomas keys can: keep them private." className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200 outline-none">
+              <option value="ace">acts as Ace</option>
+              <option value="thomas">acts as Thomas</option>
+            </select>
             <button onClick={create} disabled={busy || !label.trim()} data-testid="key-create" className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black disabled:opacity-50">{busy ? "Creating…" : "Create key"}</button>
           </div>
           {fresh && (

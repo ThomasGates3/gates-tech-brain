@@ -4,6 +4,7 @@
 import { currentOperator, fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { canGreenlight } from "./workflow";
 import { claudeBudget } from "@/lib/budget";
+import { getGates } from "./gates";
 import { sentSince } from "./store";
 import { writeBack, type NotionStatus } from "./notion";
 import { canSpamFooter } from "./playbook";
@@ -24,6 +25,7 @@ export async function requireOperator(): Promise<{ operator: Operator } | { resp
 
 export async function consoleConfig(operator: Operator | null): Promise<ConsoleConfig> {
   const db = fieldEnv.database();
+  const gates = await getGates();
   return {
     operator,
     canGreenlight: canGreenlight(operator, fieldEnv.aceCanSend()),
@@ -36,8 +38,8 @@ export async function consoleConfig(operator: Operator | null): Promise<ConsoleC
     claude: fieldEnv.claude(),
     mailingAddress: fieldEnv.mailingAddress() || null,
     footer: fieldEnv.mailingAddress() ? canSpamFooter(fieldEnv.mailingAddress()) : null,
-    domainWarmed: fieldEnv.domainWarmed(),
-    dailyCap: fieldEnv.dailyCap(),
+    domainWarmed: gates.domainWarmed,
+    dailyCap: gates.dailyCap,
     sentToday: db ? await sentSince(startOfTodayIso()).catch(() => 0) : 0,
     claudeBudget: await claudeBudget(),
   };

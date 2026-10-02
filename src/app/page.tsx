@@ -10,6 +10,7 @@ import { BootSequence } from "@/components/deck/BootSequence";
 import { NovaNoticed } from "@/components/deck/NovaNoticed";
 import { StatPanel, ActivityFeed, type Stat } from "@/components/deck/Telemetry";
 import { SystemStatPanel } from "@/components/deck/SystemStatPanel";
+import { Scoreboard, type ScoreboardData } from "@/components/deck/Scoreboard";
 import { SettingsModal, ConnectionsModal, BriefingDetailModal } from "@/components/deck/DeckModals";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset } from "@/lib/persona/presets";
@@ -20,6 +21,7 @@ import { speak, cancelSpeech } from "@/lib/ux/speak";
 interface DeckState {
   briefing: { lead: string; items: BriefingHighlight[]; next: string[] };
   ops: Stat[];
+  scoreboard: ScoreboardData;
   readouts: { tier: string; activeAgents: number; sent: string; claude: string };
 }
 
@@ -181,8 +183,9 @@ export default function Home() {
 
           {/* Right — stats (clickable) */}
           <div className="order-2 space-y-4 lg:order-3">
-            <SystemStatPanel onClick={() => setModal("settings")} />
+            <Scoreboard data={deck?.scoreboard ?? null} />
             <StatPanel title="Operations" stats={deck?.ops ?? []} onClick={() => setModal("connections")} />
+            <SystemStatPanel onClick={() => setModal("settings")} />
           </div>
         </div>
 

@@ -14,9 +14,14 @@ export type Operator = "thomas" | "ace" | "team";
 
 export type DraftSource = "template" | "claude" | "manual" | "notion" | "csv";
 
+export type Lane = "core" | "website";
+export type ContactSource = "notion" | "csv" | "ashley" | "prospectacle" | "manual";
+/** Sequence step: Email 1/2/3/4 on Day 1/3/7/12. */
+export type EmailN = 1 | 2 | 3 | 4;
+
 export interface FieldContact {
   id: string;
-  source: "notion" | "csv";
+  source: ContactSource;
   notionPageId: string | null;
   name: string;
   email: string;
@@ -41,6 +46,11 @@ export interface FieldContact {
   sentAt: string | null;
   lastError: string | null;
   updatedAt: string;
+  lane: Lane;
+  contactName: string | null;
+  siteUrl: string | null;
+  notes: string | null;
+  repliedAt: string | null;
 }
 
 export interface SendLogEntry {
@@ -55,6 +65,7 @@ export interface SendLogEntry {
   operator: string;
   suppressed: boolean;
   sentAt: string;
+  emailN: number;
 }
 
 export interface Suppression {

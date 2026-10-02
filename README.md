@@ -12,23 +12,46 @@ Locked Field path: Ace queue → Darrell Email 1 → Nick PASS/REVISE/KILL → T
 
 - **MCP URL:** `https://brain.gatestech.solutions/api/mcp` (Streamable HTTP).
 - **OpenAPI:** `https://brain.gatestech.solutions/api/v1/openapi.json`; REST mirror at `POST /api/v1/tools/<tool name>`.
-- **Auth:** `Authorization: Bearer <key>`. Create a key in the deck under **Operations → Access** (Thomas signed in). It is shown once; only its hash is stored. `FIELD_ACE_API_KEY` also works.
+- **Auth:** `Authorization: Bearer <key>`. Create a key in the deck under **Operations → Access** (Thomas signed in): "acts as Ace" for the bots, "acts as Thomas" only for Thomas's own client (it can approve, send and flip gates). Shown once; only its hash is stored. `FIELD_ACE_API_KEY` also works (Ace).
 - **Grok:** grok.com/connectors → New Connector → Custom → paste the MCP URL → add the Authorization header.
 - Pass `agent` (roster id, e.g. `"darrell"`) on each call. Every call writes an Activity row, and that bot shows **active** on the roster for 30 minutes.
 
 | Tool | What it does |
 | --- | --- |
-| `brain_today` | Whole picture in one call: queue by stage, sends vs cap, Claude spend vs budget, gates, next actions. Start here. |
-| `brain_field_queue` | Today's High+Med contacts (Soft excluded); `load_from_notion: true` pulls the morning pack first. |
-| `brain_get_draft` / `brain_set_draft` | Read / write Email 1. `generate`: `template` (free), `sonnet` (default), `opus` (hard drafts only). Returns copy-lint issues. Any edit clears PASS. |
-| `brain_set_nick_status` | PASS / REVISE / KILL + note. PASS refused if the copy lint fails. |
-| `brain_hold` | Hold or release a contact. |
-| `brain_approve_send` | Approve + send one Email 1 via AgentMail, returns `send_id`. Needs Nick PASS on the exact draft. Thomas-only (Ace key only with `FIELD_ACE_CAN_SEND=true`). |
-| `brain_suppress` / `brain_send_log` | Opt-outs and the send log. |
-| `brain_chat` | Run a prompt on Claude instead of Grok tokens. `sonnet` default, `haiku` cheapest, `opus` hard copy. Copy agents get the outreach brief; Hermes gets web search. |
-| `brain_list_automations` / `brain_run_automation` | Draft-only Gates automations. `dry_run` defaults to true (nothing delivered); `false` posts the draft to deck/Discord. Never sends outreach. |
-| `brain_get_brief` | The outreach brief + Email 1 rules. |
-| `brain_list_agents` / `brain_report_activity` / `brain_activity` | Roster with real status, log finished work, recent activity. |
+| `brain_today` | Whole picture: queue by stage and lane, sends vs cap, approved-unsent, follow-ups due, unanswered inbound, gates (+ warm note), Claude budget, next actions. Start here. |
+| `brain_upsert_contact` | Add/update one lead (by contact_id, else email) from Ashley (core) or Prospectacle (website). High/Med join today's queue; Soft is held. Rejects incomplete rows and placeholder emails. |
+| `brain_field_queue` | Today's High+Med contacts (Soft excluded unless `include_soft`), filter by `lane`; `load_from_notion: true` pulls the morning pack first. |
+| `brain_get_draft` / `brain_set_draft` | Read / write Email n (`email_n` 1–4, default 1). `generate`: `template`, `sonnet` (default), `opus` (hard only). Emails 2–4 unlock after Email 1 is sent and reply in its thread. Any edit clears PASS. |
+| `brain_set_nick_status` | PASS / REVISE / KILL + note for Email n. PASS refused if the copy lint fails. |
+| `brain_batch_set_draft` / `brain_batch_nick` | Up to 50 items each; per-item results, one failure never stops the batch. |
+| `brain_approve` | Approve Email n **without sending**. Needs Nick PASS on the exact draft hash, clean lint, unsuppressed recipient. Thomas-only. |
+| `brain_approve_send` | Approve if needed + send one email (`email_n`). Emails 2–4 only on/after their due date and after the previous step. Thomas-only (Ace only with `FIELD_ACE_CAN_SEND=true`). |
+| `brain_next_due` | Follow-ups due (Day 3/7/12 after Email 1) on a date, excluding replied / opted-out / held. |
+| `brain_inbound` | Read + classify recent replies in the cold inbox: `reply_handoff_lisa` / `soft_hold` / `suppress_opt_out` / `ignore`. Never replies; suppresses only with `confirm_suppress: true`. A matched reply ends that contact's sequence. |
+| `brain_set_gate` | Thomas-only: `domain_warmed`, `daily_cap`. Logged with who/when. No args = read gates. |
+| `brain_hold` / `brain_suppress` / `brain_list_suppressions` / `brain_send_log` | Hold/release, opt-outs, suppression list (search), send log. |
+| `brain_chat` | Run a prompt on Claude instead of Grok tokens (`sonnet` default, `haiku`, `opus`). |
+| `brain_list_automations` / `brain_run_automation` | Draft-only automations; `dry_run` defaults to true. Never sends outreach. |
+| `brain_get_brief` / `brain_list_agents` / `brain_report_activity` / `brain_activity` | Brief, roster with real status, log work, recent activity. |
+
+**Changelog (2026-10-02): example payloads for Ace**
+
+```jsonc
+// Prospectacle adds a website-lane lead (Email 1 queue today)
+brain_upsert_contact {"agent":"prospectacle","business":"Glow Med Spa","contact_name":"Dana","email":"dana@glowmedspa.com","tier":"High","lane":"website","site_url":"https://glowmedspa.com","gap":"Your site lists services but has no way to book online.","source":"prospectacle"}
+// Darrell drafts Email 1 (or Email 2 later with "email_n":2)
+brain_set_draft {"agent":"darrell","contact_id":"prospectacle_…","generate":"sonnet"}
+// Nick audits several at once
+brain_batch_nick {"agent":"nick","items":[{"contact_id":"prospectacle_…","verdict":"PASS","note":"clean"},{"contact_id":"ashley_…","verdict":"REVISE","note":"opener too long"}]}
+// Thomas approves without sending (Thomas key)
+brain_approve {"contact_id":"prospectacle_…","email_n":1}
+// What's due, what came in, who's suppressed
+brain_next_due {"agent":"ace"}
+brain_inbound {"agent":"lisa","limit":25}
+brain_list_suppressions {"agent":"ace","search":"glow"}
+// Thomas confirms warm-up and raises the cap (Thomas key)
+brain_set_gate {"domain_warmed":true,"daily_cap":30}
+```
 
 All Claude use (chat, drafts, automations, bots) shares one daily budget: warn at $3, hard stop at $5.50 (`CLAUDE_DAILY_WARN_USD` / `CLAUDE_DAILY_CAP_USD`), with alerts on the deck, in Field, and in Discord.
 

@@ -6,6 +6,9 @@
 import { fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { listQueue, sentSince } from "./store";
 import { claudeBudget } from "@/lib/budget";
+import { getGates } from "./gates";
+import { nextDue } from "./sequence";
+import { unansweredCount } from "./inbound";
 
 export async function fieldSnapshot(date = todayIn()) {
   const contacts = await listQueue(date).catch(() => []);
@@ -23,15 +26,26 @@ export async function fieldSnapshot(date = todayIn()) {
     sent: n((c) => c.stage === "sent"),
     hold: n((c) => c.stage === "hold"),
     kill: n((c) => c.stage === "kill"),
+    core: n((c) => c.priority !== "Soft" && c.lane !== "website"),
+    website: n((c) => c.priority !== "Soft" && c.lane === "website"),
   };
-  const sentToday = await sentSince(startOfTodayIso()).catch(() => 0);
-  const budget = await claudeBudget();
+  const [sentToday, budget, g, due, inboundUnanswered] = await Promise.all([
+    sentSince(startOfTodayIso()).catch(() => 0),
+    claudeBudget(),
+    getGates(),
+    nextDue(date).catch(() => []),
+    unansweredCount(),
+  ]);
+  const sequenceDue = { total: due.length, byStep: { 2: due.filter((d) => d.email_n === 2).length, 3: due.filter((d) => d.email_n === 3).length, 4: due.filter((d) => d.email_n === 4).length } };
   const gates = {
     agentmail: Boolean(fieldEnv.agentmailKey() && fieldEnv.agentmailInbox()),
     inbox: fieldEnv.agentmailInbox() || null,
     notion: Boolean(fieldEnv.notionToken() && fieldEnv.notionDataSource()),
     mailingAddress: Boolean(fieldEnv.mailingAddress()),
-    domainWarmed: fieldEnv.domainWarmed(),
+    domainWarmed: g.domainWarmed,
+    warmNote: g.warmNote,
+    gatesSetBy: g.setBy,
+    gatesSetAt: g.setAt,
     aceCanSend: fieldEnv.aceCanSend(),
   };
   const next: string[] = [];
@@ -41,8 +55,10 @@ export async function fieldSnapshot(date = todayIn()) {
   if (queue.atNick) next.push(`${queue.atNick} draft${queue.atNick > 1 ? "s" : ""} waiting on Nick's verdict.`);
   if (passAwaitingApprove) next.push(`${passAwaitingApprove} PASSed draft${passAwaitingApprove > 1 ? "s" : ""} waiting on Thomas's approval.`);
   if (queue.approved) next.push(`${queue.approved} approved email${queue.approved > 1 ? "s" : ""} ready to send.`);
-  if (!gates.domainWarmed) next.push("Cold domain warm-up is unconfirmed.");
+  if (inboundUnanswered) next.push(`${inboundUnanswered} inbound repl${inboundUnanswered > 1 ? "ies" : "y"} unanswered (brain_inbound → Lisa).`);
+  if (sequenceDue.total) next.push(`${sequenceDue.total} follow-up${sequenceDue.total > 1 ? "s" : ""} due (Email 2: ${sequenceDue.byStep[2]}, 3: ${sequenceDue.byStep[3]}, 4: ${sequenceDue.byStep[4]}). See brain_next_due.`);
+  if (!gates.domainWarmed) next.push(g.warmNote);
   if (budget.status !== "ok") next.push(budget.status === "blocked" ? "Claude budget hit: Claude paused until midnight." : `Claude spend past the $${budget.warnUsd} warning.`);
-  return { date, queue, sentToday, dailyCap: fieldEnv.dailyCap(), claudeBudget: budget, gates, next };
+  return { date, queue, approvedUnsent: queue.approved, sentToday, dailyCap: g.dailyCap, sequenceDue, inboundUnanswered, claudeBudget: budget, gates, next };
 }
 export type FieldSnapshot = Awaited<ReturnType<typeof fieldSnapshot>>;

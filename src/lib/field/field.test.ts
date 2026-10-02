@@ -21,7 +21,8 @@ function contact(over: Partial<FieldContact> = {}): FieldContact {
     city: "Alpharetta", batch: "2026-09-24 ATL med spa", gap: "Published hours are Tuesday-Saturday 9-5 with Sunday and Monday closed",
     priority: "High", packDate: "2026-10-01", stage: "new", subject: "", body: "", draftSource: null, draftHash: null,
     nickVerdict: null, nickNote: null, nickHash: null, nickAt: null, nickBy: null, approvedHash: null, approvedAt: null,
-    approvedBy: null, sentAt: null, lastError: null, updatedAt: now, ...over,
+    approvedBy: null, sentAt: null, lastError: null, updatedAt: now,
+    lane: "core", contactName: null, siteUrl: null, notes: null, repliedAt: null, ...over,
   };
 }
 
@@ -208,4 +209,44 @@ test("CSV parses quoted multi-line bodies and maps columns", () => {
   assert.equal(rows[0].priority, "High");
   assert.equal(rows[1].priority, "Soft");
   assert.throws(() => csvToRows("Business,Phone\nx,1"), /Name and To/);
+});
+
+// ── Sequence, lanes, inbound ────────────────────────────────────────────────
+
+import { dueDate, addDays, STEP_OFFSET_DAYS } from "./sequence";
+import { followupTemplate } from "./playbook";
+import { classifyReply, firstWords } from "./inbound";
+
+test("sequence due dates: Day 1/3/7/12 from the Email 1 send date (ET)", () => {
+  assert.deepEqual(STEP_OFFSET_DAYS, { 1: 0, 2: 2, 3: 6, 4: 11 });
+  const sent = "2026-10-01T15:00:00.000Z"; // 11am ET, Oct 1
+  assert.equal(dueDate(sent, 2), "2026-10-03");
+  assert.equal(dueDate(sent, 3), "2026-10-07");
+  assert.equal(dueDate(sent, 4), "2026-10-12");
+  assert.equal(dueDate("2026-10-02T02:30:00.000Z", 2), "2026-10-03"); // 10:30pm ET Oct 1 counts as Oct 1
+  assert.equal(addDays("2026-12-31", 1), "2027-01-01");
+});
+
+test("follow-up and website templates pass the copy lint", () => {
+  for (const n of [2, 3, 4] as const) {
+    for (const lane of ["core", "website"] as const) {
+      const d = followupTemplate(n, { name: "Palma Aesthetics", subject: "calls after you close", lane }, signer);
+      assert.equal(d.subject, "calls after you close");
+      assert.deepEqual(lintCopy(d.subject, d.body), [], `Email ${n} ${lane}`);
+    }
+  }
+  const w = templateDraft(contact({ lane: "website", gap: "" }), signer);
+  assert.match(w.body, /rebuild the site with booking built in/);
+  assert.deepEqual(lintCopy(w.subject, w.body), []);
+});
+
+test("inbound classifier: opt-out, not-now, auto-reply, bounce, real reply", () => {
+  assert.equal(classifyReply("No", "a@b.com").action, "suppress_opt_out");
+  assert.equal(classifyReply("no thanks\n\nOn Tue, Thomas wrote:\n> Worth a look?", "a@b.com").action, "suppress_opt_out");
+  assert.equal(classifyReply("Please remove me from your list", "a@b.com").action, "suppress_opt_out");
+  assert.equal(classifyReply("Not right now, maybe next quarter.", "a@b.com").action, "soft_hold");
+  assert.equal(classifyReply("I'm out of the office until Monday.", "a@b.com").action, "ignore");
+  assert.equal(classifyReply("Delivery Status Notification (Failure)", "mailer-daemon@googlemail.com").action, "ignore");
+  assert.equal(classifyReply("Yes, how does the text-back work with Boulevard?", "a@b.com").action, "reply_handoff_lisa");
+  assert.equal(firstWords("Sounds good\n> quoted\nOn Mon, X wrote:\nold"), "Sounds good");
 });

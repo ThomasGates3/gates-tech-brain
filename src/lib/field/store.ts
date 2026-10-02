@@ -7,10 +7,10 @@
 import { createHash, randomUUID } from "crypto";
 import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { fieldContacts, fieldSendLog, fieldSuppressions } from "@/db/schema";
+import { fieldContacts, fieldSendLog, fieldSteps, fieldSuppressions } from "@/db/schema";
 import { draftHash } from "./workflow";
 import type { NotionRow } from "./notion";
-import type { DraftSource, FieldContact, Priority, SendLogEntry, Stage, Suppression } from "./types";
+import type { ContactSource, DraftSource, EmailN, FieldContact, Lane, Priority, SendLogEntry, Stage, Suppression } from "./types";
 
 type Row = typeof fieldContacts.$inferSelect;
 
@@ -143,10 +143,125 @@ export async function importRows(rows: SourceRow[], source: "notion" | "csv", fa
   return summary;
 }
 
+// ── Sequence steps (Email 2–4) ──────────────────────────────────────────────
+
+type StepRow = typeof fieldSteps.$inferSelect;
+export type StepFields = Pick<FieldContact, "stage" | "subject" | "body" | "draftSource" | "draftHash" | "nickVerdict" | "nickNote" | "nickHash" | "nickAt" | "nickBy" | "approvedHash" | "approvedAt" | "approvedBy" | "sentAt" | "lastError"> & { messageId: string | null };
+const STEP_KEYS = ["stage", "subject", "body", "draftSource", "draftHash", "nickVerdict", "nickNote", "nickHash", "nickAt", "nickBy", "approvedHash", "approvedAt", "approvedBy", "sentAt", "lastError", "messageId"] as const;
+const emptyStep = (): StepFields => ({ stage: "new", subject: "", body: "", draftSource: null, draftHash: null, nickVerdict: null, nickNote: null, nickHash: null, nickAt: null, nickBy: null, approvedHash: null, approvedAt: null, approvedBy: null, sentAt: null, lastError: null, messageId: null });
+const stepId = (contactId: string, n: number) => `${contactId}:${n}`;
+
+export async function getStep(contactId: string, n: EmailN): Promise<StepFields> {
+  const [r] = await db.select().from(fieldSteps).where(eq(fieldSteps.id, stepId(contactId, n))).limit(1);
+  return r ? (r as unknown as StepFields) : emptyStep();
+}
+
+export async function listSteps(contactIds: string[]): Promise<StepRow[]> {
+  return contactIds.length ? db.select().from(fieldSteps).where(inArray(fieldSteps.contactId, contactIds)) : [];
+}
+
+export async function patchStep(contactId: string, n: EmailN, patch: Partial<StepFields>): Promise<StepFields> {
+  const clean = Object.fromEntries(Object.entries(patch).filter(([k]) => (STEP_KEYS as readonly string[]).includes(k)));
+  const now = new Date().toISOString();
+  const [r] = await db
+    .insert(fieldSteps)
+    .values({ id: stepId(contactId, n), contactId, n, ...emptyStep(), ...clean, updatedAt: now } as typeof fieldSteps.$inferInsert)
+    .onConflictDoUpdate({ target: fieldSteps.id, set: { ...clean, updatedAt: now } })
+    .returning();
+  return r as unknown as StepFields;
+}
+
+// ── Upsert one contact (Ashley / Prospectacle / manual) ─────────────────────
+
+export interface UpsertInput {
+  contactId?: string;
+  business: string;
+  contactName?: string;
+  email: string;
+  tier: Priority;
+  lane: Lane;
+  siteUrl?: string;
+  notes?: string;
+  gap?: string;
+  city?: string;
+  source: ContactSource;
+  date: string;
+}
+
+/** Upsert by contact_id, else by email. Never resets workflow state; an unsent contact moves onto `date`'s queue. */
+export async function upsertContact(u: UpsertInput): Promise<{ contact: FieldContact; created: boolean }> {
+  const now = new Date().toISOString();
+  const email = norm(u.email);
+  const [prev] = u.contactId
+    ? await db.select().from(fieldContacts).where(eq(fieldContacts.id, u.contactId)).limit(1)
+    : await db.select().from(fieldContacts).where(sql`lower(${fieldContacts.email}) = ${email}`).orderBy(desc(fieldContacts.updatedAt)).limit(1);
+  const facts = {
+    name: u.business,
+    email,
+    priority: u.tier,
+    lane: u.lane,
+    ...(u.contactName !== undefined && { contactName: u.contactName }),
+    ...(u.siteUrl !== undefined && { siteUrl: u.siteUrl }),
+    ...(u.notes !== undefined && { notes: u.notes }),
+    ...(u.gap !== undefined && { gap: u.gap }),
+    ...(u.city !== undefined && { city: u.city }),
+  };
+  if (prev) {
+    const c = toContact(prev);
+    const unsent = c.stage !== "sent" && c.stage !== "sending";
+    const patch: Partial<FieldContact> = { ...facts, ...(unsent && { packDate: u.date }) };
+    if (u.tier === "Soft" && (c.stage === "new" || c.stage === "drafted" || c.stage === "nick" || c.stage === "approved")) Object.assign(patch, { stage: "hold", approvedHash: null, approvedAt: null, approvedBy: null });
+    if (norm(c.email) !== email && (c.stage === "nick" || c.stage === "approved")) Object.assign(patch, { stage: "drafted", nickVerdict: null, nickHash: null, approvedHash: null, approvedAt: null, approvedBy: null });
+    return { contact: await patchContact(c.id, patch), created: false };
+  }
+  const id = u.contactId ?? `${u.source}_${createHash("sha1").update(`${email}|${u.business.toLowerCase()}`).digest("hex").slice(0, 16)}`;
+  const [r] = await db
+    .insert(fieldContacts)
+    .values({ id, source: u.source, notionPageId: null, city: u.city ?? "", batch: `${u.date} ${u.lane}`, gap: u.gap ?? "", packDate: u.date, stage: u.tier === "Soft" ? "hold" : "new", updatedAt: now, ...facts })
+    .returning();
+  return { contact: toContact(r), created: true };
+}
+
+export async function markReplied(contactId: string, at: string): Promise<void> {
+  await db.update(fieldContacts).set({ repliedAt: at }).where(and(eq(fieldContacts.id, contactId), sql`${fieldContacts.repliedAt} is null`));
+}
+
+export async function contactsByEmail(emails: string[]): Promise<FieldContact[]> {
+  const list = [...new Set(emails.map(norm))].filter(Boolean);
+  return list.length ? (await db.select().from(fieldContacts).where(inArray(sql`lower(${fieldContacts.email})`, list))).map(toContact) : [];
+}
+
+/** Contacts whose Email 1 went out (sequence candidates). */
+export async function sequenceContacts(): Promise<FieldContact[]> {
+  return (await db.select().from(fieldContacts).where(eq(fieldContacts.stage, "sent"))).map(toContact);
+}
+
+/** A suppression that blocks this contact. A contact's own "sent_email1" entry doesn't block its follow-ups. */
+export async function blockingSuppression(email: string, contactId: string): Promise<Suppression | null> {
+  const [r] = await db.select().from(fieldSuppressions).where(eq(fieldSuppressions.email, norm(email))).limit(1);
+  if (!r) return null;
+  if (r.reason === "sent_email1" && r.contactId === contactId) return null;
+  return r as Suppression;
+}
+
+/** Last AgentMail message we sent this contact (follow-ups reply into its thread). */
+export async function lastSent(contactId: string): Promise<SendLogEntry | null> {
+  const [r] = await db.select().from(fieldSendLog).where(eq(fieldSendLog.contactId, contactId)).orderBy(desc(fieldSendLog.sentAt)).limit(1);
+  return (r as SendLogEntry) ?? null;
+}
+
 // ── Send (claim → AgentMail → record) ───────────────────────────────────────
 
 /** Atomically move approved → sending. Returns false if someone else got there first. */
-export async function claimForSend(id: string, approvedHash: string): Promise<boolean> {
+export async function claimForSend(id: string, approvedHash: string, n: EmailN = 1): Promise<boolean> {
+  if (n > 1) {
+    const r = await db
+      .update(fieldSteps)
+      .set({ stage: "sending", lastError: null, updatedAt: new Date().toISOString() })
+      .where(and(eq(fieldSteps.id, stepId(id, n)), eq(fieldSteps.stage, "approved"), eq(fieldSteps.approvedHash, approvedHash)))
+      .returning({ id: fieldSteps.id });
+    return r.length === 1;
+  }
   const r = await db
     .update(fieldContacts)
     .set({ stage: "sending", lastError: null, updatedAt: new Date().toISOString() })
@@ -155,14 +270,21 @@ export async function claimForSend(id: string, approvedHash: string): Promise<bo
   return r.length === 1;
 }
 
-export async function releaseSend(id: string, error: string): Promise<void> {
+export async function releaseSend(id: string, error: string, n: EmailN = 1): Promise<void> {
+  if (n > 1) {
+    await db
+      .update(fieldSteps)
+      .set({ stage: "approved", lastError: error.slice(0, 500), updatedAt: new Date().toISOString() })
+      .where(and(eq(fieldSteps.id, stepId(id, n)), eq(fieldSteps.stage, "sending")));
+    return;
+  }
   await db
     .update(fieldContacts)
     .set({ stage: "approved", lastError: error.slice(0, 500), updatedAt: new Date().toISOString() })
     .where(and(eq(fieldContacts.id, id), eq(fieldContacts.stage, "sending")));
 }
 
-export async function recordSend(c: FieldContact, sent: { messageId: string; threadId: string | null; inbox: string; operator: string }): Promise<SendLogEntry> {
+export async function recordSend(c: FieldContact, sent: { messageId: string; threadId: string | null; inbox: string; operator: string }, n: EmailN = 1): Promise<SendLogEntry> {
   const at = new Date().toISOString();
   const entry: SendLogEntry = {
     id: `fsl_${randomUUID()}`,
@@ -176,7 +298,15 @@ export async function recordSend(c: FieldContact, sent: { messageId: string; thr
     operator: sent.operator,
     suppressed: true,
     sentAt: at,
+    emailN: n,
   };
+  if (n > 1) {
+    await db.batch([
+      db.update(fieldSteps).set({ stage: "sent", sentAt: at, messageId: sent.messageId, lastError: null, updatedAt: at }).where(eq(fieldSteps.id, stepId(c.id, n))),
+      db.insert(fieldSendLog).values(entry),
+    ]);
+    return entry;
+  }
   await db.batch([
     db.update(fieldContacts).set({ stage: "sent", sentAt: at, lastError: null, updatedAt: at }).where(eq(fieldContacts.id, c.id)),
     db.insert(fieldSendLog).values(entry),
@@ -199,8 +329,10 @@ export async function listLog(limit = 100): Promise<SendLogEntry[]> {
   return (await db.select().from(fieldSendLog).orderBy(desc(fieldSendLog.sentAt)).limit(limit)) as SendLogEntry[];
 }
 
-export async function listSuppressions(limit = 200): Promise<Suppression[]> {
-  return (await db.select().from(fieldSuppressions).orderBy(desc(fieldSuppressions.at)).limit(limit)) as Suppression[];
+export async function listSuppressions(limit = 200, search?: string): Promise<Suppression[]> {
+  const q = db.select().from(fieldSuppressions);
+  const rows = search ? q.where(sql`${fieldSuppressions.email} ilike ${`%${search.trim().toLowerCase()}%`}`) : q;
+  return (await rows.orderBy(desc(fieldSuppressions.at)).limit(limit)) as Suppression[];
 }
 
 export async function addSuppression(email: string, reason: Suppression["reason"], by: string): Promise<void> {
