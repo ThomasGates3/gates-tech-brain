@@ -9,6 +9,7 @@ import { cancelSpeech } from "@/lib/ux/speak";
 export const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
+  { href: "/roadmap", label: "Roadmap" },
   { href: "/field", label: "Field" },
   { href: "/activity", label: "Activity" },
   { href: "/automations", label: "Automations" },

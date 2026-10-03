@@ -31,6 +31,9 @@ export interface Lead {
   suppressed: boolean;
   replied: boolean;
   hold_reason: string | null;
+  sent: boolean;
+  booked: boolean;
+  paid_offer: string | null;
   /** Nick sent this exact draft back (REVISE) and it hasn't been rewritten yet. */
   revise_pending: boolean;
   duplicate_of: string[];
@@ -114,6 +117,7 @@ export async function leadsFor(f: LeadFilter = {}) {
       email1_status: status, nick_verdict: c.nickVerdict, nick_note: c.nickNote,
       approved: Boolean(c.approvedHash && c.approvedHash === c.draftHash), sent_at: c.sentAt, subject: c.draftHash ? c.subject : null,
       lint_issues: lint, suppressed: c.suppressed && status !== "sent", replied: Boolean(c.repliedAt),
+      sent: Boolean(c.sentAt), booked: Boolean(c.bookedAt), paid_offer: c.paidOffer,
       hold_reason: c.stage === "hold" ? (c.holdReason ?? (c.priority === "Soft" ? "soft" : "other")) : null,
       revise_pending: c.nickVerdict === "REVISE" && Boolean(c.nickHash) && c.nickHash === c.draftHash,
       duplicate_of: [], duplicates: [],
