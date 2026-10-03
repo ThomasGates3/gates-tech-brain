@@ -81,6 +81,11 @@ const KIND_META: Record<ActivityKind, { verb: string; color: string; icon: strin
   alert:     { verb: "Flagged",   color: "#ff3b30",       icon: "!" },
 };
 
+/** Failures that only mean "waiting on warm-up or on Thomas's approval": expected right now, not real problems. */
+const WAITING = /warm-?up|domainwarmed|approv|isn't done yet|only thomas|thomas only|thomas or lisa only|we sent email 1|only move forward/i;
+export const isWaitingBlock = (a: Pick<Activity, "kind" | "target" | "because">) => a.kind === "alert" && WAITING.test(`${a.target} ${a.because ?? ""}`);
+const HIDE_KEY = "activity_hide_blocked";
+
 export function ActivityFeed({
   "data-testid": testId = "activity-feed",
   limit = 20,
@@ -93,6 +98,8 @@ export function ActivityFeed({
   const [agent, setAgent] = useState("");
   const [kind, setKind] = useState("");
   const [lookups, setLookups] = useState(false);
+  const [hideBlocked, setHideBlocked] = useState(() => { try { return typeof window !== "undefined" && localStorage.getItem(HIDE_KEY) === "1"; } catch { return false; } });
+  const toggleBlocked = () => setHideBlocked((v) => { try { localStorage.setItem(HIDE_KEY, v ? "0" : "1"); } catch {} return !v; });
 
   useEffect(() => {
     let alive = true;
@@ -114,7 +121,8 @@ export function ActivityFeed({
   }, [limit, lookups]);
 
   const agents = [...new Set(items.map((a) => a.agent).filter(Boolean))] as string[];
-  const shown = items.filter((a) => (!agent || a.agent === agent) && (!kind || a.kind === kind));
+  const blocked = items.filter(isWaitingBlock).length;
+  const shown = items.filter((a) => (!agent || a.agent === agent) && (!kind || a.kind === kind) && !(hideBlocked && isWaitingBlock(a)));
 
   return (
     <div
@@ -130,7 +138,16 @@ export function ActivityFeed({
             <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
           )}
         </div>
-        <span className="font-mono text-[10px] text-slate-600">live</span>
+        <div className="flex items-center gap-2">
+          {loaded && (blocked > 0 || hideBlocked) && (
+            <button onClick={toggleBlocked} data-testid="activity-hide-blocked" aria-pressed={hideBlocked}
+              title="Failures caused by warm-up not confirmed or nothing approved yet"
+              className={`min-h-[28px] rounded-md border px-2 font-mono text-[10px] ${hideBlocked ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]" : "border-white/10 text-slate-400 hover:border-[var(--accent)]/40"}`}>
+              {hideBlocked ? `Show blocked (${blocked})` : `Hide blocked (${blocked})`}
+            </button>
+          )}
+          <span className="font-mono text-[10px] text-slate-600">live</span>
+        </div>
       </div>
       {filterable && (
         <div className="mb-3 flex flex-wrap gap-2">
