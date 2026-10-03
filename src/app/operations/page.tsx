@@ -10,7 +10,7 @@ export default async function OperationsPage({ searchParams }: { searchParams: P
   const initial = (TABS as readonly string[]).includes(tab ?? "") ? (tab as (typeof TABS)[number]) : "connections";
   return (
     <PageShell title="Operations" subtitle="Connections, the Grok bot roster, and API keys for the MCP server.">
-      <div className="max-w-3xl"><OperationsPanel initialTab={initial} /></div>
+      <OperationsPanel initialTab={initial} wide />
     </PageShell>
   );
 }

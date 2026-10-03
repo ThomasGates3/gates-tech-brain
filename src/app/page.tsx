@@ -123,7 +123,7 @@ export default function Home() {
 
       {/* Desktop: one screen, no page scroll. Cards scroll inside themselves. */}
       {isDesktop && (
-        <main className="relative mx-auto grid h-[calc(100dvh-3.5rem)] max-w-[1600px] grid-cols-[300px_minmax(0,1fr)_330px] gap-4 overflow-hidden p-4" data-testid="dashboard">
+        <main className="relative grid h-[calc(100dvh-3.5rem)] w-full grid-cols-[300px_minmax(0,1fr)_330px] gap-4 overflow-hidden p-4 2xl:grid-cols-[360px_minmax(0,1fr)_400px] 2xl:px-6" data-testid="dashboard">
           <ActivityFeed limit={25} href="/activity" className="h-full" />
           <div className="flex min-h-0 flex-col gap-4">
             <NextUp deck={deck} orbState={orbState} name={preset.name} />

@@ -35,7 +35,7 @@ export function TopNav() {
   const mute = () => { try { localStorage.setItem("mute_briefing", "1"); } catch { /* ignore */ } cancelSpeech(); };
   return (
     <nav data-testid="top-nav" className="sticky top-0 z-30 border-b border-[var(--accent-deep)]/30 bg-black/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4">
+      <div className="flex h-14 w-full items-center gap-3 px-4 lg:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Gates Tech Brain home">
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" style={{ boxShadow: "0 0 10px var(--accent)" }} />
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.3em] text-slate-300 sm:inline">Gates Brain</span>
