@@ -1,13 +1,45 @@
 import { connection } from "next/server";
 import { PageShell } from "@/components/deck/PageShell";
 import { getRoadmap } from "@/lib/roadmap";
+import { listWhatsNew } from "@/lib/whats-new";
 
 export const metadata = { title: "Money roadmap · Gates Tech Brain" };
 
 const STATUS_STYLE = { done: "bg-emerald-400/10 text-emerald-300", now: "bg-[var(--accent)] text-black", later: "bg-white/5 text-slate-400" };
 
-export default async function RoadmapPage() {
+const TAB = "min-h-[36px] inline-flex items-center rounded-full px-3.5 text-[12px]";
+
+export default async function RoadmapPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await connection();
+  const showNew = (await searchParams).tab === "new";
+  const tabs = (
+    <nav className="mb-4 flex gap-1.5" aria-label="Roadmap views">
+      <a href="/roadmap" data-testid="rm-tab-steps" aria-current={showNew ? undefined : "page"} className={`${TAB} ${showNew ? "bg-white/5 text-slate-400 hover:text-slate-200" : "bg-[var(--accent)] text-black"}`}>Steps</a>
+      <a href="/roadmap?tab=new" data-testid="rm-tab-new" aria-current={showNew ? "page" : undefined} className={`${TAB} ${showNew ? "bg-[var(--accent)] text-black" : "bg-white/5 text-slate-400 hover:text-slate-200"}`}>What&apos;s new</a>
+    </nav>
+  );
+  if (showNew) {
+    const items = await listWhatsNew();
+    return (
+      <PageShell title="Money roadmap" subtitle="What shipped in the Brain, newest first.">
+        {tabs}
+        {items.length === 0 ? <p className="text-[13px] text-slate-500">Nothing logged yet.</p> : (
+          <ul className="max-w-4xl space-y-2" data-testid="whats-new">
+            {items.map((w, i) => (
+              <li key={i} data-testid="whats-new-row" className="rounded-xl border border-white/[0.06] bg-[var(--panel)]/60 p-3">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-mono text-[11px] text-slate-500">{w.date}</span>
+                  <span className="text-[14px] font-medium text-slate-100">{w.title}</span>
+                  <span className="ml-auto font-mono text-[10px] text-slate-500">{w.by.charAt(0).toUpperCase() + w.by.slice(1)}</span>
+                </div>
+                <p className="mt-1 text-[13px] text-slate-300">{w.note}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PageShell>
+    );
+  }
   const r = await getRoadmap();
   const n = r.numbers;
   const tiles: [string, string, string, boolean][] = [
@@ -18,6 +50,7 @@ export default async function RoadmapPage() {
   ];
   return (
     <PageShell title="Money roadmap" subtitle="From ready to mail to the first paid client. Steps only move forward, in order.">
+      {tabs}
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-4 xl:sticky xl:top-4 xl:order-2">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2" data-testid="roadmap-numbers">

@@ -266,7 +266,7 @@ import { websiteEmail1Lint, lintDraft } from "./lint";
 import { normBusiness } from "./leads";
 
 test("website Email 1: exactly three numbered fixes, no links, no attachments", () => {
-  const good = "Your site only has a contact page.\n\nThree things I'd fix:\n1. Add a Book Now button at the top.\n2. List your services on the homepage.\n3. Put your hours under the phone number.\n\nWorth a look?\n\nThomas Gates III\nGates Technologies · gatestech.solutions";
+  const good = "Your site only has a contact page.\n\nThree things I'd fix:\n1. Add a Book Now button at the top.\n2. List your services on the homepage.\n3. Put your hours under the phone number.\n\nWe build sites with booking built in.\n\nWorth a look?\n\nThomas Gates III\nGates Technologies · gatestech.solutions";
   assert.deepEqual(websiteEmail1Lint(good), []);
   assert.deepEqual(lintDraft("three fixes for your site", good, { lane: "website" }), []);
   assert.ok(websiteEmail1Lint(good.replace("3. Put your hours under the phone number.\n", "")).some((i) => i.rule === "Website fixes"));
@@ -301,8 +301,11 @@ test("core hours honesty: concrete times in the opener, no vague hours, no Frida
 });
 
 test("website plain speech: jargon and put-downs fail the lint", () => {
-  const body = (opener: string) => `${opener}\n\nThree things I'd fix:\n1. Add a Book Now button.\n2. List your services.\n3. Put your hours under the phone number.\n\nWant me to walk you through them?`;
+  const body = (opener: string) => `${opener}\n\nThree things I'd fix:\n1. Add a Book Now button.\n2. List your services.\n3. Put your hours under the phone number.\n\nWe build sites with booking built in.\n\nWant me to walk you through them?\n\nThomas Gates III\nGates Technologies · gatestech.solutions`;
   assert.deepEqual(websiteEmail1Lint(body("Your homepage headline says \"Proffesional plumbing\".")), []);
+  const rules = (b: string) => websiteEmail1Lint(b).map((i) => i.rule);
+  assert.ok(rules(body("x").replace("We build sites with booking built in.", "Gates rebuilds sites with booking built in.")).includes("Gates in body"));
+  assert.ok(rules(body("x").replace("We build sites with booking built in.\n\n", "")).includes("Website closer"));
   assert.ok(websiteEmail1Lint(body("Your site runs on a classic-mobile XHTML template.")).some((i) => i.rule === "Website jargon"));
   assert.ok(websiteEmail1Lint(body("Your site reads as generic SEO filler with a thin brand.")).some((i) => i.rule === "Put-down"));
   assert.ok(websiteEmail1Lint(body("It reads as unfinished for a hauling business.")).some((i) => i.rule === "Put-down"));

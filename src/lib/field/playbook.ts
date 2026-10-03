@@ -145,7 +145,7 @@ export function playbookPrompt(
     ? n === 1
       ? [
           "Lane: website (Prospectacle). Email 1's value is three concrete fixes for their site, written inside the body.",
-          "Structure: one short line on what you noticed; the line \"Three things I'd fix:\"; then exactly three lines numbered \"1.\", \"2.\", \"3.\" (each one short sentence: what's wrong and what to do); one line that Gates rebuilds sites with booking built in; a soft ask such as \"Want me to walk you through them?\"; the signature.",
+          "Structure: one short line on what you noticed; the line \"Three things I'd fix:\"; then exactly three lines numbered \"1.\", \"2.\", \"3.\" (each one short sentence: what's wrong and what to do); then exactly this line, word for word: \"We build sites with booking built in.\" (never name Gates in the body; the signature already does); a soft ask such as \"Want me to walk you through them?\"; the signature.",
           "Every fix must come from the observed facts below. Never invent a fact. No links, no URLs, no attachments or files, no prices.",
           "Plain speech an owner would use. Never write XHTML, classic-mobile, legacy table HTML, CMS, SEO, Webador or other builder names; say \"old HomeAdvisor phone-site template\", \"outdated mobile template\", \"old table-layout contact page\", \"DIY builder site\".",
           "Open with a checkable defect (an exact typo in quotes, an empty homepage, a .mobi address, badges dated 2013 to 2020). Never open with a put-down like generic filler, thin brand, unfinished for, or junk site.",
