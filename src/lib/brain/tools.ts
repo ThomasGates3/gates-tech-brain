@@ -9,6 +9,7 @@
  */
 import { generateText, stepCountIs } from "ai";
 import { after } from "next/server";
+import { listWhatsNew, addWhatsNew, WhatsNewError } from "@/lib/whats-new";
 import { getRoadmap, setStep, markLead, RoadmapError, STEP_IDS } from "@/lib/roadmap";
 import { websiteBrief, BriefAnswers } from "@/lib/website/brief";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -429,6 +430,25 @@ export const TOOLS = [
     }),
     kind: "updated",
     run: (a, ctx) => roadmapCall(() => setStep({ ...a, agent: a.agent }, ctx.operator === "thomas")),
+  }),
+  tool({
+    name: "brain_whats_new_list",
+    title: "What's new",
+    description: "Shipped features Thomas sees on /roadmap, newest first: date (New York), title, one sentence, who logged it.",
+    input: z.object({ agent: Agent }),
+    kind: "queried",
+    run: async () => ({ items: await listWhatsNew() }),
+  }),
+  tool({
+    name: "brain_whats_new_add",
+    title: "Log what's new",
+    description: "Add one What's new row (append only, no edits or deletes). Title under 60 characters, note one plain sentence under 200 characters. No prices, no dashes as punctuation. Logging a feature never marks a roadmap step done.",
+    input: z.object({ agent: z.enum(AGENT_IDS).describe("Your roster id"), title: z.string().max(80), note: z.string().max(300) }),
+    kind: "updated",
+    run: async ({ agent, title, note }) => {
+      try { return { items: await addWhatsNew(agent, title, note) }; }
+      catch (e) { if (e instanceof WhatsNewError) throw new ToolError(e.status, e.message); throw e; }
+    },
   }),
   tool({
     name: "brain_mark_booked",

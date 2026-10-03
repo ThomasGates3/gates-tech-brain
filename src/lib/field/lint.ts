@@ -65,8 +65,15 @@ export function websiteEmail1Lint(body: string): LintIssue[] {
   if (/\b(attach(ed|ment)|see (the )?(file|pdf|deck)|download)\b/i.test(body)) issues.push({ rule: "Attachment mention", match: "no files or attachments in cold email" });
   for (const m of body.matchAll(WEBSITE_JARGON)) issues.push({ rule: "Website jargon", match: m[0] });
   for (const m of body.matchAll(WEBSITE_PEJORATIVE)) issues.push({ rule: "Put-down", match: m[0] });
+  if (!body.includes(WEBSITE_CLOSER)) issues.push({ rule: "Website closer", match: `needs the line "${WEBSITE_CLOSER}"` });
+  // The name isn't famous: only the signature (and the CAN-SPAM footer, added at send) may say Gates.
+  const unsigned = body.split("\n").filter((l) => !/^\s*(?:Thomas Gates III|Gates Technologies\b.*)\s*$/.test(l)).join("\n");
+  for (const m of unsigned.matchAll(/\bGates\b/gi)) issues.push({ rule: "Gates in body", match: m[0] });
   return issues;
 }
+
+/** The only closer before the ask on every website Email 1. */
+export const WEBSITE_CLOSER = "We build sites with booking built in.";
 
 // Terms an owner wouldn't recognize, and openers that fail the annoyance test (2026-10-02 Nick audit).
 const WEBSITE_JARGON = /\b(?:x?html\d?|classic[-\s]mobile|legacy table(?:[-\s]layout)?|table[-\s]html|webador|wix|squarespace|godaddy builder|cms|seo|template stack|dom|css|javascript)\b/gi;

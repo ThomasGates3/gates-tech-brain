@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-03: What's new + website closer
+- 2026-10-03 · brain · What's new: This tab.
+- 2026-10-02 · brain · What's new: Money roadmap. Nine steps from offer locked to first paid client, with live counts.
+- 2026-10-02 · brain · What's new: Copy rules. Core emails must quote published hours or the lead is held. Website emails are three plain fixes with no links.
+- Website Email 1 closer is locked to "We build sites with booking built in." Copy lint fails a website Email 1 without it, or with Gates anywhere in the body (the signature and mailing address may still say Gates Technologies).
+
 ## 2026-10-02: Money roadmap
 - 2026-10-02 · brain · /roadmap landed: nine steps from ready to mail to first paid client, four live numbers, `brain_roadmap_get` / `brain_roadmap_set`, Booked call and Paid on emailed leads. Seeded done: offer, send_domain, copy_rules. Now: warmup.
 
