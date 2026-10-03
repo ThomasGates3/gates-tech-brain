@@ -114,6 +114,11 @@ export const fieldContacts = pgTable("field_contacts", {
   notes: text("notes"),
   repliedAt: text("replied_at"), // any inbound reply ends the sequence
   holdReason: text("hold_reason"), // soft | no_published_hours | thomas | other (null when not on hold)
+  // Money roadmap flags only (not a CRM): set by the "Booked call" / "Paid" lead buttons.
+  bookedAt: text("booked_at"),
+  bookedBy: text("booked_by"),
+  paidAt: text("paid_at"),
+  paidOffer: text("paid_offer"), // core | website | reactivation
 });
 
 /** Sequence steps Email 2–4 (Email 1 lives on field_contacts). One row per contact × step. */

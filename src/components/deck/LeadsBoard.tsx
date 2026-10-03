@@ -10,7 +10,7 @@ import { callTool } from "@/lib/ux/tools";
 interface Lead {
   contact_id: string; business: string; contact_name: string | null; email: string; lane: "core" | "website"; source: string; tier: "High" | "Med" | "Soft";
   email1_status: string; nick_verdict: string | null; nick_note: string | null; approved: boolean; sent_at: string | null; subject: string | null;
-  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[]; hold_reason: string | null; revise_pending: boolean;
+  lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[]; hold_reason: string | null; revise_pending: boolean; booked: boolean; paid_offer: string | null;
   duplicates: { contact_id: string; source: string; tier: string; email1_status: string }[]; next_action: string;
 }
 interface Counts { core: number; website: number; drafted: number; awaitingNick: number; passAwaitingApprove: number; approvedUnsent: number; softHold: number; total: number; duplicates: number }

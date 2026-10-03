@@ -9,6 +9,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { fieldEnv, startOfTodayIso, todayIn } from "./config";
 import { syncNotion, type SyncResult } from "./api";
+import { advance, isWarmupSeed } from "@/lib/roadmap";
 import { lintDraft, websiteEmail1Lint, coreEmail1Lint, hasConcreteHours, type LintIssue } from "./lint";
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, followupTemplate, canSpamFooter, composeOutgoing, cleanGap, type Draft } from "./playbook";
 import { fetchPack } from "./notion";
@@ -245,6 +246,8 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
     audit.record({ action: "email_send", actor: operator, target: contact.email, detail: { contactId: contact.id, emailN: n, messageId: sent.messageId } });
     void recordActivity({ kind: "sent", target: `Email ${n} → ${contact.name}`, because: `Nick PASS + ${view.approvedBy ?? "thomas"} approve`, agent: "ace" });
     void pingIfDayDone();
+    // A send proves the approve step happened too; warm-up seeds never count.
+    if (!isWarmupSeed(contact.email)) await advance("first_send", "done", "ace", `send ${sent.messageId}`, ["approve_batch"]);
     return { ok: true, data: { log, notion: n === 1 ? await syncNotion(contact, { status: "Sent" }) : "skipped" } };
   } catch (e) {
     return fail(500, `SENT via AgentMail (message ${sent.messageId}) but logging failed: ${e instanceof Error ? e.message : String(e)}. Do NOT resend; add the log row manually.`);

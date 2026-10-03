@@ -6,8 +6,10 @@ import { callTool } from "@/lib/ux/tools";
 /** The next-step buttons for one lead. Every click goes through the Brain tools (same gates as the bots). */
 export interface ActionLead {
   contact_id: string; business: string; source: string; tier: string; email1_status: string; lint_issues: number;
-  duplicate_of: string[]; approved: boolean;
+  duplicate_of: string[]; approved: boolean; booked?: boolean; paid_offer?: string | null;
 }
+
+const OFFER_LABEL: Record<string, string> = { core: "Core", website: "Website redesign", reactivation: "Lead reactivation" };
 
 const btn = "min-h-[32px] rounded-md px-2.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const primary = `${btn} bg-[var(--accent)] text-black hover:bg-[var(--accent-bright)]`;
@@ -20,6 +22,7 @@ export function LeadActions({ lead, warmed, onDone }: { lead: ActionLead; warmed
   const [noteFor, setNoteFor] = useState<"REVISE" | "KILL" | null>(null);
   const [note, setNote] = useState("");
   const [confirmSend, setConfirmSend] = useState(false);
+  const [offer, setOffer] = useState("");
   const id = lead.contact_id;
 
   const run = async (label: string, name: string, args: Record<string, unknown>) => {
@@ -70,6 +73,20 @@ export function LeadActions({ lead, warmed, onDone }: { lead: ActionLead; warmed
     else buttons.push(B("send", "Confirm send", danger, "brain_approve_send", { confirm: true }));
   }
   if (["undrafted", "drafted", "atNick", "PASS", "approved"].includes(s)) buttons.push(B("hold", "Hold", quiet, "brain_hold", { hold: true }));
+  // Money roadmap flags (Booked: Thomas or Lisa; Paid: Thomas). The server enforces who.
+  if (s === "sent" && !lead.booked && !lead.paid_offer) buttons.push(B("booked", "Booked call", quiet, "brain_mark_booked", {}));
+  if (s === "sent" && !lead.paid_offer)
+    buttons.push(
+      <span key="paid" className="flex gap-1">
+        <select value={offer} onChange={(e) => setOffer(e.target.value)} data-testid={`act-paid-offer-${id}`} aria-label="Offer paid for" className="min-h-[32px] rounded-md border border-white/10 bg-black/40 px-1.5 text-[11px] text-slate-200">
+          <option value="">Paid for…</option>
+          {Object.entries(OFFER_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        {B("paid", "Paid", primary, "brain_mark_paid", { offer }, offer ? undefined : "Pick the offer first")}
+      </span>
+    );
+  if (lead.paid_offer) buttons.push(<span key="paid-badge" data-testid={`lead-paid-${id}`} className="rounded-md bg-emerald-400/15 px-2 py-1 text-[11px] font-medium text-emerald-300">Paid: {OFFER_LABEL[lead.paid_offer] ?? lead.paid_offer}</span>);
+  else if (lead.booked) buttons.push(<span key="booked-badge" data-testid={`lead-booked-${id}`} className="rounded-md bg-sky-400/15 px-2 py-1 text-[11px] font-medium text-sky-300">Call booked</span>);
   if (s === "hold" && lead.tier !== "Soft") buttons.push(B("release", "Release", quiet, "brain_hold", { hold: false }));
 
   return (

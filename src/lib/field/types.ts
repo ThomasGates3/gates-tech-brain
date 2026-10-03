@@ -52,6 +52,10 @@ export interface FieldContact {
   notes: string | null;
   repliedAt: string | null;
   holdReason: HoldReason | null;
+  bookedAt: string | null;
+  bookedBy: string | null;
+  paidAt: string | null;
+  paidOffer: string | null;
 }
 
 export type HoldReason = "soft" | "no_published_hours" | "thomas" | "other";

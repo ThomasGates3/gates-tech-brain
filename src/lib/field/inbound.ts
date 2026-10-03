@@ -8,6 +8,7 @@ import { listThreads } from "./agentmail";
 import { fieldEnv } from "./config";
 import { addSuppression, contactsByEmail, markReplied } from "./store";
 import { notifyOnce } from "@/lib/notify";
+import { advance, isWarmupSeed } from "@/lib/roadmap";
 
 export type InboundAction = "reply_handoff_lisa" | "soft_hold" | "suppress_opt_out" | "ignore";
 
@@ -67,6 +68,8 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
       item.contact = { contact_id: c.id, name: c.name, lane: c.lane, stage: c.stage };
       await markReplied(c.id, t.lastAt); // ends the sequence for this contact
     }
+    // A real prospect reply moves "First reply" to now; Lisa or Thomas marks it done.
+    if (c && action === "reply_handoff_lisa" && !isWarmupSeed(from)) await advance("first_reply", "now", "brain", `reply ${t.threadId}`);
     if (item.unanswered && action === "reply_handoff_lisa")
       void notifyOnce("hot_reply", t.threadId, `Reply from ${c?.name ?? from}`, `${item.snippet || t.subject}\nSuggested: hand to Lisa for a short answer.`);
     if (opts.confirmSuppress && action === "suppress_opt_out") {

@@ -9,6 +9,7 @@
  */
 import { generateText, stepCountIs } from "ai";
 import { after } from "next/server";
+import { getRoadmap, setStep, markLead, RoadmapError, STEP_IDS } from "@/lib/roadmap";
 import { websiteBrief, BriefAnswers } from "@/lib/website/brief";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
@@ -124,6 +125,11 @@ async function autoDraftLead(id: string, name: string): Promise<void> {
   if (!r.ok) { await recordActivity({ kind: "alert", target: `Auto-draft for ${name} didn't go through`, because: r.error.slice(0, 200), agent: "brain" }); return; }
   if (r.data.held) return; // hold already logged
   await recordActivity({ kind: "updated", target: `Brain drafted Email 1 for ${name}`, because: r.data.lint.length ? `${r.data.lint.length} copy issue(s) to fix` : "same-day scout draft, copy check clean", agent: "darrell" });
+}
+
+/** Roadmap rule breaks come back as clean 4xx tool errors. */
+async function roadmapCall<T>(fn: () => Promise<T>): Promise<T> {
+  try { return await fn(); } catch (e) { if (e instanceof RoadmapError) throw new ToolError(e.status, e.message); throw e; }
 }
 
 const PLACEHOLDER_EMAIL = /@(example\.(com|org|net)|test\.com|domain\.com|email\.com)$|^(test|noreply|no-reply|placeholder|unknown|n\/?a)@/i;
@@ -400,6 +406,50 @@ export const TOOLS = [
       if (domain_warmed === undefined && daily_cap === undefined) return getGates();
       if (!isThomasGate(ctx.operator)) throw new ToolError(403, "Gates are Thomas-only. Use a Thomas key.");
       return setGates({ domainWarmed: domain_warmed, dailyCap: daily_cap }, ctx.operator);
+    },
+  }),
+  tool({
+    name: "brain_roadmap_get",
+    title: "Money roadmap",
+    description: "The nine Money roadmap steps (ready to mail → first paid client) with status, owner, done date and note, plus four live numbers: PASS waiting on Thomas, approved unsent, Field emails sent all time (warm-up seeds excluded), warm-up blocked/confirmed.",
+    input: z.object({ agent: Agent }),
+    kind: "queried",
+    run: () => getRoadmap(),
+  }),
+  tool({
+    name: "brain_roadmap_set",
+    title: "Update Money roadmap",
+    description: "Move one roadmap step forward (later → now → done) or change its note. No skipping: a step can't be done while an earlier step isn't. Steps offer, send_domain, copy_rules and warmup are Thomas-only, and warmup is only done after Thomas uses Confirm warm-up (this tool never sets the gate). Brain marks warmup, first_send, first_reply (now), booked_call and paid_client itself from real events. Returns the full roadmap.",
+    input: z.object({
+      agent: z.enum(AGENT_IDS).describe("Your roster id"),
+      step_id: z.enum(STEP_IDS),
+      status: z.enum(["done", "now", "later"]),
+      note: z.string().trim().max(200).optional().describe("One short sentence"),
+      evidence: z.string().trim().max(120).optional().describe("A lead id, a send id, or thomas-confirmed"),
+    }),
+    kind: "updated",
+    run: (a, ctx) => roadmapCall(() => setStep({ ...a, agent: a.agent }, ctx.operator === "thomas")),
+  }),
+  tool({
+    name: "brain_mark_booked",
+    title: "Lead: booked call",
+    description: "Thomas or Lisa: a lead we emailed booked a call. Stored on the lead; marks First reply and First booked call done on the Money roadmap.",
+    input: z.object({ agent: Agent, contact_id: ContactId }),
+    kind: "updated",
+    run: ({ agent, contact_id }, ctx) => {
+      if (ctx.operator !== "thomas" && agent !== "lisa") throw new ToolError(403, "Booked call is Thomas or Lisa only.");
+      return roadmapCall(() => markLead(contact_id, { booked: true }, ctx.operator === "thomas" ? "thomas" : "lisa"));
+    },
+  }),
+  tool({
+    name: "brain_mark_paid",
+    title: "Lead: paid",
+    description: "Thomas only: a lead we emailed became a paying client, with the offer (core, website, reactivation). Marks First paid client done on the Money roadmap.",
+    input: z.object({ agent: Agent, contact_id: ContactId, offer: z.enum(["core", "website", "reactivation"]) }),
+    kind: "updated",
+    run: ({ contact_id, offer }, ctx) => {
+      if (ctx.operator !== "thomas") throw new ToolError(403, "Paid is Thomas only.");
+      return roadmapCall(() => markLead(contact_id, { paid: offer }, "thomas"));
     },
   }),
   tool({

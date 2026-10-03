@@ -36,5 +36,10 @@ export async function setGates(change: { domainWarmed?: boolean; dailyCap?: numb
   ].filter(Boolean).join(", ");
   audit.record({ action: "connector_change", actor: by, target: "field_gates", detail: { ...change, at } });
   await recordActivity({ kind: "updated", target: `Field gates: ${what}`, because: `set by ${by}`, agent: by });
+  // Thomas confirming warm-up also completes that roadmap step (the roadmap never sets the gate).
+  if (by === "thomas" && !before.domainWarmed && after.domainWarmed) {
+    const { advance } = await import("@/lib/roadmap");
+    await advance("warmup", "done", "thomas", "thomas-confirmed");
+  }
   return after;
 }

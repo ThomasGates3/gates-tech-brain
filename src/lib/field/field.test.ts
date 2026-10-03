@@ -22,7 +22,7 @@ function contact(over: Partial<FieldContact> = {}): FieldContact {
     priority: "High", packDate: "2026-10-01", stage: "new", subject: "", body: "", draftSource: null, draftHash: null,
     nickVerdict: null, nickNote: null, nickHash: null, nickAt: null, nickBy: null, approvedHash: null, approvedAt: null,
     approvedBy: null, sentAt: null, lastError: null, updatedAt: now,
-    lane: "core", contactName: null, siteUrl: null, notes: null, repliedAt: null, holdReason: null, ...over,
+    lane: "core", contactName: null, siteUrl: null, notes: null, repliedAt: null, holdReason: null, bookedAt: null, bookedBy: null, paidAt: null, paidOffer: null, ...over,
   };
 }
 

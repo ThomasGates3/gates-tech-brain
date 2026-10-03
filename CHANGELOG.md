@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-02: Money roadmap
+- 2026-10-02 · brain · /roadmap landed: nine steps from ready to mail to first paid client, four live numbers, `brain_roadmap_get` / `brain_roadmap_set`, Booked call and Paid on emailed leads. Seeded done: offer, send_domain, copy_rules. Now: warmup.
+
 ## 2026-10-02: Field harden (Nick audit) + website master prompt
 
 ### Core lane: hours honesty
