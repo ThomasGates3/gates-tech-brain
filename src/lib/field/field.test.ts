@@ -321,3 +321,14 @@ test("website brief: master prompt verbatim, filled message, unknowns become que
   assert.equal(b.ready, false);
   assert.ok(b.ask.some((q) => q.field === "social_proof") && !b.ask.some((q) => q.field === "conversion_goal"));
 });
+
+import { isWaitingBlock } from "../../components/deck/Telemetry";
+
+test("activity: warm-up / approval blocks are hideable, real failures are not", () => {
+  const a = (target: string, because: string, kind: "alert" | "updated" = "alert") => isWaitingBlock({ kind, target, because });
+  assert.equal(a("Send didn't go through", "Domain warm-up not confirmed. Approved emails wait until Thomas sets domainWarmed."), true);
+  assert.equal(a("Update Money roadmap didn't go through", "Only Thomas can change \"Domain warm-up\"."), true);
+  assert.equal(a("Lead: paid didn't go through", "Paid is Thomas only."), true);
+  assert.equal(a("Auto-draft for Soul Medical didn't go through", "Daily Claude budget reached"), false);
+  assert.equal(a("Field gates: domainWarmed false → true", "set by thomas", "updated"), false);
+});
