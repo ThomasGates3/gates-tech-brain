@@ -18,8 +18,9 @@ export default async function RoadmapPage() {
   ];
   return (
     <PageShell title="Money roadmap" subtitle="From ready to mail to the first paid client. Steps only move forward, in order.">
-      <div className="max-w-3xl space-y-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="roadmap-numbers">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="space-y-4 xl:sticky xl:top-4 xl:order-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2" data-testid="roadmap-numbers">
           {tiles.map(([label, value, href, hot]) => (
             <a key={label} href={href} data-testid={`rm-num-${label.split(/[ ,]/)[0].toLowerCase()}`} className={`min-h-[44px] rounded-lg border p-2.5 hover:border-[var(--accent)]/60 ${hot ? "border-[var(--accent)]/50 bg-[var(--accent)]/10" : "border-white/[0.06] bg-black/30"}`}>
               <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
@@ -27,7 +28,17 @@ export default async function RoadmapPage() {
             </a>
           ))}
         </div>
-        <ol className="space-y-2" data-testid="roadmap-steps">
+        {(
+          <div data-testid="roadmap-history" className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
+            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Changes</p>
+            {r.history.length === 0 && <p className="text-[12px] text-slate-500">No changes yet. Bots and Brain events show here.</p>}
+            <ul className="space-y-1 text-[12px] text-slate-400">
+              {r.history.map((h, i) => <li key={i}>{h.at} · {h.agent} · {r.steps.find((x) => x.id === h.step)?.name} is {h.status}{h.note ? ` · ${h.note}` : ""}</li>)}
+            </ul>
+          </div>
+        )}
+        </div>
+        <ol className="space-y-2 xl:order-1" data-testid="roadmap-steps">
           {r.steps.map((s, i) => {
             const now = s.id === r.now;
             return (
@@ -45,14 +56,6 @@ export default async function RoadmapPage() {
             );
           })}
         </ol>
-        {r.history.length > 0 && (
-          <div data-testid="roadmap-history" className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
-            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Changes</p>
-            <ul className="space-y-1 text-[12px] text-slate-400">
-              {r.history.map((h, i) => <li key={i}>{h.at} · {h.agent} · {r.steps.find((x) => x.id === h.step)?.name} is {h.status}{h.note ? ` · ${h.note}` : ""}</li>)}
-            </ul>
-          </div>
-        )}
       </div>
     </PageShell>
   );

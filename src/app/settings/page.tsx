@@ -7,7 +7,7 @@ export const metadata = { title: "Settings · Gates Tech Brain" };
 export default function SettingsPage() {
   return (
     <PageShell title="Settings" subtitle="Which model runs chat and agents, the deck's voice, and which Discord pings you get.">
-      <div className="max-w-2xl"><SettingsPanel /><NotificationsPanel /></div>
+      <div className="grid items-start gap-6 lg:grid-cols-2"><div><SettingsPanel /></div><div><NotificationsPanel /></div></div>
     </PageShell>
   );
 }

@@ -152,7 +152,8 @@ export function ConnectionsModal({ onClose }: { onClose: () => void }) {
 }
 
 /** Connections · Agents · Access. Used in the Operations modal and on /operations. */
-export function OperationsPanel({ initialTab = "connections", scroll = false }: { initialTab?: (typeof TABS)[number]; scroll?: boolean }) {
+/** `wide` (the full Operations page) lays the cards out in columns; the modal keeps one column. */
+export function OperationsPanel({ initialTab = "connections", scroll = false, wide = false }: { initialTab?: (typeof TABS)[number]; scroll?: boolean; wide?: boolean }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>(initialTab);
   const [rows, setRows] = useState<ConnRow[]>([]);
   const [field, setField] = useState<FieldConn[]>([]);
@@ -182,7 +183,7 @@ export function OperationsPanel({ initialTab = "connections", scroll = false }: 
         ))}
       </div>
 
-      <div className={`space-y-2 ${scroll ? "max-h-[55vh] overflow-y-auto" : ""}`}>
+      <div className={`${wide && tab !== "access" ? "grid items-start gap-2 lg:grid-cols-2 2xl:grid-cols-3 [&>p]:col-span-full" : "space-y-2"} ${scroll ? "max-h-[55vh] overflow-y-auto" : ""}`}>
         {tab === "connections" && (
           <>
             <p className="px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Field</p>
