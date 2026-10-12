@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-12: Humanizer copy lint
+- Copy lint now blocks strong AI-writing tells (not X but Y, dramatic closers, staged openers, chatbot residue, AI vocabulary) from blader/humanizer. Existing rules unchanged.
+- Weak tells (triads, repeated openings, hedges, curly quotes, soft vocabulary) show as an amber "Sounds AI (not blocking)" line in the contact panel only.
+
 ## 2026-10-12: Offer prices reset from market research
 - Roadmap step 1 note: Starter $297 setup + $297/mo; Core $997 + $697/mo ($1,500 + $997 for med spa, dental, legal); Website $1,500 + $147/mo; Lead reactivation $997 + $150 per booked appointment, then $497/mo. Prices live only on the private /calc page (gates-technologies PR #1), never in cold email.
 - Paid button and `brain_mark_paid` accept Starter.

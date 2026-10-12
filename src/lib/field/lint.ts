@@ -7,6 +7,10 @@
 export interface LintIssue {
   rule: string;
   match: string;
+  /** Missing means "block". Only humanizerWarnings() returns "warn". */
+  severity?: "block" | "warn";
+  /** Short fix hint for the writer. */
+  message?: string;
 }
 
 export const MAX_WORDS = 110;
@@ -34,21 +38,114 @@ const RULES: { rule: string; re: RegExp }[] = [
   { rule: "Emoji", re: /\p{Extended_Pictographic}/gu },
 ];
 
+/**
+ * AI-writing tells from blader/humanizer (based on Wikipedia "Signs of AI writing").
+ * "block" rules run inside lintCopy; "warn" rules only run in humanizerWarnings and never gate a send.
+ * Vocabulary rules are body-only and lowercase-only so capitalized business names ("Elevate Med Spa") never match.
+ */
+interface HumanizerRule { rule: string; re: RegExp; severity: "block" | "warn"; message: string; bodyOnly?: boolean }
+
+const HUMANIZER_RULES: HumanizerRule[] = [
+  {
+    rule: "Not X but Y", severity: "block", message: "State the point directly instead of contrasting it with something nobody claimed.",
+    re: /\bnot\s+(?:just|only|merely|simply)\b[^.?!\n]{1,60}?\bbut\b|\b(?:it|this|that)['’]s\s+not\s+[^.?!\n]{1,40}?[,;.]\s*(?:it|this|that)['’]s\b|\b(?:it|this|that) is not\s+[^.?!\n]{1,40}?[,;.]\s*(?:it|this|that) is\b|\bnot\s+(?:a|an|the)\s+\w+(?:\s+\w+)?,?\s+but\s+(?:a|an|the)\b/gi,
+  },
+  {
+    rule: "Dramatic closer", severity: "block", message: "Cut the one-line closer; end on the last concrete fact.",
+    re: /\b(?:let that sink in|read that again|that['’]?s the real (?:win|story|difference)|that is the real (?:win|story|difference)|that distinction matters|the message (?:is|was) clear)\b|\b\w+\.\s+single\.\s+\w+\./gi,
+  },
+  {
+    rule: "Deep saying", severity: "block", message: "Replace the saying with the specific claim.",
+    re: /\b(?:the real question is|at its core|in reality|what really matters|the heart of the matter|the deeper issue|fundamentally)\b/gi,
+  },
+  {
+    rule: "Staged opener", severity: "block", message: "Drop the run-up and make the point.",
+    re: /(?:^|(?<=[.?!]\s))\s*(?:let['’]?s (?:dive in|dive into|explore|break (?:this|it) down|be honest)|here['’]?s the thing|the thing is|here['’]?s what you need to know|without further ado|real talk|honestly\?|look,)|\bin today['’]?s (?:fast[-\s]paced|digital|competitive|busy|modern|ever[-\s]changing|world|market)\b/gim,
+  },
+  {
+    rule: "Arguing with no one", severity: "block", message: "Remove the defense of a point nobody raised.",
+    re: /\b(?:i['’]?m not saying|to be clear|don['’]?t get me wrong|this is(?:n['’]?t| not) (?:to say|about)|this isn['’]t (?:just |really |mainly )?about|you might think|one might (?:be tempted|think|argue)|some might say)\b/gi,
+  },
+  {
+    rule: "Chatbot residue", severity: "block", message: "Remove the chat wrapper and keep the content.",
+    re: /\b(?:i hope this helps|hope (?:this|that) helps|let me know if you['’]?d like|let me know if you have any (?:other )?questions|feel free to (?:reach out|contact|let me know)|don['’]?t hesitate to (?:reach out|contact)|great question|you['’]?re absolutely right|as an ai)\b|(?:^|(?<=[.?!]\s))(?:certainly|of course|absolutely)[,.!]/gim,
+  },
+  {
+    rule: "AI vocabulary", severity: "block", bodyOnly: true, message: "Use a plain word an owner would say.",
+    re: /\b(?:delv(?:e|es|ed|ing)|tapestr(?:y|ies)|testament|seamless(?:ly)?|meticulous(?:ly)?|pivotal|crucial(?:ly)?|intricat(?:e|ely|ies)|underscor(?:e|es|ed|ing)|foster(?:s|ed|ing)?|elevat(?:e|es|ed|ing)|empower(?:s|ed|ing|ment)?|cutting[-\s]edge|transformative|revolutioni[sz](?:e|es|ed|ing)|world[-\s]class|best[-\s]in[-\s]class|state[-\s]of[-\s]the[-\s]art|next[-\s]level|unlock(?:s|ed)\b|unlock(?:ing)?\b(?!\s+(?:growth|revenue|potential)\b)|navigat(?:e|es|ing) the (?:complex|world|ever|challenges|landscape|intricacies)|(?:digital|competitive|evolving|ever[-\s]changing|business|marketing|current|modern|tech) landscape)\b/g,
+  },
+  {
+    rule: "Rule of three", severity: "warn", message: "Three same-shaped words in a row read as a forced triad.",
+    re: /\b(\w+(?:ly|ing|er|est)),\s+(\w+(?:ly|ing|er|est)),?\s+(?:and|or)\s+(\w+(?:ly|ing|er|est))\b/gi,
+  },
+  {
+    rule: "Stacked hedge", severity: "warn", message: "Pick one qualifier or none.",
+    re: /\b(?:could|may|might|would)\s+(?:potentially|possibly|perhaps|arguably|conceivably)\b|\b(?:potentially|possibly)\s+(?:could|may|might)\b/gi,
+  },
+  {
+    rule: "Curly quotes", severity: "warn", message: "Use straight quotes.",
+    re: /[“”‘’]/g,
+  },
+  {
+    rule: "-ing rider", severity: "warn", message: "Cut the trailing -ing phrase or state it as its own fact.",
+    re: /,\s+(?:highlighting|emphasizing|ensuring|reflecting|symbolizing|contributing to|cultivating|encompassing)\b/gi,
+  },
+  {
+    rule: "Soft AI vocabulary", severity: "warn", bodyOnly: true, message: "Say it plainly unless it is a fact the prospect publishes.",
+    re: /\b(?:robust|vibrant|holistic|showcas(?:e|es|ed|ing)|enhanc(?:e|es|ed|ing)|additionally|garner\w*|boasts?|nestled|in the heart of|align(?:s|ed)? with)\b/g,
+  },
+];
+
 /** Lint a draft. `subject` gets the subject-only rules; every text gets the rest. */
 export function lintCopy(subject: string, body = ""): LintIssue[] {
   const issues: LintIssue[] = [];
   const seen = new Set<string>();
-  const add = (rule: string, match: string) => {
+  const add = (rule: string, match: string, message?: string) => {
     const key = `${rule}:${match.toLowerCase()}`;
     if (seen.has(key)) return;
     seen.add(key);
-    issues.push({ rule, match: match.trim() });
+    issues.push({ rule, match: match.trim(), ...(message ? { message } : {}) });
   };
   for (const text of [subject, body]) for (const { rule, re } of RULES) for (const m of text.matchAll(re)) add(rule, m[0]);
+  for (const { rule, re, severity, message, bodyOnly } of HUMANIZER_RULES) {
+    if (severity !== "block") continue;
+    for (const text of bodyOnly ? [body] : [subject, body]) for (const m of text.matchAll(re)) add(rule, m[0], message);
+  }
   if (/^\s*(?:re|fwd?):/i.test(subject)) add("Fake reply subject", subject.slice(0, 4));
   const words = body.split(/\s+/).filter(Boolean).length;
   if (words > MAX_WORDS) add("Too long", `${words} words (max ${MAX_WORDS})`);
   if ((body.match(/https?:\/\/|www\./gi) ?? []).length > 1) add("Too many links", "max one link");
+  return issues;
+}
+
+/** Three short sentences in a row that open with the same word ("No setup. No contracts. No waiting."). */
+function repeatedOpenings(body: string): string[] {
+  const sentences = body.split(/(?<=[.?!])\s+|\n+/).map((x) => x.trim()).filter((x) => x && /[a-z]/i.test(x));
+  const hits: string[] = [];
+  for (let i = 0; i + 2 < sentences.length; i++) {
+    const trio = sentences.slice(i, i + 3);
+    if (trio.some((x) => x.split(/\s+/).length > 10)) continue;
+    const first = trio.map((x) => x.split(/\s+/)[0].toLowerCase().replace(/[^a-z']/g, ""));
+    if (first[0] && first[0] === first[1] && first[1] === first[2]) hits.push(trio.join(" "));
+  }
+  return hits;
+}
+
+/** Weak AI tells. Advisory only: never part of lintCopy/lintDraft, so they never block a draft. */
+export function humanizerWarnings(subject: string, body = ""): LintIssue[] {
+  const issues: LintIssue[] = [];
+  const seen = new Set<string>();
+  const add = (rule: string, match: string, message: string) => {
+    const key = `${rule}:${match.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    issues.push({ rule, match: match.trim(), severity: "warn", message });
+  };
+  for (const { rule, re, severity, message, bodyOnly } of HUMANIZER_RULES) {
+    if (severity !== "warn") continue;
+    for (const text of bodyOnly ? [body] : [subject, body]) for (const m of text.matchAll(re)) add(rule, m[0], message);
+  }
+  for (const m of repeatedOpenings(body)) add("Repeated openings", m, "Merge the sentences or change how they start.");
   return issues;
 }
 

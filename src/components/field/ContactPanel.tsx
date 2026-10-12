@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Modal } from "@/components/deck/DeckModals";
-import { lintDraft } from "@/lib/field/lint";
+import { lintDraft, humanizerWarnings } from "@/lib/field/lint";
 import { composeOutgoing } from "@/lib/field/playbook";
 import type { ConsoleConfig, FieldContact, NickVerdict } from "@/lib/field/types";
 import { Button, Caption, PriorityBadge, StageBadge, cx } from "./ui";
@@ -48,6 +48,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
   const canGreenlight = config.canGreenlight;
   const dirty = subject !== c.subject || body !== c.body;
   const lint = lintDraft(subject, body, { lane: c.lane, emailN: 1 });
+  const warns = humanizerWarnings(subject, body);
   const editable = OPEN.includes(c.stage) && c.priority !== "Soft";
 
   const run = async (label: string, payload: Record<string, unknown>) => {
@@ -172,6 +173,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[12px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#00e5ff]/30 bg-[#00e5ff]/[0.06] text-[#7fdfff]")} data-testid="price-banner">
           <strong className="font-mono text-[10px] uppercase tracking-[0.2em]">Outreach brief</strong> · no prices, stats, client claims, HIPAA claims, &quot;week&quot;/&quot;weak&quot;, em dashes or hype. Under 110 words.
           {lint.length > 0 && <span className="mt-1 block">Found: {lint.map((i) => `“${i.match}” (${i.rule})`).join(", ")}</span>}
+          {warns.length > 0 && <span className="mt-1 block text-amber-300">Sounds AI (not blocking): {warns.map((i) => `“${i.match}” (${i.rule})`).join(", ")}</span>}
         </div>
 
         <label className="block">
