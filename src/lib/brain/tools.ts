@@ -464,8 +464,8 @@ export const TOOLS = [
   tool({
     name: "brain_mark_paid",
     title: "Lead: paid",
-    description: "Thomas only: a lead we emailed became a paying client, with the offer (core, website, reactivation). Marks First paid client done on the Money roadmap.",
-    input: z.object({ agent: Agent, contact_id: ContactId, offer: z.enum(["core", "website", "reactivation"]) }),
+    description: "Thomas only: a lead we emailed became a paying client, with the offer (starter, core, website, reactivation). Marks First paid client done on the Money roadmap.",
+    input: z.object({ agent: Agent, contact_id: ContactId, offer: z.enum(["starter", "core", "website", "reactivation"]) }),
     kind: "updated",
     run: ({ contact_id, offer }, ctx) => {
       if (ctx.operator !== "thomas") throw new ToolError(403, "Paid is Thomas only.");

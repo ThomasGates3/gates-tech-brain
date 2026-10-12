@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-12: Offer prices reset from market research
+- Roadmap step 1 note: Starter $297 setup + $297/mo; Core $997 + $697/mo ($1,500 + $997 for med spa, dental, legal); Website $1,500 + $147/mo; Lead reactivation $997 + $150 per booked appointment, then $497/mo. Prices live only on the private /calc page (gates-technologies PR #1), never in cold email.
+- Paid button and `brain_mark_paid` accept Starter.
+
 ## 2026-10-03: What's new + website closer
 - 2026-10-03 · brain · What's new: This tab.
 - 2026-10-02 · brain · What's new: Money roadmap. Nine steps from offer locked to first paid client, with live counts.

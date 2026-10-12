@@ -118,7 +118,7 @@ export const fieldContacts = pgTable("field_contacts", {
   bookedAt: text("booked_at"),
   bookedBy: text("booked_by"),
   paidAt: text("paid_at"),
-  paidOffer: text("paid_offer"), // core | website | reactivation
+  paidOffer: text("paid_offer"), // starter | core | website | reactivation
 });
 
 /** Sequence steps Email 2–4 (Email 1 lives on field_contacts). One row per contact × step. */

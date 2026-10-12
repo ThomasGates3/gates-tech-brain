@@ -9,7 +9,7 @@ export interface ActionLead {
   duplicate_of: string[]; approved: boolean; booked?: boolean; paid_offer?: string | null;
 }
 
-const OFFER_LABEL: Record<string, string> = { core: "Core", website: "Website redesign", reactivation: "Lead reactivation" };
+const OFFER_LABEL: Record<string, string> = { starter: "Starter", core: "Core", website: "Website redesign", reactivation: "Lead reactivation" };
 
 const btn = "min-h-[32px] rounded-md px-2.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const primary = `${btn} bg-[var(--accent)] text-black hover:bg-[var(--accent-bright)]`;

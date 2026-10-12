@@ -20,8 +20,8 @@ export type StepId = (typeof STEP_IDS)[number];
 
 interface Seed { id: StepId; name: string; owner: string; done_means: string; status: StepStatus; note: string; done_at: string | null }
 const SEEDS: Seed[] = [
-  { id: "offer", name: "Offer locked", owner: "Thomas", status: "done", done_at: "2026-10-02", done_means: "Three offers with set prices, kept off the website and cold email.",
-    note: "Core is $5,000 setup plus $997 a month. Website redesign is $1,500 setup plus $97 a month. Lead reactivation is $2,500 setup plus $250 per booked appointment, no retainer. Prices stay off the website and off cold email." },
+  { id: "offer", name: "Offer locked", owner: "Thomas", status: "done", done_at: "2026-10-12", done_means: "Set prices for every offer, shown only on the private /calc page and never in cold email.",
+    note: "Starter is $297 setup plus $297 a month. Core is $997 setup plus $697 a month, or $1,500 plus $997 for med spa, dental and legal. Website is $1,500 setup plus $147 a month. Lead reactivation is $997 setup plus $150 per booked appointment, then $497 a month. Prices live only on the private /calc page, never in cold email." },
   { id: "send_domain", name: "Send domain and address", owner: "Thomas", status: "done", done_at: "2026-10-02", done_means: "A cold inbox, a physical address and AgentMail are ready.",
     note: "hello@gatesoutreach.com. Physical address on file. AgentMail connected." },
   { id: "copy_rules", name: "Copy rules and board", owner: "Brain", status: "done", done_at: "2026-10-02", done_means: "Every draft is checked and reviewed on /leads before Thomas sees it.",
@@ -32,7 +32,7 @@ const SEEDS: Seed[] = [
   { id: "first_send", name: "First Field send", owner: "Ace", status: "later", done_at: null, done_means: "AgentMail sends approved Email 1s from hello@gatesoutreach.com under the daily cap.", note: "Zero Field sends so far." },
   { id: "first_reply", name: "First reply", owner: "Lisa", status: "later", done_at: null, done_means: "A prospect replies (not a warm-up seed, not an opt-out) and Lisa drafts the answer. No auto-reply.", note: "" },
   { id: "booked_call", name: "First booked call", owner: "Lisa", status: "later", done_at: null, done_means: "A reply becomes a scheduled call. Still no price in the email.", note: "" },
-  { id: "paid_client", name: "First paid client", owner: "Thomas", status: "later", done_at: null, done_means: "Thomas closes Core, Website or Lead Reactivation and the client pays.", note: "" },
+  { id: "paid_client", name: "First paid client", owner: "Thomas", status: "later", done_at: null, done_means: "Thomas closes Starter, Core, Website or Lead Reactivation and the client pays.", note: "" },
 ];
 
 interface Stored { status: StepStatus; note?: string; done_at?: string | null; done_by?: string | null; evidence?: string | null }
@@ -135,7 +135,7 @@ export async function advance(target: StepId, status: StepStatus, by: string, ev
   }
 }
 
-export const OFFERS = { core: "Core", website: "Website redesign", reactivation: "Lead reactivation" } as const;
+export const OFFERS = { starter: "Starter", core: "Core", website: "Website redesign", reactivation: "Lead reactivation" } as const;
 export type Offer = keyof typeof OFFERS;
 
 /** "Booked call" / "Paid" on a lead: stored on the lead, and they flip the roadmap. Only for leads we actually emailed. */
