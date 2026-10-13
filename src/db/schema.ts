@@ -3,7 +3,7 @@
  * Tables: jobs, knowledge_items (pgvector), audit_log, approvals, field_* (Field Console).
  * JSON columns hold the typed shapes from @/lib/types (cast on read).
  */
-import { pgTable, text, jsonb, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, timestamp, boolean, integer, doublePrecision } from "drizzle-orm/pg-core";
 
 export const jobs = pgTable("jobs", {
   id: text("id").primaryKey(),
@@ -178,4 +178,36 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: text("created_at").notNull(),
   lastUsedAt: text("last_used_at"),
   revokedAt: text("revoked_at"),
+});
+
+// ── Mission Control (task board for Thomas + the bots) ───────────────────────
+export const missionTasks = pgTable("mission_tasks", {
+  id: text("id").primaryKey(), // task_<base36 time>_<rand>
+  title: text("title").notNull(),
+  column: text("column").notNull().default("not_yet"), // not_yet | this_week | in_progress | waiting_thomas | done
+  rank: doublePrecision("rank").notNull().default(0), // order within a column (fractional)
+  agent: text("agent"), // roster id or "thomas"; null = unassigned
+  lane: text("lane").notNull(), // gates | twin | fleet | govcon | career
+  priority: text("priority").notNull().default("med"), // high | med | low
+  recurring: boolean("recurring").notNull().default(false),
+  dueDate: text("due_date"), // YYYY-MM-DD (New York)
+  ask: text("ask"), // what Thomas needs to do (Waiting column)
+  links: jsonb("links").notNull().default([]), // { label: string; url: string }[]
+  createdBy: text("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+  doneAt: text("done_at"),
+  notionPageId: text("notion_page_id"), // set only by the sync stub
+});
+
+/** Append-only audit log: every create, field change, move and note, with the actor. */
+export const missionTaskEvents = pgTable("mission_task_events", {
+  id: text("id").primaryKey(),
+  taskId: text("task_id").notNull(),
+  kind: text("kind").notNull(), // created | updated | moved | note
+  actor: text("actor").notNull(), // "thomas" | roster id | "ace" (operator fallback)
+  via: text("via").notNull(), // mcp | rest | ui
+  changes: jsonb("changes"), // { field: { from, to } } for updated/moved
+  note: text("note"),
+  at: text("at").notNull(),
 });

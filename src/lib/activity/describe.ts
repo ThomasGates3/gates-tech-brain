@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { fieldContacts } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { AGENTS } from "@/lib/agents";
+import { COLUMN_LABEL, type Column } from "@/lib/mission/model";
 import type { ActivityKind, ActivityRow } from "./index";
 
 export const agentLabel = (id?: string) =>
@@ -67,6 +68,18 @@ export function describeCall(name: string, a: A, result: unknown, agent: string,
         : { target: `${who} changed the send gates`, because: [a.domain_warmed !== undefined && `warm-up ${a.domain_warmed ? "confirmed" : "off"}`, a.daily_cap !== undefined && `daily cap ${a.daily_cap}`].filter(Boolean).join(" · "), kind: "updated" };
     case "brain_inbound":
       return { target: `${who} checked replies`, because: `${r.unanswered ?? 0} unanswered${r.suppressed ? ` · ${r.suppressed} opted out` : ""}`, kind: a.confirm_suppress ? "updated" : undefined };
+    case "brain_task_create":
+      return { target: `${who} added task: ${str(r.title) || str(a.title)}`, because: a.column === "waiting_thomas" ? "waiting on Thomas" : undefined };
+    case "brain_task_update":
+      return { target: `${who} edited task: ${str(r.title) || "a task"}` };
+    case "brain_task_move": {
+      const col = COLUMN_LABEL[a.column as Column] ?? "a new column";
+      return { target: `${who} moved "${str(r.title) || "a task"}" to ${col}`, because: str(a.note).slice(0, 200) || undefined };
+    }
+    case "brain_task_note":
+      return { target: `${who} left a note on "${str(r.title) || "a task"}"`, because: str(a.note).replace(/\s+/g, " ").slice(0, 200) || undefined };
+    case "brain_task_list":
+      return { target: `${who} looked at Mission Control` };
     case "brain_today": return { target: `${who} checked today's status` };
     case "brain_get_draft": return { target: `${who} opened ${B}'s ${n(a)}` };
     case "brain_get_brief": return { target: `${who} read the outreach brief` };
