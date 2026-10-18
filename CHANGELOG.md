@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-18: Offer prices unified to the approved sheet
+- Roadmap step 1 note: 2026-10-18 price sheet. Text-back, reviews and CRM $1,500 setup each ($197, $147, $197 a month); Entry pack $1,500 + $297/mo; Full ops pack $2,500 + $497/mo; reminders add-on $97/mo; walk-in website $2,500 + $297/mo (default), standard $1,000 + $297/mo; Business suite custom quote; knowledge-base AI agent $10,000 setup, monthly custom quote. Monthly billing starts after the first 30 days. A stored roadmap_state note for the offer step overrides this seed.
+
 ## 2026-10-12: Offer prices reset from market research
 - Roadmap step 1 note: Starter $297 setup + $297/mo; Core $997 + $697/mo ($1,500 + $997 for med spa, dental, legal); Website $1,500 + $147/mo; Lead reactivation $997 + $150 per booked appointment, then $497/mo. Prices live only on the private /calc page (gates-technologies PR #1), never in cold email.
 - Paid button and `brain_mark_paid` accept Starter.
