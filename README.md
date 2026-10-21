@@ -14,6 +14,8 @@ Locked Field path: Ace queue → Darrell Email 1 → Nick PASS/REVISE/KILL → T
 - **OpenAPI:** `https://brain.gatestech.solutions/api/v1/openapi.json`; REST mirror at `POST /api/v1/tools/<tool name>`.
 - **Auth:** `Authorization: Bearer <key>`. Create a key in the deck under **Operations → Access** (Thomas signed in): "acts as Ace" for the bots, "acts as Thomas" only for Thomas's own client (it can approve, send and flip gates). Shown once; only its hash is stored. `FIELD_ACE_API_KEY` also works (Ace).
 - **Grok:** grok.com/connectors → New Connector → Custom → paste the MCP URL → add the Authorization header.
+- **Claude (web + phone):** Settings → Connectors → Add custom connector → paste the MCP URL, leave OAuth fields blank → Connect. You land on the Brain sign-in: use the Thomas or Ace password (not the team one), then **Allow**. The connector acts as whoever signed in and carries over to the phone app. OAuth is stateless (signed with `AUTH_SECRET`); access tokens last 1 hour, refresh tokens 30 days. Set `OAUTH_TOKEN_GENERATION=2` (then 3, …) to revoke every OAuth sign-in. Redirects only go to claude.ai / claude.com / localhost, plus hosts in `OAUTH_REDIRECT_HOSTS`.
+- **Claude Code:** `claude mcp add --transport http gates-brain https://brain.gatestech.solutions/api/mcp` then `/mcp` → Authenticate (same sign-in), or add `--header "Authorization: Bearer <key>"` instead.
 - Pass `agent` (roster id, e.g. `"darrell"`) on each call. Every call writes an Activity row, and that bot shows **active** on the roster for 30 minutes.
 
 | Tool | What it does |
