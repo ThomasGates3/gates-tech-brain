@@ -335,3 +335,93 @@ test("activity: warm-up / approval blocks are hideable, real failures are not", 
   assert.equal(a("Auto-draft for Soul Medical didn't go through", "Daily Claude budget reached"), false);
   assert.equal(a("Field gates: domainWarmed false → true", "set by thomas", "updated"), false);
 });
+
+import { humanizerWarnings } from "./lint";
+
+const hblock = (b: string) => lintCopy("s", b).map((i) => i.rule);
+const hwarn = (b: string) => humanizerWarnings("s", b).map((i) => i.rule);
+
+test("humanizer: Not X but Y", () => {
+  assert.ok(hblock("not just answering calls but booking them").includes("Not X but Y"));
+  assert.ok(hblock("It's not a phone line, it's a front desk.").includes("Not X but Y"));
+  assert.ok(hblock("not a tool but a system").includes("Not X but Y"));
+  for (const t of ["I'm not sure, but Tuesday works.", "Monitoring, not a redesign.", "Priced per booked appointment rather than per send."])
+    assert.ok(!hblock(t).includes("Not X but Y"), t);
+});
+
+test("humanizer: dramatic closers and deep sayings", () => {
+  for (const t of ["Let that sink in.", "Read that again.", "That's the real win.", "every. single. day."]) assert.ok(hblock(t).includes("Dramatic closer"), t);
+  assert.ok(hblock("At its core, it is about trust.").includes("Deep saying"));
+  assert.deepEqual(hblock("We catch calls at the end of the day."), []);
+});
+
+test("humanizer: staged openers and arguing with no one", () => {
+  assert.ok(hblock("Here's the thing: calls get missed.").includes("Staged opener"));
+  assert.ok(hblock("Is it worth it? Honestly? It depends.").includes("Staged opener"));
+  assert.ok(hblock("In today's fast-paced market, calls matter.").includes("Staged opener"));
+  assert.ok(hblock("Don't get me wrong, your site is fine.").includes("Arguing with no one"));
+  for (const t of ["Worth a look, or is it covered?", "Answer honestly and hand to Thomas.", "the calls in today's log"]) assert.deepEqual(hblock(t), [], t);
+});
+
+test("humanizer: chatbot residue", () => {
+  for (const t of ["I hope this helps.", "Feel free to reach out.", "Great question.", "Certainly, here is the plan.", "Let me know if you'd like a demo."])
+    assert.ok(hblock(t).includes("Chatbot residue"), t);
+  for (const t of ["Want me to send a 15-second clip?", "Just reply and let me know."]) assert.deepEqual(hblock(t), [], t);
+});
+
+test("humanizer: AI vocabulary is body-only and lowercase-only", () => {
+  const words = ["delve into it", "a tapestry", "a testament", "seamless booking", "meticulously done", "a pivotal step", "crucial calls", "intricate setup", "underscores it", "fostering trust", "elevate the desk", "empowers staff", "cutting-edge tools", "transformative", "revolutionize calls", "world-class", "best-in-class", "state-of-the-art", "next-level", "unlock more bookings", "the digital landscape", "navigate the complex"];
+  for (const t of words) assert.ok(hblock(t).includes("AI vocabulary"), t);
+  assert.deepEqual(lintCopy("missed calls at elevate med spa", "Is it covered for Elevate Med Spa?"), []);
+  for (const t of ["Holistic Health Spa", "navigate the booking page", "your landscape crew"]) assert.deepEqual(hblock(t), [], t);
+  assert.deepEqual(hblock("unlock growth"), ["AI-ism"]);
+  assert.deepEqual(hblock("unlocking growth"), ["AI-ism"]);
+  assert.deepEqual(hblock("revolutionary"), ["Banned phrase"]);
+});
+
+test("humanizer warnings: rule of three and repeated openings", () => {
+  assert.ok(hwarn("faster, smarter, and cheaper").includes("Rule of three"));
+  assert.ok(hwarn("No setup. No contracts. No waiting.").includes("Repeated openings"));
+  assert.deepEqual(hwarn("Open Tuesday, Thursday and Friday."), []);
+  const web = "Your site only has a contact page.\n\nThree things I'd fix:\n1. Add a Book Now button at the top.\n2. List your services on the homepage.\n3. Put your hours under the phone number.";
+  assert.deepEqual(hwarn(web), []);
+});
+
+test("humanizer warnings: hedges, curly quotes, -ing riders, soft vocabulary", () => {
+  assert.ok(hwarn("this could potentially help").includes("Stacked hedge"));
+  assert.ok(hwarn("it may arguably help").includes("Stacked hedge"));
+  assert.ok(hwarn("don’t wait").includes("Curly quotes"));
+  assert.ok(hwarn("We reply fast, ensuring no lead is lost.").includes("-ing rider"));
+  assert.ok(hwarn("your vibrant studio").includes("Soft AI vocabulary"));
+  for (const t of ["could pick up", "don't wait", "Holistic Health Spa"]) assert.deepEqual(hwarn(t), [], t);
+});
+
+test("humanizer warnings never block", () => {
+  const hits = ["this could potentially help", "it may arguably help", "don’t wait", "We reply fast, ensuring no lead is lost.", "your vibrant studio", "faster, smarter, and cheaper"];
+  for (const t of hits) {
+    assert.deepEqual(lintCopy("s", t), [], t);
+    assert.ok(humanizerWarnings("s", t).every((i) => i.severity === "warn"));
+  }
+  const good = "Your listing shows Wednesday 9 to 4 and Thursday 10 to 5.\n\nWorth a look?";
+  assert.deepEqual(lintDraft("calls after you close", good, { lane: "core" }), []);
+});
+
+test("every template passes both block lint and warnings", () => {
+  const drafts = [
+    templateDraft(contact(), signer),
+    templateDraft(contact({ gap: "" }), signer),
+    templateDraft(contact({ name: "Shine Mobile Detail", batch: "ATL detailers", gap: "No booking form on the IG bio" }), signer),
+    templateDraft(contact({ lane: "website", gap: "" }), signer),
+    templateDraft(contact({ lane: "website" }), signer),
+  ];
+  for (const n of [2, 3, 4] as const)
+    for (const lane of ["core", "website"] as const) drafts.push(followupTemplate(n, { name: "Palma Aesthetics", subject: "calls after you close", lane }, signer));
+  for (const d of drafts) {
+    assert.deepEqual(lintCopy(d.subject, d.body), [], d.body);
+    assert.deepEqual(humanizerWarnings(d.subject, d.body), [], d.body);
+  }
+  for (const b of ["HIPAA-aware where that scope applies. Open Mon-Sat 9-5. Worth a look?", "We answer after-hours calls and text back. Worth a look?"]) {
+    assert.deepEqual(lintCopy("calls after you close", b), []);
+    assert.deepEqual(humanizerWarnings("calls after you close", b), []);
+  }
+});
