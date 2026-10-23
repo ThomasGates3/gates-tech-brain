@@ -12,6 +12,11 @@ import { after } from "next/server";
 import { listWhatsNew, addWhatsNew, WhatsNewError } from "@/lib/whats-new";
 import { getRoadmap, setStep, markLead, RoadmapError, STEP_IDS } from "@/lib/roadmap";
 import { websiteBrief, BriefAnswers } from "@/lib/website/brief";
+import { COLUMNS, LANES, PRIORITIES, MissionError, type Actor, type Task } from "@/lib/mission/model";
+import { createTask, updateTask, moveTask, noteTask, listTasks, getTaskView } from "@/lib/mission/service";
+import { dbStore } from "@/lib/mission/db-store";
+import { pushTask, isSyncOn, NOTION_SYNC_KEY } from "@/lib/mission/notion-sync";
+import { getSetting } from "@/lib/settings";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { contactStep, sendContact, loadPack, addSuppression } from "@/lib/field/actions";
@@ -133,7 +138,22 @@ async function roadmapCall<T>(fn: () => Promise<T>): Promise<T> {
   try { return await fn(); } catch (e) { if (e instanceof RoadmapError) throw new ToolError(e.status, e.message); throw e; }
 }
 
-const PLACEHOLDER_EMAIL = /@(example\.(com|org|net)|test\.com|domain\.com|email\.com)$|^(test|noreply|no-reply|placeholder|unknown|n\/?a)@/i;
+/** Mission Control rule breaks come back as clean 4xx tool errors. */
+async function missionCall<T>(fn: () => Promise<T>): Promise<T> {
+  try { return await fn(); } catch (e) { if (e instanceof MissionError) throw new ToolError(e.status, e.message); throw e; }
+}
+const missionActor = (agent: string | undefined, ctx: ToolCtx): Actor => ({ actor: agent ?? ctx.operator, via: ctx.via, now: new Date().toISOString() });
+/** Notion sync is a stub (lib/mission/notion-sync.ts). Runs after the response; never blocks or fails a write. */
+function syncAfter(t: Task) {
+  runAfter(async () => {
+    try { await pushTask(t, isSyncOn(await getSetting(NOTION_SYNC_KEY)), (line) => recordActivity({ kind: "updated", target: line, agent: "brain" })); } catch { /* sync is best-effort */ }
+  });
+}
+const Assignee = z.enum([...AGENT_IDS, "thomas"] as [string, ...string[]]).describe("Who owns it: a roster id or \"thomas\"");
+const TaskLinks = z.array(z.object({ label: z.string().trim().min(1).max(80), url: z.string().max(500) })).max(10);
+const TaskId = z.string().min(1).describe("Task id from brain_task_list");
+
+const PLACEHOLDER_EMAIL =/@(example\.(com|org|net)|test\.com|domain\.com|email\.com)$|^(test|noreply|no-reply|placeholder|unknown|n\/?a)@/i;
 
 export const TOOLS = [
   tool({
@@ -471,6 +491,94 @@ export const TOOLS = [
       if (ctx.operator !== "thomas") throw new ToolError(403, "Paid is Thomas only.");
       return roadmapCall(() => markLead(contact_id, { paid: offer }, "thomas"));
     },
+  }),
+  tool({
+    name: "brain_task_create",
+    title: "Mission Control: add a task",
+    description: "Add a task to the Mission Control board (/mission). No AI calls. Every change is logged with who made it. Lane is gates, twin, fleet, govcon or career. assignee is a roster id or \"thomas\". column defaults to not_yet; waiting_thomas needs an ask. Optional note is saved to the task history. Returns the task with its history.",
+    input: z.object({
+      agent: Agent,
+      title: z.string().min(1).max(200),
+      lane: z.enum(LANES),
+      assignee: Assignee.optional(),
+      priority: z.enum(PRIORITIES).default("med"),
+      recurring: z.boolean().default(false),
+      due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("YYYY-MM-DD (New York)"),
+      column: z.enum(COLUMNS).default("not_yet"),
+      ask: z.string().max(500).optional().describe("What Thomas has to do (needed for waiting_thomas)"),
+      links: TaskLinks.optional(),
+      note: z.string().max(2000).optional(),
+    }),
+    kind: "updated",
+    run: ({ agent, title, lane, assignee, priority, recurring, due_date, column, ask, links, note }, ctx) => missionCall(async () => {
+      const v = await createTask(dbStore(), { title, lane, agent: assignee ?? null, priority, recurring, dueDate: due_date ?? null, column, ask: ask ?? null, links }, missionActor(agent, ctx), note);
+      syncAfter(v);
+      return v;
+    }),
+  }),
+  tool({
+    name: "brain_task_update",
+    title: "Mission Control: edit a task",
+    description: "Change fields on a task. Pass only what changes; assignee, due_date and ask can be null to clear them. No AI calls. Every change is logged with who made it. To move a card between columns use brain_task_move.",
+    input: z.object({
+      agent: Agent,
+      task_id: TaskId,
+      title: z.string().min(1).max(200).optional(),
+      assignee: Assignee.nullable().optional(),
+      lane: z.enum(LANES).optional(),
+      priority: z.enum(PRIORITIES).optional(),
+      recurring: z.boolean().optional(),
+      due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+      ask: z.string().max(500).nullable().optional(),
+      links: TaskLinks.optional(),
+    }),
+    kind: "updated",
+    run: ({ agent, task_id, title, assignee, lane, priority, recurring, due_date, ask, links }, ctx) => missionCall(async () => {
+      const v = await updateTask(dbStore(), task_id, { title, agent: assignee, lane, priority, recurring, dueDate: due_date, ask, links }, missionActor(agent, ctx));
+      syncAfter(v);
+      return v;
+    }),
+  }),
+  tool({
+    name: "brain_task_move",
+    title: "Mission Control: move a task",
+    description: "Move a task to a column (not_yet, this_week, in_progress, waiting_thomas, done). before_id puts it just above that card, after_id just below it; neither puts it at the bottom. Waiting on Thomas needs an ask (set it with brain_task_update first). Optional note is saved to the history. No AI calls. Every change is logged with who made it.",
+    input: z.object({ agent: Agent, task_id: TaskId, column: z.enum(COLUMNS), before_id: z.string().optional(), after_id: z.string().optional(), note: z.string().max(2000).optional() }),
+    kind: "updated",
+    run: ({ agent, task_id, column, before_id, after_id, note }, ctx) => missionCall(async () => {
+      const v = await moveTask(dbStore(), task_id, column, { beforeId: before_id, afterId: after_id }, missionActor(agent, ctx), note);
+      syncAfter(v);
+      return v;
+    }),
+  }),
+  tool({
+    name: "brain_task_note",
+    title: "Mission Control: add a note",
+    description: "Leave a timestamped note on a task (1 to 2000 characters). It shows in the task history with your name. No AI calls.",
+    input: z.object({ agent: Agent, task_id: TaskId, note: z.string().min(1).max(2000) }),
+    kind: "updated",
+    run: ({ agent, task_id, note }, ctx) => missionCall(() => noteTask(dbStore(), task_id, note, missionActor(agent, ctx))),
+  }),
+  tool({
+    name: "brain_task_list",
+    title: "Mission Control: list tasks",
+    description: "List Mission Control tasks with the count waiting on Thomas. Filters: column, assignee, lane, due_from, due_to (YYYY-MM-DD). Done tasks are hidden unless include_done. Pass task_id to get one task with its full history instead. No AI calls.",
+    input: z.object({
+      agent: Agent,
+      task_id: z.string().optional().describe("Return just this task with its history"),
+      column: z.enum(COLUMNS).optional(),
+      assignee: Assignee.optional(),
+      lane: z.enum(LANES).optional(),
+      due_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      due_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      include_done: z.boolean().default(false),
+      limit: z.number().int().min(1).max(500).default(100),
+    }),
+    kind: "queried",
+    run: ({ task_id, column, assignee, lane, due_from, due_to, include_done, limit }) => missionCall(async () => {
+      if (task_id) return getTaskView(dbStore(), task_id);
+      return listTasks(dbStore(), { column, agent: assignee, lane, dueFrom: due_from, dueTo: due_to, includeDone: include_done, limit });
+    }),
   }),
   tool({
     name: "brain_batch_set_draft",
