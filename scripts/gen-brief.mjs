@@ -5,3 +5,4 @@ const gen = (md, ts, name) => writeFileSync(ts, `// Generated from ${md} by \`np
 gen("docs/outreach-brief.md", "src/lib/field/brief.ts", "OUTREACH_BRIEF");
 gen("docs/website-master-prompt.md", "src/lib/website/master-prompt.ts", "WEBSITE_MASTER_PROMPT");
 gen("templates/site/index.html", "src/lib/website/site-template.ts", "SITE_TEMPLATE");
+gen("docs/website-blueprint.md", "src/lib/website/blueprint.ts", "WEBSITE_BLUEPRINT");

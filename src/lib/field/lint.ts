@@ -76,7 +76,7 @@ export function websiteEmail1Lint(body: string): LintIssue[] {
 export const WEBSITE_CLOSER = "We build sites with booking built in.";
 
 // Terms an owner wouldn't recognize, and openers that fail the annoyance test (2026-10-02 Nick audit).
-const WEBSITE_JARGON = /\b(?:x?html\d?|classic[-\s]mobile|legacy table(?:[-\s]layout)?|table[-\s]html|webador|wix|squarespace|godaddy builder|cms|seo|template stack|dom|css|javascript)\b/gi;
+const WEBSITE_JARGON = /\b(?:x?html\d?|classic[-\s]mobile|legacy table(?:[-\s]layout)?|table[-\s]html|webador|wix|squarespace|godaddy builder|cms|seo|template stack|dom|css|javascript|meta (?:title|description)s?|sitemap(?:\.xml)?|robots\.txt|canonical|schema|alt[-\s]text|favicon|open graph|og:\w+|lighthouse)\b/gi;
 const WEBSITE_PEJORATIVE = /\b(?:seo filler|generic filler|thin brand|unfinished for|junk site|looks cheap|amateur|bad site|terrible|ugly)\b/gi;
 
 // ── Core lane: hours honesty ────────────────────────────────────────────────

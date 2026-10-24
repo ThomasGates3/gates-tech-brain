@@ -3,6 +3,8 @@ import type { FieldContact } from "@/lib/field/types";
 import { WEBSITE_MASTER_PROMPT } from "./master-prompt";
 import { SITE_TEMPLATE } from "./site-template";
 import { mediaBrief } from "./media";
+import { WEBSITE_BLUEPRINT } from "./blueprint";
+import { LAUNCH_CHECKLIST } from "./checklist";
 
 /** The master prompt's "Before you build" checklist; anything not known yet becomes a question. */
 export const BriefAnswers = z.object({
@@ -38,9 +40,11 @@ const QUESTIONS: Record<Asked, string> = {
 };
 
 /**
- * Website build brief for a lead: the master prompt verbatim, the filled
- * "Build a website for…" message, the static site template, and the Higgsfield /
- * HeyGen media brief. Unknown answers stay as [BRACKETS] and are returned as questions.
+ * Website build brief for a lead: the master prompt verbatim, the Gates Website
+ * Blueprint (4-part layout + 20-point launch checklist, wins over the master
+ * prompt), the filled "Build a website for…" message, the static site template,
+ * and the Higgsfield / HeyGen media brief. Unknown answers stay as [BRACKETS] and
+ * are returned as questions.
  */
 export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
   const v = (k: keyof BriefAnswers, slot: string) => a[k]?.trim() || `[${slot}]`;
@@ -53,8 +57,10 @@ export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
     (a.pages ? `\nMust-have pages: ${a.pages}.` : "") +
     (a.phone ? `\nPhone for tap-to-call: ${a.phone}.` : "") +
     (c.siteUrl ? `\nTheir current site: ${c.siteUrl}` : "") +
-    (c.gap || c.notes ? `\nWhat we observed on it: ${[c.gap, c.notes].filter(Boolean).join(" ")}` : "");
+    (c.gap || c.notes ? `\nWhat we observed on it: ${[c.gap, c.notes].filter(Boolean).join(" ")}` : "") +
+    "\nFollow the Gates Website Blueprint: hero video + CTA with free scrolling, then See the Transformation, Real Reviews (verified Google reviews only) and the quote form wired to our lead sheet / GoHighLevel webhook. " +
+    "Ship and verify all 20 launch checklist items before opening a PR.";
   const ask = (Object.keys(QUESTIONS) as Asked[]).filter((k) => !a[k]?.trim()).map((k) => ({ field: k, question: QUESTIONS[k] }));
   const media = mediaBrief(c, [a.what_they_sell, a.offer].filter(Boolean).join(" "), a);
-  return { master_prompt: WEBSITE_MASTER_PROMPT, build_message: message, site_template: SITE_TEMPLATE, media, ask, ready: ask.length === 0 };
+  return { master_prompt: WEBSITE_MASTER_PROMPT, blueprint: WEBSITE_BLUEPRINT, launch_checklist: LAUNCH_CHECKLIST.map(({ n, label }) => ({ n, label })), build_message: message, site_template: SITE_TEMPLATE, media, ask, ready: ask.length === 0 };
 }
