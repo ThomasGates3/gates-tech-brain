@@ -26,6 +26,7 @@ import { recordUsage } from "@/lib/usage";
 import { recordActivity } from "@/lib/activity";
 import { claudeBudget } from "@/lib/budget";
 import audit from "@/lib/audit";
+import { checklistAuditLines } from "@/lib/website/checklist";
 
 export type Result<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 const fail = (status: number, error: string): { ok: false; status: number; error: string } => ({ ok: false, status, error });
@@ -41,25 +42,36 @@ export const StepInput = z.discriminatedUnion("action", [
 ]);
 export type StepInput = z.input<typeof StepInput>;
 
-/** Read the lead's own site (Haiku + web fetch, that domain only) and list what's observably there. */
-async function observeSite(c: FieldContact): Promise<string> {
+/**
+ * Read the lead's own site (Haiku + web fetch, that domain only) and list what's observably there.
+ * Website lane: also grade it against the 20-point launch checklist (lib/website/checklist) and
+ * list the missing items, so the three fixes in Email 1 come from real gaps.
+ */
+async function observeSite(c: FieldContact, checklist = false): Promise<string> {
   if (!c.siteUrl) return "";
   let host = "";
   try { host = new URL(c.siteUrl).hostname.replace(/^www\./, ""); } catch { return ""; }
   const started = Date.now();
+  const grade = checklist
+    ? "\n\nThen grade the site against our 20-point launch checklist. Also fetch /robots.txt, /sitemap.xml and one made-up path (for the 404 page) on the same domain if you can. " +
+      "After the facts, write the line \"Launch checklist gaps:\" and one line per item that is missing or broken, as \"#<n> <label>: <what you saw>\". " +
+      "Only list items you actually checked; skip any you could not verify. Then one line \"Checklist: <passed>/<checked> checked items pass\".\n" +
+      checklistAuditLines()
+    : "";
   try {
     const r = await generateText({
       model: claude(LIGHT),
       prompt:
         `Fetch ${c.siteUrl} and list 6 to 10 short, concrete, observable facts about the site that matter for a local business getting booked: ` +
         "how someone books or contacts them, phone placement, hours shown, page count and navigation, mobile layout clues, broken or placeholder pages, outdated elements, missing basics (services, reviews, location). " +
-        "Facts only, one per line, no advice. If the page fails to load, say so.",
-      tools: { web_fetch: anthropic.tools.webFetch_20260209({ maxUses: 2, allowedDomains: [host, `www.${host}`] }) },
-      stopWhen: stepCountIs(4),
-      maxOutputTokens: 1200,
+        "Facts only, one per line, no advice. If the page fails to load, say so." +
+        grade,
+      tools: { web_fetch: anthropic.tools.webFetch_20260209({ maxUses: checklist ? 5 : 2, allowedDomains: [host, `www.${host}`] }) },
+      stopWhen: stepCountIs(checklist ? 7 : 4),
+      maxOutputTokens: checklist ? 2000 : 1200,
     });
     void recordUsage({ model: LIGHT, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
-    return r.text.trim().slice(0, 3000);
+    return r.text.trim().slice(0, checklist ? 5000 : 3000);
   } catch {
     return "";
   }
@@ -92,7 +104,7 @@ async function claudeDraft(c: FieldContact, tier: "sonnet" | "opus", n: EmailN =
     void recordUsage({ model, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
     return r.output;
   };
-  const observed = c.lane === "website" && n === 1 ? await observeSite(c) : hoursSeen;
+  const observed = c.lane === "website" && n === 1 ? await observeSite(c, true) : hoursSeen;
   const prompt = playbookPrompt(c, fieldEnv.signer(), n, previous, observed);
   const draft = await ask(prompt);
   const issues = lintDraft(draft.subject, draft.body, { lane: c.lane, emailN: n });
