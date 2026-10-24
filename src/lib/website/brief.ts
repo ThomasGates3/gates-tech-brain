@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { FieldContact } from "@/lib/field/types";
 import { WEBSITE_MASTER_PROMPT } from "./master-prompt";
+import { WEBSITE_BLUEPRINT } from "./blueprint";
+import { LAUNCH_CHECKLIST } from "./checklist";
 
 /** The master prompt's "Before you build" checklist; anything not known yet becomes a question. */
 export const BriefAnswers = z.object({
@@ -29,8 +31,10 @@ const QUESTIONS: Record<keyof BriefAnswers, string> = {
 };
 
 /**
- * Website build brief for a lead: the master prompt verbatim, then the filled
- * "Build a website for…" message. Unknown answers stay as [BRACKETS] and are returned as questions.
+ * Website build brief for a lead: the master prompt verbatim, the Gates Website
+ * Blueprint (4-part layout + 20-point launch checklist, wins over the master
+ * prompt), then the filled "Build a website for…" message. Unknown answers stay
+ * as [BRACKETS] and are returned as questions.
  */
 export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
   const v = (k: keyof BriefAnswers, slot: string) => a[k]?.trim() || `[${slot}]`;
@@ -42,7 +46,9 @@ export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
     (a.differentiator ? `\nKey differentiator: ${a.differentiator}.` : "") +
     (a.pages ? `\nMust-have pages: ${a.pages}.` : "") +
     (c.siteUrl ? `\nTheir current site: ${c.siteUrl}` : "") +
-    (c.gap || c.notes ? `\nWhat we observed on it: ${[c.gap, c.notes].filter(Boolean).join(" ")}` : "");
+    (c.gap || c.notes ? `\nWhat we observed on it: ${[c.gap, c.notes].filter(Boolean).join(" ")}` : "") +
+    "\nFollow the Gates Website Blueprint: hero video + CTA with free scrolling, then See the Transformation, Real Reviews (verified Google reviews only) and the quote form wired to our lead sheet / GoHighLevel webhook. " +
+    "Ship and verify all 20 launch checklist items before opening a PR.";
   const ask = (Object.keys(QUESTIONS) as (keyof BriefAnswers)[]).filter((k) => !a[k]?.trim()).map((k) => ({ field: k, question: QUESTIONS[k] }));
-  return { master_prompt: WEBSITE_MASTER_PROMPT, build_message: message, ask, ready: ask.length === 0 };
+  return { master_prompt: WEBSITE_MASTER_PROMPT, blueprint: WEBSITE_BLUEPRINT, launch_checklist: LAUNCH_CHECKLIST.map(({ n, label }) => ({ n, label })), build_message: message, ask, ready: ask.length === 0 };
 }
