@@ -178,9 +178,13 @@ export function ContentStudio({ initial }: { initial: Board }) {
                     {d.vertical} · {d.city} · keyword {d.defaultKeyword}
                   </p>
                 </div>
-                <a data-testid={`demo-drive-${d.slug}`} href={d.driveFolderUrl} target="_blank" rel="noopener noreferrer" className={btn}>
-                  📂 Drive ↗
-                </a>
+                {d.driveFolderUrl ? (
+                  <a data-testid={`demo-drive-${d.slug}`} href={d.driveFolderUrl} target="_blank" rel="noopener noreferrer" className={btn}>
+                    📂 Drive ↗
+                  </a>
+                ) : (
+                  <span className="text-[12px] text-slate-500">No Drive folder</span>
+                )}
                 <button
                   data-testid={`demo-draft-${d.slug}`}
                   disabled={!!busy}
@@ -256,9 +260,13 @@ function SlotCard({ s, busy, run, demos }: { s: ContentSlotItem; busy: string | 
         <span className="text-[12px] text-slate-300">
           Demo: <span className="text-slate-100">{s.businessName}</span>
         </span>
-        <a data-testid={`drive-${s.id}`} href={s.driveUrl} target="_blank" rel="noopener noreferrer" className={`${btn} ml-auto`}>
-          📂 Open Google Drive assets ↗
-        </a>
+        {s.driveUrl ? (
+          <a data-testid={`drive-${s.id}`} href={s.driveUrl} target="_blank" rel="noopener noreferrer" className={`${btn} ml-auto`}>
+            📂 Open Google Drive assets ↗
+          </a>
+        ) : (
+          <span data-testid={`drive-none-${s.id}`} className="ml-auto text-[12px] text-slate-500">No Drive folder yet</span>
+        )}
       </div>
 
       {edit ? (

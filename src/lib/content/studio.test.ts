@@ -44,7 +44,10 @@ test("seed copy follows the Brain rules: no em dashes, no invented percentages",
     const text = [i.title, i.topPillHook, i.topPillAlt ?? "", i.caption, i.ghlDmScript, ...i.shotList].join(" ");
     assert.doesNotMatch(text, /[—–]/, i.id);
     assert.doesNotMatch(text, /\d+(\.\d+)?\s?%\s+of\b/i, i.id); // stats like "78% of homeowners", not poll labels
-    assert.ok(i.ghlKeyword && i.driveUrl.startsWith("https://drive.google.com/"), i.id);
+    assert.ok(i.ghlKeyword, i.id);
+    // Every demo links its Drive folder, except Iconic Legacies, which has none yet.
+    if (i.demoSlug === "iconic-legacies") assert.equal(i.driveUrl, "", i.id);
+    else assert.match(i.driveUrl, /^https:\/\/drive\.google\.com\/drive\/folders\/[\w-]+$/, i.id);
   }
 });
 

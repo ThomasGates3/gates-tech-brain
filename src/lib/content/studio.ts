@@ -74,8 +74,7 @@ export interface ContentIdeaItem {
 
 export interface ContentState { mode: GrowthMode; weekOf: string; items: ContentSlotItem[]; ideas: ContentIdeaItem[] }
 
-// TODO(Thomas): Stone Creek and Iconic Legacies still point at the Drive root; swap in their folder links.
-const DRIVE_ROOT = "https://drive.google.com/drive/u/0/my-drive"
+// Iconic Legacies has no Drive folder yet (Thomas, 2026-10-28); its cards say so instead of linking.
 
 export const DEMO_CATALOG: DemoAssetPack[] = [
   {
@@ -101,7 +100,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Custom Builder",
     city: "Ball Ground & Canton, GA",
     heroStyle: "4-stage wireframe-to-finish estate scroll ('Designed to the inch' → 'Rough in' → 'Cabinetry & Millwork' → 'Built to gather')",
-    driveFolderUrl: DRIVE_ROOT,
+    driveFolderUrl: "https://drive.google.com/drive/folders/1oMBpUHNFyygtJRG0Um6VQngt58Kkh4t7",
     localMockupPath: "/workspace/mockups/stone-creek-construction",
     defaultKeyword: "BUILD",
     keyProofPoints: [
@@ -146,7 +145,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Auto Performance",
     city: "Performance & custom auto shop",
     heroStyle: "5-second matte-black garage bay roll-up reveal (red Supra on lift + black Trackhawk)",
-    driveFolderUrl: DRIVE_ROOT,
+    driveFolderUrl: "",
     localMockupPath: "/workspace/mockups/iconic-legacies",
     defaultKeyword: "SHOP",
     keyProofPoints: [
