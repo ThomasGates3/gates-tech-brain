@@ -71,6 +71,22 @@ export function describeCall(name: string, a: A, result: unknown, agent: string,
     case "brain_get_draft": return { target: `${who} opened ${B}'s ${n(a)}` };
     case "brain_get_brief": return { target: `${who} read the outreach brief` };
     case "brain_next_due": return { target: `${who} checked follow-ups due` };
+    case "brain_content_today":
+      return { target: `${who} checked today's IG content queue` };
+    case "brain_content_list":
+      return { target: `${who} viewed the IG content calendar` };
+    case "brain_content_upsert":
+      return {
+        target: a.set_mode
+          ? `${who} switched IG Studio to ${String(a.set_mode).toUpperCase()} growth mode`
+          : a.status === "posted"
+            ? `${who} marked IG slot ${str(a.id) || str(a.title)} posted`
+            : `${who} updated IG content (${str(a.title) || str(a.id) || "slot"})`,
+        because: [str(a.day_of_week), str(a.format), str(a.ghl_keyword) && `keyword ${str(a.ghl_keyword)}`].filter(Boolean).join(" · ") || undefined,
+        kind: "updated",
+      };
+    case "brain_content_generate_week":
+      return { target: a.slot_id ? `${who} regenerated IG slot ${str(a.slot_id)} with Claude` : `${who} generated the weekly IG content pack with Claude`, kind: "generated" };
     default: return { target: `${who} used ${name.replace(/^brain_/, "").replace(/_/g, " ")}` };
   }
 }

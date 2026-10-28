@@ -9,6 +9,7 @@ import { recordActivity } from "@/lib/activity";
 export interface WhatsNew { date: string; title: string; note: string; by: string }
 
 const SEED: WhatsNew[] = [
+  { date: "2026-10-28", title: "Instagram Content Studio", note: "Added the Content tab with Slow and Fast growth schedules, demo links, and copy buttons.", by: "brain" },
   { date: "2026-10-03", title: "What's new", note: "This tab.", by: "brain" },
   { date: "2026-10-02", title: "Money roadmap", note: "Nine steps from offer locked to first paid client, with live counts.", by: "brain" },
   { date: "2026-10-02", title: "Copy rules", note: "Core emails must quote published hours or the lead is held. Website emails are three plain fixes with no links.", by: "brain" },

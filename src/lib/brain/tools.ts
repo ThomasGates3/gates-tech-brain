@@ -11,6 +11,7 @@ import { generateText, stepCountIs } from "ai";
 import { after } from "next/server";
 import { listWhatsNew, addWhatsNew, WhatsNewError } from "@/lib/whats-new";
 import { getRoadmap, setStep, markLead, RoadmapError, STEP_IDS } from "@/lib/roadmap";
+import { ContentError, DAYS, STATUSES, generateWeekWithClaude, getTodayContent, listContentItems, regenerateSlotWithClaude, upsertContentItem } from "@/lib/content/studio";
 import { websiteBrief, BriefAnswers } from "@/lib/website/brief";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
@@ -129,6 +130,14 @@ async function autoDraftLead(id: string, name: string): Promise<void> {
 }
 
 /** Roadmap rule breaks come back as clean 4xx tool errors. */
+/** Content Studio rule breaks come back as clean 4xx tool errors. */
+async function contentCall<T>(fn: () => Promise<T>): Promise<T> {
+  try { return await fn(); } catch (e) { if (e instanceof ContentError) throw new ToolError(e.status, e.message); throw e; }
+}
+const Day = z.enum(DAYS);
+const Mode = z.enum(["slow", "fast"]);
+const Format = z.enum(["reel", "carousel", "story"]);
+
 async function roadmapCall<T>(fn: () => Promise<T>): Promise<T> {
   try { return await fn(); } catch (e) { if (e instanceof RoadmapError) throw new ToolError(e.status, e.message); throw e; }
 }
@@ -449,6 +458,64 @@ export const TOOLS = [
       try { return { items: await addWhatsNew(agent, title, note) }; }
       catch (e) { if (e instanceof WhatsNewError) throw new ToolError(e.status, e.message); throw e; }
     },
+  }),
+  tool({
+    name: "brain_content_today",
+    title: "Today's IG content queue",
+    description: "Returns today's Instagram posting checklist on brain.gatestech.solutions/content, current growth mode ('slow' or 'fast'), weekly progress counts, and the full slot details (top pill hook, 12s shot list, caption, GHL keyword, and Google Drive asset folder) due today.",
+    input: z.object({ agent: Agent, day_of_week: Day.optional(), mode: Mode.optional() }),
+    kind: "queried",
+    run: ({ day_of_week, mode }) => getTodayContent({ day: day_of_week, mode }),
+  }),
+  tool({
+    name: "brain_content_list",
+    title: "List IG content schedule & ideas",
+    description: "Lists the weekly Mon-Sun Instagram content slots, idea backlog, and demo asset catalog from brain.gatestech.solutions/content. Filter by mode ('slow' | 'fast'), day_of_week, status ('idea' | 'drafted' | 'ready' | 'posted' | 'skipped'), or format ('reel' | 'carousel' | 'story').",
+    input: z.object({ agent: Agent, mode: Mode.optional(), day_of_week: Day.optional(), status: z.enum(STATUSES).optional(), format: Format.optional() }),
+    kind: "queried",
+    run: (a) => listContentItems(a),
+  }),
+  tool({
+    name: "brain_content_upsert",
+    title: "Upsert IG content slot or idea",
+    description: "Create or update a weekly Instagram content slot (Reel, Carousel, or Story), switch growth mode ('slow' | 'fast'), mark a slot posted, or add a new idea to the Content Studio backlog on brain.gatestech.solutions/content. No em or en dashes in copy.",
+    input: z.object({
+      agent: Agent,
+      id: z.string().optional().describe("Existing slot id (e.g. 'tue-story-1', 'mon-reel-1') or omit to create a new slot/idea"),
+      as_idea: z.boolean().default(false).describe("true to add to the Idea Backlog instead of a scheduled day slot"),
+      set_mode: Mode.optional().describe("Optionally switch the active weekly cadence mode"),
+      day_of_week: Day.optional(),
+      format: Format.optional(),
+      modes: z.array(Mode).optional(),
+      status: z.enum(STATUSES).optional(),
+      title: z.string().max(160).optional(),
+      demo_slug: z.string().max(100).optional(),
+      drive_url: z.string().max(500).optional(),
+      top_pill_hook: z.string().max(160).optional(),
+      shot_list: z.array(z.string().max(400)).optional(),
+      caption: z.string().max(3000).optional(),
+      ghl_keyword: z.string().max(40).optional(),
+      ghl_dm_script: z.string().max(1000).optional(),
+      posting_time_et: z.string().max(80).optional(),
+    }),
+    kind: "updated",
+    run: ({ agent, ...a }, ctx) => contentCall(() => upsertContentItem(a, agent ?? ctx.operator)),
+  }),
+  tool({
+    name: "brain_content_generate_week",
+    title: "Generate IG week or slot with Claude",
+    description: "Uses Claude (Sonnet/Haiku) inside the Brain to generate or refresh a single Instagram slot (pass slot_id) or all slots for a mode ('slow' or 'fast') using Gates Technologies' real website demos (Sinful Slidrz, Stone Creek Construction, Bennett Custom Pools, Authentic Gyros, Iconic Legacies, Filtered Showerhead) and the @w.wearebrand + @brandisocial playbook. Counts against the daily Claude budget.",
+    input: z.object({
+      agent: Agent,
+      mode: Mode.optional(),
+      slot_id: z.string().optional().describe("Pass a specific slot id (e.g. 'tue-reel-1') to regenerate just that card, or omit to refresh the week"),
+      demo_slug: z.string().optional().describe("Optional demo slug to feature"),
+      custom_angle: z.string().max(500).optional().describe("Optional hook/angle instruction for Claude"),
+      model: z.enum(["haiku", "sonnet"]).default("sonnet"),
+    }),
+    kind: "generated",
+    run: ({ agent, slot_id, ...o }, ctx) =>
+      contentCall<unknown>(() => (slot_id ? regenerateSlotWithClaude(slot_id, o, agent ?? ctx.operator) : generateWeekWithClaude(o, agent ?? ctx.operator))),
   }),
   tool({
     name: "brain_mark_booked",

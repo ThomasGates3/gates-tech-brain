@@ -62,3 +62,4 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ Field harden: core hours honesty (opener needs day+time, vague-hours ban, Friday contradiction, no_published_hours auto-hold), website plain speech (jargon/put-down ban), scout same-day auto-draft, Nick queue skips unchanged REVISE, hold reason badges, Nick note on REVISE rows
 ✓ Money roadmap: /roadmap (9 steps, live numbers), brain_roadmap_get/set (forward-only, in order, warm-up Thomas-only), auto-advance on warm-up confirm / first send / first reply / booked / paid
 ✓ What's new tab on /roadmap + brain_whats_new_add/list; website Email 1 closer locked, no Gates in body
+✓ Instagram Content Studio: /content (Slow/Fast cadence, day deck with copy buttons, 7-day board, idea vault, demo library), /api/content, brain_content_today/list/upsert/generate_week, studio.test.ts
