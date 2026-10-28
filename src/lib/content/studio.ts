@@ -25,7 +25,8 @@ export interface DemoAssetPack {
   vertical: "Custom Builder" | "Restaurant" | "Pool Builder" | "Auto Performance" | "E-Commerce" | "Med Spa";
   city: string;
   heroStyle: string;
-  driveFolderUrl: string;
+  /** Live sample website the post shows off. Empty until it is deployed. */
+  siteUrl: string;
   localMockupPath: string;
   defaultKeyword: string;
   keyProofPoints: string[];
@@ -43,7 +44,7 @@ export interface ContentSlotItem {
   title: string;
   demoSlug: string;
   businessName: string;
-  driveUrl: string;
+  siteUrl: string;
   previewUrl?: string;
   topPillHook: string;
   topPillAlt?: string;
@@ -74,7 +75,7 @@ export interface ContentIdeaItem {
 
 export interface ContentState { mode: GrowthMode; weekOf: string; items: ContentSlotItem[]; ideas: ContentIdeaItem[] }
 
-// Iconic Legacies has no Drive folder yet (Thomas, 2026-10-28); its cards say so instead of linking.
+// Live demo sites on Vercel. The showerhead demo has no site or repo yet (Thomas, 2026-10-28).
 
 export const DEMO_CATALOG: DemoAssetPack[] = [
   {
@@ -83,7 +84,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Restaurant",
     city: "East Atlanta Village · 1245 Glenwood Ave SE",
     heroStyle: "BRASA-style interactive split screen + 3-stage Oxtail Sear / Plantain / Drip switcher",
-    driveFolderUrl: "https://drive.google.com/drive/folders/13xTLONkOgJHCD1Urfue3hvg-LuXAjECS",
+    siteUrl: "https://sinful-sliderz.vercel.app",
     localMockupPath: "/workspace/mockups/sinful-slidrz",
     defaultKeyword: "MENU",
     keyProofPoints: [
@@ -100,7 +101,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Custom Builder",
     city: "Ball Ground & Canton, GA",
     heroStyle: "4-stage wireframe-to-finish estate scroll ('Designed to the inch' → 'Rough in' → 'Cabinetry & Millwork' → 'Built to gather')",
-    driveFolderUrl: "https://drive.google.com/drive/folders/1oMBpUHNFyygtJRG0Um6VQngt58Kkh4t7",
+    siteUrl: "https://stone-creek.vercel.app",
     localMockupPath: "/workspace/mockups/stone-creek-construction",
     defaultKeyword: "BUILD",
     keyProofPoints: [
@@ -116,7 +117,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Pool Builder",
     city: "Ball Ground & North Georgia",
     heroStyle: "Backyard excavation-to-resort pool scroll transformation + missed-call text-back",
-    driveFolderUrl: "https://drive.google.com/drive/folders/1HKvAAix0xrcPcNXTLQj30hFpsDMBreHB",
+    siteUrl: "https://bennett-pools.vercel.app",
     localMockupPath: "/workspace/mockups/bennett-custom-pool-construction",
     defaultKeyword: "POOL",
     keyProofPoints: [
@@ -130,7 +131,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Restaurant",
     city: "Georgia Mediterranean spot",
     heroStyle: "5-second storefront walk-in hero + interactive visual menu",
-    driveFolderUrl: "https://drive.google.com/drive/folders/1zTVOY2z2I086LYY0mXEzG8oMwRxeaq7l",
+    siteUrl: "https://authneticgyros.vercel.app",
     localMockupPath: "/workspace/mockups/authentic-gyros-and-grill",
     defaultKeyword: "GYRO",
     keyProofPoints: [
@@ -145,7 +146,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "Auto Performance",
     city: "Performance & custom auto shop",
     heroStyle: "5-second matte-black garage bay roll-up reveal (red Supra on lift + black Trackhawk)",
-    driveFolderUrl: "",
+    siteUrl: "https://iconic-legacies.vercel.app",
     localMockupPath: "/workspace/mockups/iconic-legacies",
     defaultKeyword: "SHOP",
     keyProofPoints: [
@@ -160,7 +161,7 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     vertical: "E-Commerce",
     city: "DTC e-commerce product scroll",
     heroStyle: "Apple-style 8-keyframe exploded product scroll + Day 1 vs. Day 90 cartridge proof",
-    driveFolderUrl: "https://drive.google.com/drive/folders/1CX7x-zuRp2ppVPOckTOXI86QULeHNz2M",
+    siteUrl: "",
     localMockupPath: "/workspace/mockups/filtered-shower-store",
     defaultKeyword: "STORE",
     keyProofPoints: ["8-stage exploded hardware scroll film", "KDF-55 + Calcium Sulfite filtration breakdown", "Day 1 vs. Day 90 visual filter proof"],
@@ -190,7 +191,7 @@ export const weekTotals = (mode: GrowthMode) =>
 
 // ── Week 1 pack ─────────────────────────────────────────────────────────────
 
-type Seed = Omit<ContentSlotItem, "weekOf" | "tier" | "status" | "businessName" | "driveUrl" | "postingTimeEt" | "createdBy" | "updatedAt" | "gridCoverPrompt"> & { gridCoverPrompt?: string; postingTimeEt?: string }
+type Seed = Omit<ContentSlotItem, "weekOf" | "tier" | "status" | "businessName" | "siteUrl" | "postingTimeEt" | "createdBy" | "updatedAt" | "gridCoverPrompt"> & { gridCoverPrompt?: string; postingTimeEt?: string }
 const both: GrowthMode[] = ["slow", "fast"]
 const fastOnly: GrowthMode[] = ["fast"]
 const slowOnly: GrowthMode[] = ["slow"]
@@ -545,7 +546,7 @@ function expand(s: Seed, weekOf: string, at: string): ContentSlotItem {
     tier: s.modes.includes("slow") ? "both" : "fast_only",
     status: "ready",
     businessName: demo?.businessName ?? s.demoSlug,
-    driveUrl: demo?.driveFolderUrl ?? "",
+    siteUrl: demo?.siteUrl ?? "",
     postingTimeEt: s.postingTimeEt ?? CADENCE_MATRIX[s.dayOfWeek].postingTimeEt,
     gridCoverPrompt: s.gridCoverPrompt ?? "",
     createdBy: "brain",
@@ -666,7 +667,7 @@ export interface UpsertInput {
   status?: ContentStatus
   title?: string
   demo_slug?: string
-  drive_url?: string
+  site_url?: string
   top_pill_hook?: string
   top_pill_alt?: string
   shot_list?: string[]
@@ -706,7 +707,7 @@ export async function upsertContentItem(input: UpsertInput, by: string) {
     title: "",
     demoSlug,
     businessName: demo?.businessName ?? demoSlug,
-    driveUrl: demo?.driveFolderUrl ?? "",
+    siteUrl: demo?.siteUrl ?? "",
     topPillHook: "",
     gridCoverPrompt: "",
     shotList: [],
@@ -727,7 +728,7 @@ export async function upsertContentItem(input: UpsertInput, by: string) {
     title: input.title ?? base.title,
     demoSlug,
     businessName: input.demo_slug ? demo?.businessName ?? demoSlug : base.businessName,
-    driveUrl: input.drive_url ?? (input.demo_slug ? demo?.driveFolderUrl ?? base.driveUrl : base.driveUrl),
+    siteUrl: input.site_url ?? (input.demo_slug ? demo?.siteUrl ?? base.siteUrl : base.siteUrl),
     topPillHook: input.top_pill_hook ?? base.topPillHook,
     topPillAlt: input.top_pill_alt ?? base.topPillAlt,
     shotList: input.shot_list ?? base.shotList,
@@ -862,7 +863,7 @@ ${opts.custom_angle ? `Angle: ${opts.custom_angle}\n` : ""}Return exactly one sl
   const out = await askClaude(prompt, opts.model ?? "sonnet", 1)
   if (opts.demo_slug && opts.demo_slug !== slot.demoSlug) {
     const d = demoBySlug(opts.demo_slug)
-    state.items = state.items.map((i) => (i.id === id ? { ...i, demoSlug: opts.demo_slug!, businessName: d?.businessName ?? i.businessName, driveUrl: d?.driveFolderUrl ?? i.driveUrl } : i))
+    state.items = state.items.map((i) => (i.id === id ? { ...i, demoSlug: opts.demo_slug!, businessName: d?.businessName ?? i.businessName, siteUrl: d?.siteUrl ?? i.siteUrl } : i))
   }
   applyGenerated(state, out.filter((o) => o.id === id), by)
   await save(state)

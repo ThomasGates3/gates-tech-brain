@@ -462,7 +462,7 @@ export const TOOLS = [
   tool({
     name: "brain_content_today",
     title: "Today's IG content queue",
-    description: "Returns today's Instagram posting checklist on brain.gatestech.solutions/content, current growth mode ('slow' or 'fast'), weekly progress counts, and the full slot details (top pill hook, 12s shot list, caption, GHL keyword, and Google Drive asset folder) due today.",
+    description: "Returns today's Instagram posting checklist on brain.gatestech.solutions/content, current growth mode ('slow' or 'fast'), weekly progress counts, and the full slot details (top pill hook, 12s shot list, caption, GHL keyword, and live demo site URL) due today.",
     input: z.object({ agent: Agent, day_of_week: Day.optional(), mode: Mode.optional() }),
     kind: "queried",
     run: ({ day_of_week, mode }) => getTodayContent({ day: day_of_week, mode }),
@@ -490,7 +490,7 @@ export const TOOLS = [
       status: z.enum(STATUSES).optional(),
       title: z.string().max(160).optional(),
       demo_slug: z.string().max(100).optional(),
-      drive_url: z.string().max(500).optional(),
+      site_url: z.string().max(500).optional().describe("Live demo website URL for this post"),
       top_pill_hook: z.string().max(160).optional(),
       shot_list: z.array(z.string().max(400)).optional(),
       caption: z.string().max(3000).optional(),

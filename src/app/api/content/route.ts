@@ -18,7 +18,7 @@ const Fields = z.object({
   status: z.enum(STATUSES).optional(),
   title: z.string().max(160).optional(),
   demo_slug: z.string().max(100).optional(),
-  drive_url: z.string().max(500).optional(),
+  site_url: z.string().max(500).optional(),
   top_pill_hook: z.string().max(160).optional(),
   top_pill_alt: z.string().max(160).optional(),
   shot_list: z.array(z.string().max(400)).optional(),
