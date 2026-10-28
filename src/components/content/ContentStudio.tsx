@@ -168,7 +168,7 @@ export function ContentStudio({ initial }: { initial: Board }) {
       <section className="grid gap-4 lg:grid-cols-2">
         <IdeaVault data={data} busy={busy} run={run} />
         <div className={`${card} p-4`}>
-          <p className={eyebrow}>Website demos · Drive asset packs</p>
+          <p className={eyebrow}>Sample websites · live demos</p>
           <ul className="mt-3 space-y-2">
             {data.demos.map((d) => (
               <li key={d.slug} data-testid={`demo-${d.slug}`} className="flex flex-wrap items-center gap-2 rounded-lg border border-white/[0.06] bg-black/30 p-3">
@@ -178,9 +178,13 @@ export function ContentStudio({ initial }: { initial: Board }) {
                     {d.vertical} · {d.city} · keyword {d.defaultKeyword}
                   </p>
                 </div>
-                <a data-testid={`demo-drive-${d.slug}`} href={d.driveFolderUrl} target="_blank" rel="noopener noreferrer" className={btn}>
-                  📂 Drive ↗
-                </a>
+                {d.siteUrl ? (
+                  <a data-testid={`demo-site-${d.slug}`} href={d.siteUrl} target="_blank" rel="noopener noreferrer" className={btn}>
+                    🌐 Live site ↗
+                  </a>
+                ) : (
+                  <span className="text-[12px] text-slate-500">No live site yet</span>
+                )}
                 <button
                   data-testid={`demo-draft-${d.slug}`}
                   disabled={!!busy}
@@ -236,7 +240,7 @@ type Run = (label: string, body: Record<string, unknown>, done?: string) => Prom
 
 function SlotCard({ s, busy, run, demos }: { s: ContentSlotItem; busy: string | null; run: Run; demos: Board["demos"] }) {
   const [edit, setEdit] = useState(false);
-  const [f, setF] = useState({ hook: s.topPillHook, shots: s.shotList.join("\n"), caption: s.caption, keyword: s.ghlKeyword, dm: s.ghlDmScript, drive: s.driveUrl, demo: s.demoSlug });
+  const [f, setF] = useState({ hook: s.topPillHook, shots: s.shotList.join("\n"), caption: s.caption, keyword: s.ghlKeyword, dm: s.ghlDmScript, site: s.siteUrl, demo: s.demoSlug });
   const posted = s.status === "posted";
   return (
     <article data-testid={`slot-${s.id}`} className={`${card} p-4 ${posted ? "opacity-70" : ""}`}>
@@ -256,9 +260,13 @@ function SlotCard({ s, busy, run, demos }: { s: ContentSlotItem; busy: string | 
         <span className="text-[12px] text-slate-300">
           Demo: <span className="text-slate-100">{s.businessName}</span>
         </span>
-        <a data-testid={`drive-${s.id}`} href={s.driveUrl} target="_blank" rel="noopener noreferrer" className={`${btn} ml-auto`}>
-          📂 Open Google Drive assets ↗
-        </a>
+        {s.siteUrl ? (
+          <a data-testid={`site-${s.id}`} href={s.siteUrl} target="_blank" rel="noopener noreferrer" className={`${btn} ml-auto`}>
+            🌐 Open demo site ↗
+          </a>
+        ) : (
+          <span data-testid={`site-none-${s.id}`} className="ml-auto text-[12px] text-slate-500">No live site yet</span>
+        )}
       </div>
 
       {edit ? (
@@ -270,7 +278,7 @@ function SlotCard({ s, busy, run, demos }: { s: ContentSlotItem; busy: string | 
               ["caption", "Caption", 6],
               ["keyword", "GHL keyword", 1],
               ["dm", "GHL auto-DM script", 3],
-              ["drive", "Drive URL", 1],
+              ["site", "Demo site URL", 1],
             ] as const
           ).map(([k, label, rows]) => (
             <label key={k} className="grid gap-1 text-[11px] text-slate-400">
@@ -313,7 +321,7 @@ function SlotCard({ s, busy, run, demos }: { s: ContentSlotItem; busy: string | 
                   ghl_keyword: f.keyword,
                   ghl_dm_script: f.dm,
                   demo_slug: f.demo,
-                  drive_url: f.drive,
+                  site_url: f.site,
                 }, "Saved.");
                 setEdit(false);
               }}

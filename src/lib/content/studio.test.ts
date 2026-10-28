@@ -44,7 +44,10 @@ test("seed copy follows the Brain rules: no em dashes, no invented percentages",
     const text = [i.title, i.topPillHook, i.topPillAlt ?? "", i.caption, i.ghlDmScript, ...i.shotList].join(" ");
     assert.doesNotMatch(text, /[—–]/, i.id);
     assert.doesNotMatch(text, /\d+(\.\d+)?\s?%\s+of\b/i, i.id); // stats like "78% of homeowners", not poll labels
-    assert.ok(i.ghlKeyword && i.driveUrl.startsWith("https://drive.google.com/"), i.id);
+    assert.ok(i.ghlKeyword, i.id);
+    // Every demo links its live site, except the showerhead demo, which has none yet.
+    if (i.demoSlug === "filtered-shower-store") assert.equal(i.siteUrl, "", i.id);
+    else assert.match(i.siteUrl, /^https:\/\/[a-z0-9-]+\.vercel\.app$/, i.id);
   }
 });
 
