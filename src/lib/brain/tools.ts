@@ -504,7 +504,7 @@ export const TOOLS = [
   tool({
     name: "brain_content_generate_week",
     title: "Generate IG week or slot with Claude",
-    description: "Uses Claude (Sonnet/Haiku) inside the Brain to generate or refresh a single Instagram slot (pass slot_id) or all slots for a mode ('slow' or 'fast') using Gates Technologies' real website demos (Sinful Slidrz, Stone Creek Construction, Bennett Custom Pools, Authentic Gyros, Iconic Legacies, Filtered Showerhead) and the @w.wearebrand + @brandisocial playbook. Counts against the daily Claude budget.",
+    description: "Uses Claude (Sonnet/Haiku) inside the Brain to generate or refresh a single Instagram slot (pass slot_id) or all slots for a mode ('slow' or 'fast') using Gates Technologies' real website demos (Sinful Slidrz, Stone Creek Construction, Bennett Custom Pools, Authentic Gyros, Iconic Legacies, Paradise Smoothie, Filtered Showerhead) and the @w.wearebrand + @brandisocial playbook. Counts against the daily Claude budget.",
     input: z.object({
       agent: Agent,
       mode: Mode.optional(),

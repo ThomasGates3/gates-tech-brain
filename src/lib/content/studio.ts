@@ -166,6 +166,22 @@ export const DEMO_CATALOG: DemoAssetPack[] = [
     defaultKeyword: "STORE",
     keyProofPoints: ["8-stage exploded hardware scroll film", "KDF-55 + Calcium Sulfite filtration breakdown", "Day 1 vs. Day 90 visual filter proof"],
   },
+  {
+    slug: "paradise-smoothie",
+    businessName: "Paradise Smoothie Juice Bar",
+    vertical: "Restaurant",
+    city: "TODO: store location not on the site yet",
+    heroStyle: "Signature smoothie carousel + build-your-own layered cup builder",
+    siteUrl: "https://paradise-smoothie.vercel.app",
+    localMockupPath: "/workspace/mockups/paradise-smoothie",
+    defaultKeyword: "SMOOTHIE",
+    keyProofPoints: [
+      "Six signature smoothies: Tropical Blast, Purple Rain, Mombo Passion, Superman, Green Forest, Detox",
+      "Each drink lists what goes in it",
+      "Create Your Own: pick up to 6 ingredients, each drops into the cup as its own layer, then Blend it",
+      "Online ordering button",
+    ],
+  },
 ];
 export const demoBySlug = (slug: string) => DEMO_CATALOG.find((d) => d.slug === slug)
 
@@ -517,6 +533,7 @@ Comment "POOL" and let’s rethink your digital presence before Monday morning.
 
 export const SEED_IDEAS: Omit<ContentIdeaItem, "createdAt">[] = [
   { id: "idea-gyros-reel", title: "Authentic Gyros walk-in reel", format: "reel", demoSlug: "authentic-gyros-and-grill", topPillHook: "Restaurant websites in 2026 🥙", angleNote: "Door opens straight onto the spit; end on 1-tap ordering.", ghlKeyword: "GYRO", createdBy: "brain" },
+  { id: "idea-smoothie-builder", title: "Paradise Smoothie build-your-own reel", format: "reel", demoSlug: "paradise-smoothie", topPillHook: "Juice bar websites in 2026 🥤", angleNote: "Hand picks 4 ingredients, each one drops into the cup as a layer, then taps Blend it. Wait until the menu, hours and contact sections are filled in.", ghlKeyword: "SMOOTHIE", createdBy: "brain" },
   { id: "idea-builder-estimator", title: "Estimator-only carousel for remodelers", format: "carousel", demoSlug: "stone-creek-construction", topPillHook: "Price your kitchen in 30 seconds 📐", angleNote: "Show the estimator slider frame by frame.", ghlKeyword: "BUILD", createdBy: "brain" },
 ]
 
