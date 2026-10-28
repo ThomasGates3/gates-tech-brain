@@ -11,9 +11,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 // /api/cron is protected by CRON_SECRET (not the password gate) so Vercel Cron can reach it.
-const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json"];
+// /api/mcp checks its own auth (API key or OAuth) and must answer 401 + WWW-Authenticate itself.
+// OAuth discovery, client registration and token exchange are public by design (lib/oauth).
+const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json", "/api/mcp", "/.well-known", "/api/oauth/register", "/api/oauth/token"];
 // Machine APIs: a Bearer request is passed to the route, which verifies the key (env or DB) itself.
-const KEY_PATHS = ["/api/field/", "/api/mcp", "/api/v1/"];
+const KEY_PATHS = ["/api/field/", "/api/v1/"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
 
 export default async function middleware(req: NextRequest) {
@@ -39,7 +41,7 @@ export default async function middleware(req: NextRequest) {
         return new NextResponse("Unauthorized", { status: 401, headers: { ...securityHeaders, ...corsHeaders(origin) } });
       }
       const signIn = new URL("/sign-in", req.url);
-      signIn.searchParams.set("callbackUrl", req.nextUrl.pathname);
+      signIn.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search);
       return NextResponse.redirect(signIn);
     }
   }

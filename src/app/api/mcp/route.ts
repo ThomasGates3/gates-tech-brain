@@ -1,11 +1,14 @@
 /**
  * MCP server for Ace and the Gates Grok bots — https://brain.gatestech.solutions/api/mcp
- * Auth: Authorization: Bearer <API key> (create one in Operations → Access).
+ * Auth: Authorization: Bearer <API key> (create one in Operations → Access), or
+ * OAuth sign-in (lib/oauth) for Claude's custom connectors on web + phone.
+ * Unauthenticated calls get a 401 + WWW-Authenticate pointing at the metadata.
  * Same tools as /api/v1 (lib/brain/tools); the locked Field path is enforced underneath.
  */
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { TOOLS, callTool } from "@/lib/brain/tools";
 import { operatorForApiKey } from "@/lib/api-keys";
+import { isOAuthAccessToken, readAccessToken, SCOPE } from "@/lib/oauth";
 import type { Operator } from "@/lib/field/types";
 
 export const maxDuration = 120;
@@ -28,6 +31,10 @@ const handler = createMcpHandler(
 const authed = withMcpAuth(
   handler,
   async (_req, token) => {
+    if (isOAuthAccessToken(token)) {
+      const t = readAccessToken(token);
+      return t ? { token: token!, clientId: t.clientId, scopes: [SCOPE], expiresAt: t.expiresAt, extra: { operator: t.operator } } : undefined;
+    }
     const operator = await operatorForApiKey(token);
     return operator ? { token: token!, clientId: operator, scopes: [], extra: { operator } } : undefined;
   },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-21: Claude connector sign-in (OAuth on /api/mcp)
+- `/api/mcp` now also takes OAuth, so Brain can be added as a Claude custom connector on web and phone (no bearer token to paste). Sign in with the Thomas or Ace password and click Allow; the team password can't grant access. Bearer API keys work as before.
+- Clients can use Claude's published identity (Client ID Metadata Document: an https client_id whose JSON is fetched, validated and cached for 10 minutes) or dynamic registration.
+- New: `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `/api/oauth/register`, `/oauth/authorize`, `/api/oauth/token`. Stateless, signed with `AUTH_SECRET`; `OAUTH_TOKEN_GENERATION` revokes all; `OAUTH_REDIRECT_HOSTS` widens the redirect allowlist.
+- Unauthenticated `/api/mcp` calls now get a proper 401 + `WWW-Authenticate` from the route instead of a bare middleware 401. Sign-in keeps the query string on `callbackUrl`.
+
 ## 2026-10-12: Offer prices reset from market research
 - Roadmap step 1 note: Starter $297 setup + $297/mo; Core $997 + $697/mo ($1,500 + $997 for med spa, dental, legal); Website $1,500 + $147/mo; Lead reactivation $997 + $150 per booked appointment, then $497/mo. Prices live only on the private /calc page (gates-technologies PR #1), never in cold email.
 - Paid button and `brain_mark_paid` accept Starter.
