@@ -2,6 +2,7 @@
 
 ## 2026-10-21: Claude connector sign-in (OAuth on /api/mcp)
 - `/api/mcp` now also takes OAuth, so Brain can be added as a Claude custom connector on web and phone (no bearer token to paste). Sign in with the Thomas or Ace password and click Allow; the team password can't grant access. Bearer API keys work as before.
+- Clients can use Claude's published identity (Client ID Metadata Document: an https client_id whose JSON is fetched, validated and cached for 10 minutes) or dynamic registration.
 - New: `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `/api/oauth/register`, `/oauth/authorize`, `/api/oauth/token`. Stateless, signed with `AUTH_SECRET`; `OAUTH_TOKEN_GENERATION` revokes all; `OAUTH_REDIRECT_HOSTS` widens the redirect allowlist.
 - Unauthenticated `/api/mcp` calls now get a proper 401 + `WWW-Authenticate` from the route instead of a bare middleware 401. Sign-in keeps the query string on `callbackUrl`.
 

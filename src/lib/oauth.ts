@@ -5,7 +5,10 @@
  * Stateless: clients, codes and tokens are HMAC-signed with AUTH_SECRET, so no
  * DB tables. Bump OAUTH_TOKEN_GENERATION to revoke every OAuth token at once.
  *
- * Flow: Claude registers (/api/oauth/register) → sends you to /oauth/authorize
+ * Clients: either Claude's published identity (CIMD: the client_id is an https
+ * URL to its metadata JSON, fetched and cached) or dynamic registration.
+ *
+ * Flow: Claude identifies itself (CIMD or /api/oauth/register) → sends you to /oauth/authorize
  * (sign in with your Thomas or Ace password, click Allow) → exchanges the code
  * with PKCE S256 (/api/oauth/token) → calls /api/mcp with the access token.
  * Redirects only go to claude.ai / claude.com, loopback (Claude Code), or hosts
@@ -94,6 +97,59 @@ export function readClient(clientId: string | null | undefined): Client | null {
   return p ? { name: p.n, redirectUris: p.r, auth: p.a } : null;
 }
 
+// ── Client ID Metadata Documents (CIMD) ──────────────────────────────────────
+
+const CIMD_TTL_MS = 10 * 60 * 1000;
+const cimdCache = new Map<string, { client: Client | null; at: number }>();
+
+/** A CIMD client_id: https, a real hostname (no IPs / localhost), with a path. */
+export function isCimdClientId(id: string | null | undefined): boolean {
+  if (!id?.startsWith("https://")) return false;
+  try {
+    const u = new URL(id);
+    const h = u.hostname;
+    if (u.username || u.password || u.hash || u.port || u.pathname === "/") return false;
+    if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal") || !h.includes(".")) return false;
+    return !/^[\d.]+$/.test(h) && !h.startsWith("[");
+  } catch {
+    return false;
+  }
+}
+
+/** Validate a fetched metadata document against its URL; public clients only. */
+export function clientFromMetadata(url: string, doc: unknown): Client | null {
+  if (!doc || typeof doc !== "object") return null;
+  const d = doc as Record<string, unknown>;
+  if (d.client_id !== url) return null;
+  const uris = Array.isArray(d.redirect_uris) ? d.redirect_uris.filter((u): u is string => typeof u === "string") : [];
+  if (!uris.length) return null;
+  const auth = d.token_endpoint_auth_method ?? "none";
+  if (auth !== "none") return null;
+  const name = typeof d.client_name === "string" && d.client_name.trim() ? d.client_name.trim().slice(0, 100) : new URL(url).hostname;
+  return { name, redirectUris: uris.slice(0, 20), auth: "none" };
+}
+
+async function fetchCimd(url: string): Promise<Client | null> {
+  const hit = cimdCache.get(url);
+  if (hit && Date.now() - hit.at < CIMD_TTL_MS) return hit.client;
+  let client: Client | null = null;
+  try {
+    const r = await fetch(url, { headers: { Accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(5000) });
+    const text = r.ok ? await r.text() : "";
+    if (text && text.length <= 16_384) client = clientFromMetadata(url, JSON.parse(text));
+  } catch {
+    client = null;
+  }
+  cimdCache.set(url, { client, at: Date.now() });
+  return client;
+}
+
+/** Any client: a CIMD URL (fetched + cached) or one of our signed DCR ids. */
+export async function resolveClient(clientId: string | null | undefined): Promise<Client | null> {
+  if (isCimdClientId(clientId)) return fetchCimd(clientId!);
+  return readClient(clientId);
+}
+
 export function clientSecretOk(clientId: string, client: Client, secret: string | null | undefined): boolean {
   if (client.auth === "none") return true;
   return Boolean(secret) && same(secret!, sign("secret", clientId));
@@ -159,6 +215,7 @@ export function authServerMetadata(origin: string) {
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none", "client_secret_post", "client_secret_basic"],
     scopes_supported: [SCOPE],
+    client_id_metadata_document_supported: true,
   };
 }
 
@@ -167,9 +224,9 @@ export type AuthorizeCheck =
   | { ok: true; client: Client; clientId: string; redirectUri: string; codeChallenge: string; state: string | null }
   | { ok: false; error: string; redirectUri?: string; state?: string | null };
 
-export function checkAuthorize(q: Record<string, string | undefined>): AuthorizeCheck {
+export async function checkAuthorize(q: Record<string, string | undefined>): Promise<AuthorizeCheck> {
   const clientId = q.client_id ?? "";
-  const client = readClient(clientId);
+  const client = await resolveClient(clientId);
   if (!client) return { ok: false, error: "Unknown client. Remove the connector in Claude and add it again." };
   const redirectUri = q.redirect_uri ?? (client.redirectUris.length === 1 ? client.redirectUris[0] : "");
   if (!redirectUri || !client.redirectUris.includes(redirectUri) || !allowedRedirect(redirectUri)) {

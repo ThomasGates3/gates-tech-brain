@@ -3,7 +3,7 @@
  * grants (public; form-encoded per OAuth). Issues lib/oauth access tokens that
  * /api/mcp accepts next to API keys.
  */
-import { clientSecretOk, issueTokens, readClient, readRefresh, redeemCode } from "@/lib/oauth";
+import { clientSecretOk, issueTokens, resolveClient, readRefresh, redeemCode } from "@/lib/oauth";
 
 const noStore = { "Cache-Control": "no-store", Pragma: "no-cache" };
 const oauthError = (error: string, status = 400) => Response.json({ error }, { status, headers: noStore });
@@ -30,7 +30,7 @@ function credentials(req: Request, form: URLSearchParams): { id: string | null; 
 export async function POST(req: Request) {
   const form = await readForm(req);
   const { id: clientId, secret } = credentials(req, form);
-  const client = readClient(clientId);
+  const client = await resolveClient(clientId);
   if (!clientId || !client || !clientSecretOk(clientId, client, secret)) return oauthError("invalid_client", 401);
 
   const grant = form.get("grant_type");

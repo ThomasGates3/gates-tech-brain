@@ -26,7 +26,7 @@ function Card({ children }: { children: React.ReactNode }) {
 export default async function AuthorizePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams;
   const q = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
-  const check = checkAuthorize(q);
+  const check = await checkAuthorize(q);
   const session = await readSession((await cookies()).get(GATE_COOKIE)?.value);
 
   if (!check.ok) {

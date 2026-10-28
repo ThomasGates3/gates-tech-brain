@@ -11,7 +11,7 @@ import { canAuthorize, checkAuthorize, issueCode } from "@/lib/oauth";
 export async function POST(req: Request) {
   const form = await req.formData();
   const q = Object.fromEntries([...form.entries()].map(([k, v]) => [k, String(v)]));
-  const check = checkAuthorize(q);
+  const check = await checkAuthorize(q);
   if (!check.ok && !check.redirectUri) return new Response(check.error, { status: 400 });
 
   const back = new URL(check.redirectUri!);

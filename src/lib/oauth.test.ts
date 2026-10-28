@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "crypto";
-import { allowedRedirect, registerClient, readClient, clientSecretOk, issueCode, redeemCode, issueTokens, readAccessToken, readRefresh, checkAuthorize, canAuthorize } from "./oauth";
+import { allowedRedirect, registerClient, readClient, clientSecretOk, issueCode, redeemCode, issueTokens, readAccessToken, readRefresh, checkAuthorize, canAuthorize, isCimdClientId, clientFromMetadata, resolveClient } from "./oauth";
 
 process.env.AUTH_SECRET = "test-secret";
 const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
@@ -69,15 +69,55 @@ test("bumping OAUTH_TOKEN_GENERATION revokes every token", () => {
   assert.ok(readAccessToken(t.access_token));
 });
 
-test("authorize checks: unknown client and foreign redirect never redirect", () => {
+test("authorize checks: unknown client and foreign redirect never redirect", async () => {
   const { clientId } = registerClient({ name: "Claude", redirectUris: [REDIRECT], auth: "none" });
   const base = { response_type: "code", client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256", state: "s" };
-  assert.equal(checkAuthorize(base).ok, true);
-  const unknown = checkAuthorize({ ...base, client_id: "gtc_bad" });
+  assert.equal((await checkAuthorize(base)).ok, true);
+  const unknown = await checkAuthorize({ ...base, client_id: "gtc_bad" });
   assert.ok(!unknown.ok && !unknown.redirectUri);
-  const foreign = checkAuthorize({ ...base, redirect_uri: "https://claude.ai/other" });
+  const foreign = await checkAuthorize({ ...base, redirect_uri: "https://claude.ai/other" });
   assert.ok(!foreign.ok && !foreign.redirectUri);
-  const plain = checkAuthorize({ ...base, code_challenge_method: "plain" });
+  const plain = await checkAuthorize({ ...base, code_challenge_method: "plain" });
   assert.ok(!plain.ok && plain.redirectUri === REDIRECT);
   assert.ok(canAuthorize("thomas") && canAuthorize("ace") && !canAuthorize("team") && !canAuthorize(null));
+});
+
+const CIMD = "https://claude.ai/oauth/mcp-oauth-client-metadata";
+const cimdDoc = { client_id: CIMD, client_name: "Claude", redirect_uris: [REDIRECT], token_endpoint_auth_method: "none" };
+
+test("CIMD client ids: https with a path on a real hostname only", () => {
+  assert.ok(isCimdClientId(CIMD));
+  for (const bad of ["http://claude.ai/x", "https://claude.ai/", "https://127.0.0.1/x", "https://localhost/x", "https://[::1]/x", "https://claude.ai:8443/x", "https://metadata.internal/x", "gtc_abc", null]) {
+    assert.ok(!isCimdClientId(bad), String(bad));
+  }
+});
+
+test("CIMD document must name itself and be a public client", () => {
+  assert.deepEqual(clientFromMetadata(CIMD, cimdDoc), { name: "Claude", redirectUris: [REDIRECT], auth: "none" });
+  assert.equal(clientFromMetadata(CIMD, { ...cimdDoc, client_id: "https://evil.example/x" }), null);
+  assert.equal(clientFromMetadata(CIMD, { ...cimdDoc, redirect_uris: [] }), null);
+  assert.equal(clientFromMetadata(CIMD, { ...cimdDoc, token_endpoint_auth_method: "private_key_jwt" }), null);
+});
+
+test("CIMD flow: authorize with Claude's published identity, then redeem the code", async () => {
+  const real = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async (url: string) => {
+    calls++;
+    assert.equal(url, CIMD);
+    return new Response(JSON.stringify(cimdDoc), { headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  try {
+    const check = await checkAuthorize({ response_type: "code", client_id: CIMD, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256" });
+    assert.ok(check.ok);
+    const client = await resolveClient(CIMD);
+    assert.equal(calls, 1, "metadata is cached");
+    assert.ok(client && clientSecretOk(CIMD, client, null));
+    const code = issueCode({ clientId: CIMD, redirectUri: REDIRECT, codeChallenge: challenge, operator: "thomas" });
+    assert.equal(redeemCode(code, CIMD, REDIRECT, verifier), "thomas");
+    const foreign = await checkAuthorize({ response_type: "code", client_id: CIMD, redirect_uri: "https://evil.example/cb", code_challenge: challenge, code_challenge_method: "S256" });
+    assert.ok(!foreign.ok && !foreign.redirectUri);
+  } finally {
+    globalThis.fetch = real;
+  }
 });
