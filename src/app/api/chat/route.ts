@@ -6,7 +6,7 @@
  */
 import { streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
-import { claude, conductorModel } from "@/lib/models";
+import { claude, conductorModel, LIGHT } from "@/lib/models";
 import { budgetBlock } from "@/lib/budget";
 import { resolveModelTier } from "@/lib/settings";
 import { recordUsage } from "@/lib/usage";
@@ -23,7 +23,9 @@ Delegate with delegate_to when a task needs data or tools:
 - data (today's Field queue, stages, sends, budget), research (NotebookLM briefings),
 - devops (GitHub/Vercel for gatestech.solutions and the Brain), comms (internal notifications),
 - operator (Gates Tech site + Speed to Lead lookups/drafts; Brain dev tasks on a branch).
-You can't send outreach. Be concise. Never invent data; if you lack it, say so.`;
+You can't send outreach. Be concise. Never invent data; if you lack it, say so.
+Answer directly when you can; only delegate when you need live data or a tool, and delegate once with one clear task.
+Format replies in short Markdown: a one-line answer first, then bullets or a numbered list with blank lines between blocks.`;
 
 const delegateTool = tool({
   description: "Delegate a sub-task to a specialist agent (research, data, devops, comms, operator).",
@@ -54,23 +56,48 @@ export async function POST(req: Request) {
   }
 
   if (!process.env.ANTHROPIC_API_KEY) return new Response("Chat is offline: ANTHROPIC_API_KEY is not set.", { status: 503 });
-  const blocked = await budgetBlock();
+  const [blocked, tier] = await Promise.all([budgetBlock(), resolveModelTier()]);
   if (blocked) return new Response("Daily Claude budget reached. Chat resumes at midnight.", { status: 429 });
 
-  const tier = await resolveModelTier();
-  const model = conductorModel(tier);
+  // Standard tier chats on Haiku (it mostly routes and summarizes); flagship stays on Opus.
+  const model = tier === "flagship" ? conductorModel(tier) : (process.env.CHAT_MODEL as typeof LIGHT | undefined) ?? LIGHT;
   const started = Date.now();
   const result = streamText({
     model: claude(model),
     system: SYSTEM,
     prompt: parsed.data.message,
     tools: { delegate_to: delegateTool },
-    stopWhen: stepCountIs(6),
+    stopWhen: stepCountIs(4),
+    maxOutputTokens: 700,
     onError: ({ error }) => console.error("[chat] model call failed:", error),
     onFinish: ({ usage }) => {
       void recordUsage({ model, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens, latencyMs: Date.now() - started, source: "chat" });
     },
   });
 
-  return result.toTextStreamResponse();
+  // Plain-text stream, with a paragraph break between model steps (before/after a delegation)
+  // so "Let me check." and the answer don't run together.
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let wrote = false;
+      let needBreak = false;
+      try {
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta" && part.text) {
+            if (needBreak && wrote) controller.enqueue(encoder.encode("\n\n"));
+            needBreak = false;
+            wrote = true;
+            controller.enqueue(encoder.encode(part.text));
+          } else if (part.type === "finish-step") {
+            needBreak = true;
+          }
+        }
+      } catch (error) {
+        console.error("[chat] stream failed:", error);
+      }
+      controller.close();
+    },
+  });
+  return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 }
