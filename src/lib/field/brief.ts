@@ -192,7 +192,7 @@ for thirty minutes.
 - Worse: "Do you have 30 minutes Tuesday at 2?"
 - Bad: any assumptive close, any fake deadline
 
-When someone shows interest, *then* send the booking link: \`https://cal.com/gatestech/ai-audit\`
+When someone shows interest, *then* send the booking link: \`https://cal.com/gatestech/walkthrough\`
 
 ---
 
