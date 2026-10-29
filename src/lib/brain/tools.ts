@@ -270,7 +270,7 @@ export const TOOLS = [
   tool({
     name: "brain_website_brief",
     title: "Website build brief",
-    description: "The Gates master website prompt (Premium Website Architect, verbatim) plus the filled \"Build a website for…\" message for a lead. Paste master_prompt first, then build_message. Pass what you know in answers; everything still unknown comes back in ask as the checklist questions to answer before building. For building the prospect's site, never for cold email copy.",
+    description: "The Gates master website prompt (Premium Website Architect, verbatim) plus the filled \"Build a website for…\" message for a lead, the static site template (site_template: one index.html, Tailwind + GSAP from CDN, edit only window.SITE), and the media brief (media: Higgsfield hero B-roll prompt in the house style, optional HeyGen spokesperson spec, download and prep steps). Paste master_prompt first, then build_message. Pass what you know in answers; everything still unknown comes back in ask as the checklist questions to answer before building. For building the prospect's site, never for cold email copy.",
     input: z.object({ agent: Agent, contact_id: ContactId, answers: BriefAnswers.optional() }),
     kind: "queried",
     run: async ({ contact_id, answers }) => {

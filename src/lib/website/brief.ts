@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { FieldContact } from "@/lib/field/types";
 import { WEBSITE_MASTER_PROMPT } from "./master-prompt";
+import { SITE_TEMPLATE } from "./site-template";
+import { mediaBrief } from "./media";
 
 /** The master prompt's "Before you build" checklist; anything not known yet becomes a question. */
 export const BriefAnswers = z.object({
@@ -13,10 +15,16 @@ export const BriefAnswers = z.object({
   social_proof: z.string().max(600).optional(),
   brand_personality: z.string().max(120).optional(),
   pages: z.string().max(200).optional(),
+  phone: z.string().max(40).optional(),
+  // Optional HeyGen spokesperson; never asked for, used when given.
+  spokesperson_script: z.string().max(1500).optional(),
+  heygen_avatar_id: z.string().max(100).optional(),
 });
 export type BriefAnswers = z.infer<typeof BriefAnswers>;
 
-const QUESTIONS: Record<keyof BriefAnswers, string> = {
+type Asked = Exclude<keyof BriefAnswers, "spokesperson_script" | "heygen_avatar_id">;
+
+const QUESTIONS: Record<Asked, string> = {
   what_they_sell: "Business name and what they sell (product, service, or offer)",
   offer: "Their primary offer (the main service or package a visitor should act on)",
   target_customer: "Target customer (who are they, what do they want, what are they afraid of?)",
@@ -26,11 +34,13 @@ const QUESTIONS: Record<keyof BriefAnswers, string> = {
   social_proof: "Social proof available (testimonials, logos, metrics, awards?)",
   brand_personality: "Brand personality (premium, friendly, bold, minimal, luxury, energetic?)",
   pages: "Must-have pages (home, about, services, contact, pricing, etc.)",
+  phone: "Business phone number (for the tap-to-call button)",
 };
 
 /**
- * Website build brief for a lead: the master prompt verbatim, then the filled
- * "Build a website for…" message. Unknown answers stay as [BRACKETS] and are returned as questions.
+ * Website build brief for a lead: the master prompt verbatim, the filled
+ * "Build a website for…" message, the static site template, and the Higgsfield /
+ * HeyGen media brief. Unknown answers stay as [BRACKETS] and are returned as questions.
  */
 export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
   const v = (k: keyof BriefAnswers, slot: string) => a[k]?.trim() || `[${slot}]`;
@@ -41,8 +51,10 @@ export function websiteBrief(c: FieldContact, a: BriefAnswers = {}) {
     `Here's what I know about their social proof: ${v("social_proof", "PROOF")}.` +
     (a.differentiator ? `\nKey differentiator: ${a.differentiator}.` : "") +
     (a.pages ? `\nMust-have pages: ${a.pages}.` : "") +
+    (a.phone ? `\nPhone for tap-to-call: ${a.phone}.` : "") +
     (c.siteUrl ? `\nTheir current site: ${c.siteUrl}` : "") +
     (c.gap || c.notes ? `\nWhat we observed on it: ${[c.gap, c.notes].filter(Boolean).join(" ")}` : "");
-  const ask = (Object.keys(QUESTIONS) as (keyof BriefAnswers)[]).filter((k) => !a[k]?.trim()).map((k) => ({ field: k, question: QUESTIONS[k] }));
-  return { master_prompt: WEBSITE_MASTER_PROMPT, build_message: message, ask, ready: ask.length === 0 };
+  const ask = (Object.keys(QUESTIONS) as Asked[]).filter((k) => !a[k]?.trim()).map((k) => ({ field: k, question: QUESTIONS[k] }));
+  const media = mediaBrief(c, [a.what_they_sell, a.offer].filter(Boolean).join(" "), a);
+  return { master_prompt: WEBSITE_MASTER_PROMPT, build_message: message, site_template: SITE_TEMPLATE, media, ask, ready: ask.length === 0 };
 }

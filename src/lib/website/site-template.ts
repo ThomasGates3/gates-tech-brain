@@ -1,0 +1,498 @@
+// Generated from templates/site/index.html by `npm run brief:sync`. Edit that file, not this one.
+export const SITE_TEMPLATE = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Edit these three for SEO (crawlers read them before the SITE config renders). -->
+  <title>Northline Kitchen &amp; Bath | Custom Kitchen Remodels in Atlanta</title>
+  <meta name="description" content="Custom kitchen remodels designed, built and finished by one crew. Free in-home estimate." />
+  <meta property="og:title" content="Northline Kitchen &amp; Bath" />
+  <meta property="og:image" content="assets/hero-poster.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="image" href="assets/hero-poster.jpg" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer></script>
+
+  <!-- ===================================================================
+       SITE CONFIG: the only block you edit per client.
+       Brand colors, copy, phone, and every Higgsfield / HeyGen video path
+       live here. Layout and GSAP code below read from it, so swapping a
+       client never touches the markup or the animation code.
+       Media files go in /assets (see templates/site/README.md).
+       =================================================================== -->
+  <script>
+    window.SITE = {
+      brand: {
+        name: "Northline Kitchen & Bath",
+        city: "Atlanta",
+        phone: "+14045550123",          // tel: link (E.164)
+        phoneDisplay: "(404) 555-0123",
+        email: "hello@example.com",
+        logoText: "Northline",
+      },
+      colors: {
+        brand: "#1d2a24",   // dominant (header glass tint, dark sections)
+        accent: "#d9a441",  // CTA, highest contrast on the page
+        ink: "#16191a",     // body text on light
+        paper: "#f6f2ea",   // light section background
+      },
+      fonts: { display: "Fraunces", body: "Manrope" }, // Google Fonts family names
+      nav: [
+        { label: "Work", href: "#work" },
+        { label: "Before & After", href: "#before-after" },
+        { label: "Process", href: "#process" },
+        { label: "Estimate", href: "#estimate" },
+        { label: "FAQ", href: "#faq" },
+      ],
+      hero: {
+        eyebrow: "Custom kitchens · Atlanta",
+        headline: "The kitchen you keep planning, finished in 8 weeks.",
+        sub: "One crew designs, builds and finishes it, so you deal with one person from first sketch to final walkthrough.",
+        cta: { label: "Get My Free Estimate", href: "#estimate" },
+        proof: "★★★★★ 4.9 from 212 Atlanta homeowners",
+        // Higgsfield B-roll export. mp4 (H.264) plays everywhere; webm is the fallback.
+        video: {
+          mp4: "assets/hero.mp4",
+          webm: "assets/hero.webm",
+          mobileMp4: "assets/hero-mobile.mp4", // optional 9:16 cut; leave "" to reuse mp4
+          poster: "assets/hero-poster.jpg",
+        },
+      },
+      problems: {
+        title: "Sound familiar?",
+        items: [
+          "Three contractors, three quotes, and none of them call back.",
+          "A remodel that was supposed to take 6 weeks is on month 4.",
+          "Cabinets ordered from one company, counters from another, and nobody owns the gaps.",
+        ],
+      },
+      offer: {
+        title: "Everything in one price, written down before we start",
+        items: [
+          { title: "3D design you sign off on", body: "See the finished room before a single cabinet is ordered." },
+          { title: "Fixed price, fixed date", body: "The number on the contract is the number you pay." },
+          { title: "One crew, start to finish", body: "No subcontractor handoffs, no lost details." },
+          { title: "5-year workmanship warranty", body: "If we built it and it fails, we fix it." },
+        ],
+      },
+      portfolio: {
+        title: "Recent kitchens",
+        items: [
+          { src: "assets/placeholder-1.svg", alt: "Walnut and white oak kitchen with island", caption: "Buckhead · walnut island" },
+          { src: "assets/placeholder-2.svg", alt: "Navy cabinets with brass hardware", caption: "Decatur · navy and brass" },
+          { src: "assets/placeholder-3.svg", alt: "Open kitchen with quartz waterfall counter", caption: "Roswell · waterfall quartz" },
+        ],
+      },
+      beforeAfter: {
+        title: "Drag to see the difference",
+        before: { src: "assets/placeholder-before.svg", alt: "Kitchen before the remodel" },
+        after: { src: "assets/placeholder-after.svg", alt: "The same kitchen after the remodel" },
+      },
+      steps: {
+        title: "How it works",
+        items: [
+          { title: "Free in-home estimate", body: "We measure, listen, and give you a written range on the spot." },
+          { title: "Design and sign off", body: "Approve the 3D design and the fixed price. Nothing starts until you do." },
+          { title: "Build and walkthrough", body: "Our crew builds it, and you walk through the finished kitchen with us." },
+        ],
+      },
+      testimonials: [
+        { quote: "They finished a week early and the price never moved.", name: "Dana R.", where: "Buckhead" },
+        { quote: "One person answered every question for two months. That alone was worth it.", name: "Marcus T.", where: "Decatur" },
+      ],
+      // Ballpark calculator. low/high = base × size × finish. Keep honest ranges.
+      estimator: {
+        title: "Get a ballpark in 20 seconds",
+        services: [
+          { label: "Kitchen refresh (paint, counters, hardware)", base: 18000 },
+          { label: "Full kitchen remodel", base: 45000 },
+          { label: "Kitchen + layout change", base: 70000 },
+        ],
+        sizes: [
+          { label: "Small (under 150 sq ft)", mult: 0.8 },
+          { label: "Medium (150–250 sq ft)", mult: 1 },
+          { label: "Large (250+ sq ft)", mult: 1.35 },
+        ],
+        finishes: [
+          { label: "Standard", mult: 1 },
+          { label: "Premium", mult: 1.25 },
+          { label: "Luxury", mult: 1.6 },
+        ],
+        spread: 0.15, // ± shown around the midpoint
+        disclaimer: "A ballpark, not a quote. Your written price comes after the free in-home visit.",
+        qualifier: { label: "When do you want to start?", options: ["In the next 3 months", "3–6 months", "Just planning"] },
+        formAction: "", // e.g. https://formspree.io/f/xxxx. Empty = show thanks + call link only.
+        submitLabel: "Send My Estimate Request",
+      },
+      faq: [
+        { q: "Do you charge for the estimate?", a: "No. The in-home visit and written range are free, with no obligation." },
+        { q: "How long will I be without a kitchen?", a: "Most full remodels take 6 to 8 weeks. We set up a temporary sink station on day one." },
+        { q: "Can I keep my layout to save money?", a: "Yes. Keeping plumbing and gas where they are is the biggest single saving." },
+        { q: "Are you licensed and insured?", a: "Yes. Fully licensed and insured in Georgia, and we show the certificates at the estimate." },
+      ],
+      finalCta: {
+        title: "Your new kitchen starts with a free visit.",
+        body: "Fixed price, fixed date, one crew. No obligation.",
+      },
+      // Optional HeyGen module (owner clone or preset spokesperson).
+      // enabled:false hides every trace of it.
+      spokesperson: {
+        enabled: false,
+        label: "Watch: a minute with the owner",
+        title: "Hi, I'm the owner. Here's how we work.",
+        mp4: "assets/spokesperson.mp4",
+        webm: "",
+        poster: "assets/spokesperson-poster.jpg",
+        captions: "", // e.g. assets/spokesperson.vtt (HeyGen caption export)
+        orientation: "landscape", // "landscape" | "portrait"
+      },
+      footer: { legal: "Licensed & insured in Georgia" },
+    };
+  </script>
+
+  <style>
+    :root { --brand:#1d2a24; --accent:#d9a441; --ink:#16191a; --paper:#f6f2ea; --font-display:serif; --font-body:system-ui,sans-serif; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-body); color: var(--ink); background: var(--paper); }
+    .font-display { font-family: var(--font-display); }
+    .glass { background: color-mix(in srgb, var(--brand) 35%, transparent); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%); border: 1px solid rgb(255 255 255 / .16); }
+    .glass.is-scrolled { background: color-mix(in srgb, var(--brand) 82%, transparent); }
+    .nav-link.is-active { color: var(--accent); }
+    .btn-accent { background: var(--accent); color: var(--brand); }
+    .btn-accent:hover { filter: brightness(1.06); transform: translateY(-1px); }
+    .ba-after { clip-path: inset(0 0 0 var(--ba, 50%)); }
+    .ba-handle { left: var(--ba, 50%); }
+    input[type=range].ba-range { -webkit-appearance: none; appearance: none; background: transparent; }
+    input[type=range].ba-range::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 100vh; cursor: ew-resize; }
+    input[type=range].ba-range::-moz-range-thumb { width: 44px; height: 100vh; border: 0; background: transparent; cursor: ew-resize; }
+    [data-reveal] { opacity: 0; }
+    .no-js [data-reveal], .reduced [data-reveal] { opacity: 1; }
+    dialog::backdrop { background: rgb(0 0 0 / .75); }
+  </style>
+</head>
+<body class="antialiased">
+  <noscript><style>[data-reveal]{opacity:1}</style><p style="padding:1rem">This site needs JavaScript. Call us: see the phone number in your search result.</p></noscript>
+
+  <!-- Header -->
+  <header id="site-header" class="fixed inset-x-0 top-3 z-50 px-4">
+    <div class="glass mx-auto flex max-w-6xl items-center justify-between gap-4 rounded-2xl px-4 py-3 text-white transition-colors duration-300">
+      <a href="#top" class="font-display text-xl font-semibold tracking-tight" data-text="brand.logoText"></a>
+      <nav class="hidden items-center gap-6 text-sm md:flex" data-nav></nav>
+      <div class="flex items-center gap-2">
+        <a data-tel class="btn-accent inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition" aria-label="Call us">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>
+          <span data-text="brand.phoneDisplay" class="hidden sm:inline"></span><span class="sm:hidden">Call</span>
+        </a>
+        <button class="inline-flex size-11 items-center justify-center rounded-xl md:hidden" aria-label="Menu" aria-expanded="false" data-menu-toggle>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="glass mx-auto mt-2 hidden max-w-6xl flex-col rounded-2xl p-2 text-white md:hidden" data-nav-mobile></nav>
+  </header>
+
+  <main id="top">
+    <!-- Hero: Higgsfield background loop -->
+    <section class="relative flex min-h-[100svh] items-end overflow-hidden bg-[var(--brand)] text-white" id="hero">
+      <video class="absolute inset-0 h-full w-full object-cover" data-hero-video autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/20"></div>
+      <div class="relative mx-auto w-full max-w-6xl px-4 pb-16 pt-32 md:pb-24">
+        <p class="mb-4 text-sm font-semibold uppercase tracking-[.2em] text-[var(--accent)]" data-hero-in data-text="hero.eyebrow"></p>
+        <h1 class="font-display max-w-3xl text-4xl leading-[1.05] font-semibold md:text-7xl" data-hero-in data-text="hero.headline"></h1>
+        <p class="mt-5 max-w-xl text-lg text-white/85" data-hero-in data-text="hero.sub"></p>
+        <div class="mt-8 flex flex-wrap items-center gap-4" data-hero-in>
+          <a class="btn-accent inline-flex min-h-12 items-center rounded-xl px-6 text-base font-bold shadow-lg transition" data-href="hero.cta.href" data-text="hero.cta.label"></a>
+          <button type="button" class="hidden min-h-12 items-center gap-3 rounded-xl border border-white/30 px-5 text-sm font-semibold backdrop-blur hover:bg-white/10" data-spokesperson-open>
+            <span class="inline-flex size-7 items-center justify-center rounded-full bg-white text-[var(--brand)]">▶</span>
+            <span data-text="spokesperson.label"></span>
+          </button>
+        </div>
+        <p class="mt-6 text-sm text-white/75" data-hero-in data-text="hero.proof"></p>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="mx-auto max-w-4xl px-4 py-20 md:py-28">
+      <h2 class="font-display text-3xl font-semibold md:text-5xl" data-reveal data-text="problems.title"></h2>
+      <ul class="mt-10 space-y-5" data-list="problems.items"></ul>
+    </section>
+
+    <!-- Offer / value stack -->
+    <section class="bg-[var(--brand)] py-20 text-white md:py-28">
+      <div class="mx-auto max-w-6xl px-4">
+        <h2 class="font-display max-w-3xl text-3xl font-semibold md:text-5xl" data-reveal data-text="offer.title"></h2>
+        <div class="mt-12 grid gap-5 sm:grid-cols-2" data-list="offer.items"></div>
+      </div>
+    </section>
+
+    <!-- Portfolio: ScrollTrigger image reveal + scale -->
+    <section id="work" class="mx-auto max-w-6xl px-4 py-20 md:py-28">
+      <h2 class="font-display text-3xl font-semibold md:text-5xl" data-reveal data-text="portfolio.title"></h2>
+      <div class="mt-12 grid gap-6 md:grid-cols-3" data-list="portfolio.items"></div>
+    </section>
+
+    <!-- Before / After -->
+    <section id="before-after" class="bg-white py-20 md:py-28">
+      <div class="mx-auto max-w-5xl px-4">
+        <h2 class="font-display text-3xl font-semibold md:text-5xl" data-reveal data-text="beforeAfter.title"></h2>
+        <div class="relative mt-10 aspect-[16/10] w-full overflow-hidden rounded-2xl bg-neutral-200 select-none" data-ba data-reveal>
+          <img class="absolute inset-0 h-full w-full object-cover" data-ba-before width="1600" height="1000" />
+          <img class="ba-after absolute inset-0 h-full w-full object-cover" data-ba-after width="1600" height="1000" />
+          <span class="absolute left-4 top-4 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">Before</span>
+          <span class="absolute right-4 top-4 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">After</span>
+          <div class="ba-handle pointer-events-none absolute inset-y-0 w-0.5 -translate-x-1/2 bg-white">
+            <span class="absolute top-1/2 left-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[var(--brand)] shadow-lg">⇆</span>
+          </div>
+          <input type="range" min="0" max="100" value="50" class="ba-range absolute inset-0 h-full w-full cursor-ew-resize opacity-0" aria-label="Before and after comparison" data-ba-range />
+        </div>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section id="process" class="mx-auto max-w-6xl px-4 py-20 md:py-28">
+      <h2 class="font-display text-3xl font-semibold md:text-5xl" data-reveal data-text="steps.title"></h2>
+      <ol class="mt-12 grid gap-6 md:grid-cols-3" data-list="steps.items"></ol>
+      <div class="mt-16 grid gap-6 md:grid-cols-2" data-list="testimonials"></div>
+    </section>
+
+    <!-- Estimator / lead intake -->
+    <section id="estimate" class="bg-[var(--brand)] py-20 text-white md:py-28">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 md:grid-cols-2">
+        <div data-reveal>
+          <h2 class="font-display text-3xl font-semibold md:text-5xl" data-text="estimator.title"></h2>
+          <form class="mt-8 space-y-6" data-estimator novalidate>
+            <label class="block"><span class="text-sm text-white/75">Project</span>
+              <select class="mt-2 min-h-12 w-full rounded-xl border border-white/20 bg-white/10 px-3 text-white" name="service" data-est-service></select>
+            </label>
+            <fieldset><legend class="text-sm text-white/75">Room size</legend><div class="mt-2 grid gap-2" data-est-sizes></div></fieldset>
+            <fieldset><legend class="text-sm text-white/75">Finish level</legend><div class="mt-2 grid grid-cols-3 gap-2" data-est-finishes></div></fieldset>
+          </form>
+        </div>
+        <div class="rounded-2xl bg-white p-6 text-[var(--ink)] md:p-8" data-reveal>
+          <p class="text-sm font-semibold uppercase tracking-wider text-neutral-500">Your ballpark</p>
+          <p class="font-display mt-2 text-4xl font-semibold md:text-5xl" data-est-result aria-live="polite">—</p>
+          <p class="mt-2 text-sm text-neutral-500" data-text="estimator.disclaimer"></p>
+          <form class="mt-6 space-y-3" data-lead-form>
+            <input class="min-h-12 w-full rounded-xl border border-neutral-300 px-3" name="name" placeholder="Your name" autocomplete="name" required />
+            <input class="min-h-12 w-full rounded-xl border border-neutral-300 px-3" name="phone" type="tel" placeholder="Phone" autocomplete="tel" required />
+            <select class="min-h-12 w-full rounded-xl border border-neutral-300 px-3" name="timeline" data-est-qualifier aria-label="Timeline"></select>
+            <input type="hidden" name="estimate" data-est-hidden />
+            <button class="btn-accent min-h-12 w-full rounded-xl font-bold transition" data-text="estimator.submitLabel"></button>
+            <p class="hidden text-sm font-semibold text-green-700" data-lead-thanks role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="mx-auto max-w-3xl px-4 py-20 md:py-28">
+      <h2 class="font-display text-3xl font-semibold md:text-5xl" data-reveal>Questions, answered</h2>
+      <div class="mt-10 divide-y divide-neutral-300" data-list="faq"></div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="px-4 pb-20">
+      <div class="mx-auto max-w-6xl rounded-3xl bg-[var(--brand)] px-6 py-16 text-center text-white md:py-24" data-reveal>
+        <h2 class="font-display mx-auto max-w-2xl text-3xl font-semibold md:text-5xl" data-text="finalCta.title"></h2>
+        <p class="mx-auto mt-4 max-w-xl text-white/80" data-text="finalCta.body"></p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a class="btn-accent inline-flex min-h-12 items-center rounded-xl px-6 font-bold transition" data-href="hero.cta.href" data-text="hero.cta.label"></a>
+          <a class="inline-flex min-h-12 items-center rounded-xl border border-white/30 px-6 font-semibold hover:bg-white/10" data-tel>Call <span class="ml-1" data-text="brand.phoneDisplay"></span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-neutral-300 px-4 py-10 text-sm text-neutral-600">
+    <div class="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <p><span data-text="brand.name"></span> · <span data-text="brand.city"></span> · <span data-text="footer.legal"></span></p>
+      <p><a class="underline" data-tel><span data-text="brand.phoneDisplay"></span></a> · <a class="underline" data-mailto><span data-text="brand.email"></span></a></p>
+    </div>
+  </footer>
+
+  <!-- HeyGen spokesperson modal -->
+  <dialog class="w-[min(92vw,960px)] rounded-2xl bg-black p-0 text-white" data-spokesperson-dialog aria-label="Video from the owner">
+    <div class="flex items-center justify-between px-4 py-3">
+      <p class="text-sm font-semibold" data-text="spokesperson.title"></p>
+      <button class="inline-flex size-11 items-center justify-center rounded-xl hover:bg-white/10" aria-label="Close video" data-spokesperson-close>✕</button>
+    </div>
+    <video class="w-full" controls playsinline preload="none" data-spokesperson-video></video>
+  </dialog>
+
+  <!-- ===================================================================
+       RENDER + MOTION. Structural code: never edit per client.
+       =================================================================== -->
+  <script>
+    (() => {
+      const S = window.SITE;
+      const $ = (sel, root = document) => root.querySelector(sel);
+      const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+      const get = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), S);
+      const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      const money = (n) => "$" + Math.round(n / 1000) * 1000 / 1000 + "k";
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduced) document.documentElement.classList.add("reduced");
+
+      // Theme: colors + fonts from config
+      const root = document.documentElement.style;
+      Object.entries(S.colors).forEach(([k, v]) => root.setProperty(\`--\${k}\`, v));
+      const fam = (f) => f.replace(/ /g, "+");
+      const fonts = document.createElement("link");
+      fonts.rel = "stylesheet";
+      fonts.href = \`https://fonts.googleapis.com/css2?family=\${fam(S.fonts.display)}:wght@500;600;700&family=\${fam(S.fonts.body)}:wght@400;500;600;700&display=swap\`;
+      document.head.appendChild(fonts);
+      root.setProperty("--font-display", \`"\${S.fonts.display}", Georgia, serif\`);
+      root.setProperty("--font-body", \`"\${S.fonts.body}", system-ui, sans-serif\`);
+
+      // Text, links, contact
+      $$("[data-text]").forEach((el) => (el.textContent = get(el.dataset.text) ?? ""));
+      $$("[data-href]").forEach((el) => (el.href = get(el.dataset.href) ?? "#"));
+      $$("[data-tel]").forEach((el) => (el.href = \`tel:\${S.brand.phone}\`));
+      $$("[data-mailto]").forEach((el) => (el.href = \`mailto:\${S.brand.email}\`));
+
+      // Nav
+      const navHtml = (cls) => S.nav.map((n) => \`<a class="nav-link \${cls}" href="\${esc(n.href)}">\${esc(n.label)}</a>\`).join("");
+      $("[data-nav]").innerHTML = navHtml("transition hover:text-[var(--accent)]");
+      $("[data-nav-mobile]").innerHTML = navHtml("block rounded-xl px-4 py-3 hover:bg-white/10");
+      const toggle = $("[data-menu-toggle]"), mobile = $("[data-nav-mobile]");
+      toggle.addEventListener("click", () => {
+        const open = mobile.classList.toggle("hidden") === false;
+        mobile.classList.toggle("flex", open);
+        toggle.setAttribute("aria-expanded", String(open));
+      });
+      mobile.addEventListener("click", (e) => { if (e.target.closest("a")) toggle.click(); });
+
+      // Lists
+      const tpl = {
+        "problems.items": (t) => \`<li class="flex gap-4 text-lg md:text-xl" data-reveal><span class="mt-2 size-2 shrink-0 rounded-full bg-[var(--accent)]"></span><span>\${esc(t)}</span></li>\`,
+        "offer.items": (o) => \`<div class="rounded-2xl border border-white/15 bg-white/5 p-6" data-reveal><h3 class="text-xl font-semibold">\${esc(o.title)}</h3><p class="mt-2 text-white/75">\${esc(o.body)}</p></div>\`,
+        "portfolio.items": (p) => \`<figure class="group" data-portfolio><div class="overflow-hidden rounded-2xl" data-portfolio-frame><img src="\${esc(p.src)}" alt="\${esc(p.alt)}" width="1200" height="1500" loading="lazy" class="aspect-[4/5] w-full object-cover" data-portfolio-img /></div><figcaption class="mt-3 text-sm text-neutral-600">\${esc(p.caption)}</figcaption></figure>\`,
+        "steps.items": (s, i) => \`<li class="rounded-2xl bg-white p-6" data-reveal><span class="font-display text-4xl text-[var(--accent)]">\${i + 1}</span><h3 class="mt-3 text-xl font-semibold">\${esc(s.title)}</h3><p class="mt-2 text-neutral-600">\${esc(s.body)}</p></li>\`,
+        testimonials: (t) => \`<blockquote class="rounded-2xl border border-neutral-300 p-6" data-reveal><p class="font-display text-2xl leading-snug">“\${esc(t.quote)}”</p><footer class="mt-4 text-sm text-neutral-600">\${esc(t.name)} · \${esc(t.where)}</footer></blockquote>\`,
+        faq: (f) => \`<details class="group py-5" data-reveal><summary class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">\${esc(f.q)}<span class="transition group-open:rotate-45 text-[var(--accent)] text-2xl">+</span></summary><p class="mt-3 text-neutral-600">\${esc(f.a)}</p></details>\`,
+      };
+      $$("[data-list]").forEach((el) => (el.innerHTML = (get(el.dataset.list) || []).map(tpl[el.dataset.list]).join("")));
+
+      // Hero video (Higgsfield export): mobile cut on small screens, mp4 then webm
+      const hv = $("[data-hero-video]"), v = S.hero.video;
+      const small = matchMedia("(max-width: 767px)").matches;
+      hv.poster = v.poster;
+      hv.innerHTML = [[small && v.mobileMp4 ? v.mobileMp4 : v.mp4, "video/mp4"], [v.webm, "video/webm"]]
+        .filter(([src]) => src).map(([src, type]) => \`<source src="\${esc(src)}" type="\${type}">\`).join("");
+      if (reduced) hv.removeAttribute("autoplay"); else hv.play().catch(() => {});
+      new IntersectionObserver(([e]) => { if (reduced) return; e.isIntersecting ? hv.play().catch(() => {}) : hv.pause(); }).observe(hv);
+
+      // HeyGen spokesperson (optional)
+      const sp = S.spokesperson;
+      if (sp?.enabled && sp.mp4) {
+        const dlg = $("[data-spokesperson-dialog]"), vid = $("[data-spokesperson-video]");
+        const open = $("[data-spokesperson-open]");
+        open.classList.remove("hidden"); open.classList.add("inline-flex");
+        if (sp.orientation === "portrait") dlg.style.width = "min(92vw, 420px)";
+        vid.poster = sp.poster || "";
+        vid.innerHTML = [[sp.mp4, "video/mp4"], [sp.webm, "video/webm"]].filter(([s]) => s).map(([s, t]) => \`<source src="\${esc(s)}" type="\${t}">\`).join("")
+          + (sp.captions ? \`<track kind="captions" src="\${esc(sp.captions)}" srclang="en" label="English" default>\` : "");
+        open.addEventListener("click", () => { dlg.showModal(); vid.play().catch(() => {}); });
+        const close = () => { vid.pause(); dlg.close(); };
+        $("[data-spokesperson-close]").addEventListener("click", close);
+        dlg.addEventListener("click", (e) => { if (e.target === dlg) close(); });
+        dlg.addEventListener("close", () => vid.pause());
+      }
+
+      // Before / after
+      const ba = $("[data-ba]");
+      Object.assign($("[data-ba-before]"), S.beforeAfter.before);
+      Object.assign($("[data-ba-after]"), S.beforeAfter.after);
+      const range = $("[data-ba-range]");
+      const setBa = () => ba.style.setProperty("--ba", \`\${range.value}%\`);
+      range.addEventListener("input", setBa); setBa();
+
+      // Estimator
+      const E = S.estimator;
+      const radios = (name, opts, cls) => opts.map((o, i) => \`<label class="\${cls}"><input type="radio" name="\${name}" value="\${i}" \${i === 1 || opts.length === 1 ? "checked" : ""} class="peer sr-only"><span class="flex min-h-12 items-center justify-center rounded-xl border border-white/20 px-3 text-center text-sm peer-checked:border-[var(--accent)] peer-checked:bg-[var(--accent)] peer-checked:text-[var(--brand)] peer-focus-visible:ring-2">\${esc(o.label)}</span></label>\`).join("");
+      $("[data-est-service]").innerHTML = E.services.map((s, i) => \`<option value="\${i}" class="text-black">\${esc(s.label)}</option>\`).join("");
+      $("[data-est-service]").value = String(Math.min(1, E.services.length - 1));
+      $("[data-est-sizes]").innerHTML = radios("size", E.sizes, "block");
+      $("[data-est-finishes]").innerHTML = radios("finish", E.finishes, "block");
+      $("[data-est-qualifier]").innerHTML = \`<option value="">\${esc(E.qualifier.label)}</option>\` + E.qualifier.options.map((o) => \`<option>\${esc(o)}</option>\`).join("");
+      const estForm = $("[data-estimator]"), result = $("[data-est-result]"), hidden = $("[data-est-hidden]");
+      const calc = () => {
+        const f = new FormData(estForm);
+        const mid = E.services[+f.get("service")].base * E.sizes[+f.get("size")].mult * E.finishes[+f.get("finish")].mult;
+        const text = \`\${money(mid * (1 - E.spread))} – \${money(mid * (1 + E.spread))}\`;
+        hidden.value = \`\${E.services[+f.get("service")].label} · \${E.sizes[+f.get("size")].label} · \${E.finishes[+f.get("finish")].label} · \${text}\`;
+        if (result.textContent !== text) {
+          result.textContent = text;
+          if (window.gsap && !reduced) gsap.fromTo(result, { y: 8, opacity: 0.3 }, { y: 0, opacity: 1, duration: 0.35, ease: "power2.out" });
+        }
+      };
+      estForm.addEventListener("change", calc); calc();
+
+      const lead = $("[data-lead-form]"), thanks = $("[data-lead-thanks]");
+      lead.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!lead.reportValidity()) return;
+        const btn = lead.querySelector("button"); btn.disabled = true;
+        let ok = true;
+        if (E.formAction) {
+          try { ok = (await fetch(E.formAction, { method: "POST", body: new FormData(lead), headers: { Accept: "application/json" } })).ok; } catch { ok = false; }
+        }
+        thanks.classList.remove("hidden");
+        thanks.className = \`text-sm font-semibold \${ok ? "text-green-700" : "text-red-700"}\`;
+        thanks.innerHTML = ok
+          ? \`Got it. We'll call you within one business day, or call us now at <a class="underline" href="tel:\${esc(S.brand.phone)}">\${esc(S.brand.phoneDisplay)}</a>.\`
+          : \`That didn't send. Please call us at <a class="underline" href="tel:\${esc(S.brand.phone)}">\${esc(S.brand.phoneDisplay)}</a>.\`;
+        if (ok) lead.reset(); else btn.disabled = false;
+        calc();
+      });
+
+      // Motion (GSAP + ScrollTrigger). Loaded with defer, so wait for it.
+      const motion = () => {
+        const header = $("#site-header .glass");
+        const onScroll = () => header.classList.toggle("is-scrolled", scrollY > 40);
+        addEventListener("scroll", onScroll, { passive: true }); onScroll();
+        if (!window.gsap || !window.ScrollTrigger) { $$("[data-reveal]").forEach((el) => (el.style.opacity = 1)); return; }
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Active nav link follows the section in view
+        S.nav.forEach((n) => {
+          const sec = n.href.startsWith("#") && $(n.href);
+          if (!sec) return;
+          ScrollTrigger.create({ trigger: sec, start: "top 55%", end: "bottom 55%", onToggle: (st) => {
+            if (st.isActive) $$(".nav-link").forEach((a) => a.classList.toggle("is-active", a.getAttribute("href") === n.href));
+          } });
+        });
+
+        if (reduced) { gsap.set("[data-reveal], [data-hero-in]", { opacity: 1 }); return; }
+
+        gsap.from("[data-hero-in]", { y: 28, opacity: 0, duration: 0.9, ease: "power3.out", stagger: 0.08, delay: 0.1 });
+        gsap.fromTo(hv, { scale: 1.12 }, { scale: 1, ease: "none", scrollTrigger: { trigger: "#hero", start: "top top", end: "bottom top", scrub: true } });
+
+        ScrollTrigger.batch("[data-reveal]", {
+          start: "top 88%",
+          once: true,
+          onEnter: (els) => gsap.fromTo(els, { y: 32, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out", stagger: 0.08 }),
+        });
+
+        $$("[data-portfolio]").forEach((fig, i) => {
+          const frame = $("[data-portfolio-frame]", fig), img = $("[data-portfolio-img]", fig);
+          gsap.fromTo(frame, { clipPath: "inset(18% 12% 18% 12% round 1rem)" }, { clipPath: "inset(0% 0% 0% 0% round 1rem)", duration: 1.1, ease: "power3.out", delay: i * 0.08, scrollTrigger: { trigger: fig, start: "top 85%", once: true } });
+          gsap.fromTo(img, { scale: 1.25 }, { scale: 1, ease: "none", scrollTrigger: { trigger: fig, start: "top bottom", end: "bottom top", scrub: true } });
+        });
+
+        // Before/after: sweep once on first view to show it's draggable
+        ScrollTrigger.create({ trigger: ba, start: "top 70%", once: true, onEnter: () => {
+          const o = { v: 50 };
+          gsap.timeline().to(o, { v: 25, duration: 0.6, ease: "power2.inOut" }).to(o, { v: 65, duration: 0.8, ease: "power2.inOut" }).to(o, { v: 50, duration: 0.5, ease: "power2.out" })
+            .eventCallback("onUpdate", () => { range.value = o.v; setBa(); });
+        } });
+      };
+      if (document.readyState === "complete") motion(); else addEventListener("load", motion);
+    })();
+  </script>
+</body>
+</html>
+`;
