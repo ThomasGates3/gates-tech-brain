@@ -123,8 +123,11 @@ export default function Home() {
 
       {/* Desktop: one screen, no page scroll. Cards scroll inside themselves. */}
       {isDesktop && (
-        <main className="relative grid h-[calc(100dvh-3.5rem)] w-full grid-cols-[300px_minmax(0,1fr)_330px] gap-4 overflow-hidden p-4 2xl:grid-cols-[360px_minmax(0,1fr)_400px] 2xl:px-6" data-testid="dashboard">
-          <ActivityFeed limit={25} href="/activity" className="h-full" />
+        <main className="relative grid h-[calc(100dvh-3.5rem)] w-full grid-cols-[260px_minmax(0,1fr)_360px] gap-4 overflow-hidden p-4 xl:grid-cols-[300px_minmax(0,1fr)_440px] 2xl:grid-cols-[340px_minmax(0,1fr)_520px] 2xl:px-6" data-testid="dashboard">
+          <div className="flex min-h-0 flex-col gap-4">
+            <ActivityFeed limit={25} href="/activity" className="min-h-0 flex-1" />
+            <Link href="/settings" className="block shrink-0"><SystemStatPanel /></Link>
+          </div>
           <div className="flex min-h-0 flex-col gap-4">
             <NextUp deck={deck} orbState={orbState} name={preset.name} />
             <LeadsCard fill topCount={12} />
@@ -133,7 +136,6 @@ export default function Home() {
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
             <Scoreboard data={sb ?? null} onChange={loadDeck} />
             <QuickLinks ops={deck?.ops ?? []} pass={sb?.passAwaitingApprove} drafted={deck ? Number(deck.briefing.items.find((i) => i.label === "Waiting on Nick")?.value ?? 0) : undefined} />
-            <Link href="/settings" className="block"><SystemStatPanel /></Link>
           </div>
         </main>
       )}
