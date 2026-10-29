@@ -1,4 +1,4 @@
-// Generated from docs/outreach-brief.md by `npm run brief:sync`. Edit the .md, not this file.
+// Generated from docs/outreach-brief.md by `npm run brief:sync`. Edit that file, not this one.
 export const OUTREACH_BRIEF = `# Gates Technologies — outreach brief
 
 **Hand this file to any agent writing outbound email on our behalf. It is the only source of

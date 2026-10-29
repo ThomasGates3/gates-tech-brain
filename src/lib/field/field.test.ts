@@ -323,6 +323,33 @@ test("website brief: master prompt verbatim, filled message, unknowns become que
   assert.match(b.build_message, /\[PROOF\]/);
   assert.equal(b.ready, false);
   assert.ok(b.ask.some((q) => q.field === "social_proof") && !b.ask.some((q) => q.field === "conversion_goal"));
+  assert.ok(b.ask.some((q) => q.field === "phone"));
+  assert.match(b.site_template, /window\.SITE = \{/);
+  assert.equal(b.media.heygen.enabled, false);
+});
+
+import { mediaBrief, sceneKind, HIGGSFIELD_STYLE } from "../website/media";
+
+test("website media: Higgsfield shot in house style, scene by business, HeyGen only when asked", () => {
+  assert.equal(sceneKind("custom kitchen remodeling"), "kitchen");
+  assert.equal(sceneKind("Bennett Pools, pool construction"), "pool");
+  assert.equal(sceneKind("Authentic Gyros and Grill"), "restaurant");
+  assert.equal(sceneKind("Oak Kitchen & Bar"), "restaurant");
+  assert.equal(sceneKind("bookkeeping firm"), "general");
+
+  const m = mediaBrief(contact({ name: "Stone Ridge Remodeling", lane: "website" }), "kitchen remodels");
+  const shot = m.higgsfield.shots[0];
+  assert.ok(shot.prompt.includes(HIGGSFIELD_STYLE) && shot.prompt.includes("dolly-in"));
+  assert.equal(shot.aspect_ratio, "16:9");
+  assert.ok(m.higgsfield.steps.some((s) => s.includes("prepare-video.sh assets/raw/hero.mp4 hero --loop")));
+  assert.deepEqual([m.heygen.enabled, m.heygen.suggested], [false, false]);
+
+  const r = mediaBrief(contact({ name: "Authentic Gyros and Grill" }), "", { spokesperson_script: "Hi. ".repeat(80), heygen_avatar_id: "av_123" });
+  assert.equal(r.heygen.enabled, true);
+  assert.equal(r.heygen.avatar, "av_123");
+  assert.equal(r.heygen.orientation, "portrait 9:16");
+  assert.equal(r.heygen.script_check, "ok");
+  assert.equal(mediaBrief(contact({ name: "Taco Spot" }), "").heygen.suggested, true);
 });
 
 import { isWaitingBlock } from "../../components/deck/Telemetry";

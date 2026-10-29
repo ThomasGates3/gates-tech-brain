@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-29: Website builds move to a static template with Higgsfield and HeyGen video
+- `templates/site/index.html`: one static file with Tailwind, GSAP and ScrollTrigger from CDN, and no build step, so it deploys to Vercel as-is. It has a glass header with tap-to-call and an active nav link, a Higgsfield hero background loop (mp4, then webm fallback, poster, optional 9:16 mobile cut), ScrollTrigger portfolio reveals, a before/after slider, a ballpark cost estimator with lead intake, and an optional HeyGen spokesperson modal with captions. Everything per client lives in one `window.SITE` block.
+- `templates/site/scripts/prepare-video.sh`: turns a downloaded render into web-ready files: an H.264 mp4 (faststart), a VP9 webm, a first-frame poster, an optional seamless loop crossfade (`--loop`) and an optional 9:16 cut (`--mobile`).
+- `brain_website_brief` now also returns `site_template` and `media`: the Higgsfield hero shot (house style: Architectural Digest look, golden hour, deep dynamic range, shallow depth of field, one slow continuous camera move; the scene is picked from the business: kitchen, pool, restaurant, home or general), plus the HeyGen spec (avatar ID or preset, script word check, portrait for restaurants, captions). New optional answers: `phone` (asked), `spokesperson_script` and `heygen_avatar_id` (never asked).
+- Master prompt: targets Claude instead of Base44, adds Build Target & Tech Stack and the Higgsfield/HeyGen media standard, and adds phone and spokesperson to the checklist.
+
 ## 2026-10-21: Claude connector sign-in (OAuth on /api/mcp)
 - `/api/mcp` now also takes OAuth, so Brain can be added as a Claude custom connector on web and phone (no bearer token to paste). Sign in with the Thomas or Ace password and click Allow; the team password can't grant access. Bearer API keys work as before.
 - Clients can use Claude's published identity (Client ID Metadata Document: an https client_id whose JSON is fetched, validated and cached for 10 minutes) or dynamic registration.
