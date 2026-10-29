@@ -25,7 +25,7 @@ const FOLDERS: { id: FolderId; label: string; art: ArtPreset; tone: "light" | "d
   { id: "new", label: "New Leads", art: "aurora", tone: "light", href: "/leads" },
   { id: "approved", label: "Approved", art: "verdant", tone: "dark", href: "/leads?status=approved" },
   { id: "sent", label: "Sent", art: "dusk", tone: "light", href: "/leads?status=sent" },
-  { id: "followup", label: "Due for Follow Up", art: "ember", tone: "dark", href: "/leads?status=sent" },
+  { id: "followup", label: "Follow Up", art: "ember", tone: "dark", href: "/leads?status=sent" },
 ];
 const NEW_STATUSES = ["undrafted", "drafted", "atNick", "PASS"];
 const STATUS_LABEL: Record<string, string> = { undrafted: "Needs draft", drafted: "Drafted", atNick: "At Nick", PASS: "Needs approval", approved: "Ready to send", sent: "Sent" };
@@ -105,7 +105,7 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
                 seed={i * 5 + 3}
                 files={files}
                 action="more"
-                labelPlacement="top-left"
+                labelPlacement="center"
                 width={folderW}
                 appearDelay={i * 120}
                 menu={[{ label: "View all in Leads", onSelect: () => { window.location.href = f.href; } }]}

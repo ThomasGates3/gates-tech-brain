@@ -90,7 +90,7 @@ export type GlassFolderProps = {
   /** Items for the `more` menu. An Open / Close item is always first. */
   menu?: FolderMenuItem[]
   /** Where the label sits on the front panel. */
-  labelPlacement?: "bottom-left" | "top-left" | "top-right"
+  labelPlacement?: "bottom-left" | "top-left" | "top-right" | "center"
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -1186,6 +1186,9 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 }
 .gf-root[data-place="bottom-left"] .gf-label { left: 28px; bottom: 32px; }
 .gf-root[data-place="top-left"] .gf-label { left: 28px; top: 34px; }
+.gf-root[data-place="center"] .gf-label { left: 16px; right: 16px; top: 50%; max-width: none; align-items: center; text-align: center; transform: translateY(-50%); }
+.gf-root[data-place="center"] .gf-title { font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -.02em; white-space: normal; overflow: visible; }
+.gf-root[data-place="center"] .gf-meta { font-size: 26px; font-weight: 700; letter-spacing: .02em; color: var(--gf-ink); opacity: .75; }
 .gf-root[data-place="top-right"] .gf-label { right: 32px; top: 52px; align-items: flex-start; }
 .gf-title {
   font-size: 18px;
