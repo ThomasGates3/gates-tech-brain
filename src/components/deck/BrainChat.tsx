@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { VoiceControl } from "@/components/voice/VoiceControl";
+import { Markdown } from "@/components/deck/Markdown";
 
 export interface ChatMessage {
   id: string;
@@ -27,6 +28,7 @@ export function BrainChat({
 }: BrainChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollDown = () => requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 1e9, behavior: "smooth" }));
@@ -38,6 +40,7 @@ export function BrainChat({
     const brainId = `b_${Date.now()}`;
     setMessages((m) => [...m, userMsg, { id: brainId, role: "brain", text: "" }]);
     setInput("");
+    setStreaming(true);
     onSend?.(t);
     scrollDown();
 
@@ -52,18 +55,27 @@ export function BrainChat({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "";
+      let frame = 0;
+      const flush = () => {
+        frame = 0;
+        setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: acc } : msg)));
+        scrollDown();
+      };
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         acc += decoder.decode(value, { stream: true });
-        setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: acc } : msg)));
-        scrollDown();
+        if (!frame) frame = requestAnimationFrame(flush);
       }
+      if (frame) cancelAnimationFrame(frame);
+      flush();
       if (!acc.trim()) {
         setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "(No response. Set ANTHROPIC_API_KEY to bring me online.)" } : msg)));
       }
     } catch {
       setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: "I couldn't reach the model. Add ANTHROPIC_API_KEY and restart to bring me online." } : msg)));
+    } finally {
+      setStreaming(false);
     }
   };
 
@@ -86,8 +98,8 @@ export function BrainChat({
 
       {/* messages — collapses to nothing when idle */}
       {messages.length > 0 && (
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" style={{ maxHeight: 320 }}>
-        {messages.map((m) => (
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" style={{ maxHeight: 420 }}>
+        {messages.map((m, idx) => (
           <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div
               className={
@@ -96,10 +108,22 @@ export function BrainChat({
                   : "max-w-[85%] rounded-2xl rounded-bl-sm bg-white/[0.04] px-3.5 py-2 text-sm text-slate-300 ring-1 ring-white/5"
               }
             >
-              {m.role === "brain" && (
-                <span className="mr-1.5 font-mono text-[10px] uppercase tracking-wider text-[var(--accent-soft)]">›</span>
+              {m.role === "user" ? (
+                m.text
+              ) : !m.text ? (
+                <span className="flex items-center gap-1 py-1" role="status" aria-label="Thinking">
+                  {[0, 1, 2].map((d) => (
+                    <span key={d} className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" style={{ animation: "chat-dot 1.1s ease-in-out infinite", animationDelay: `${d * 0.16}s` }} />
+                  ))}
+                </span>
+              ) : (
+                <>
+                  <Markdown text={m.text} />
+                  {streaming && idx === messages.length - 1 && (
+                    <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 bg-[var(--accent)]" style={{ animation: "blink-cursor 0.9s step-end infinite" }} />
+                  )}
+                </>
               )}
-              {m.text}
             </div>
           </div>
         ))}

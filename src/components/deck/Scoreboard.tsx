@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import GlassFolder, { type ArtPreset, type FolderFile } from "@/components/ui/glass-folder-cards";
 import { callTool } from "@/lib/ux/tools";
 
 /** Control Center scoreboard: the Field numbers that decide Thomas's next move. */
@@ -16,14 +17,48 @@ export interface ScoreboardData {
   warmNote: string;
 }
 
-function Tile({ label, value, sub, hot, testId, href }: { label: string; value: string; sub?: string; hot?: boolean; testId: string; href: string }) {
-  return (
-    <a href={href} data-testid={testId} className={`block rounded-lg border p-2.5 transition-colors hover:border-[var(--accent)]/60 ${hot ? "border-[var(--accent)]/60 bg-[var(--accent)]/10" : "border-white/[0.06] bg-black/30"}`}>
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className={`mt-1 font-mono text-[22px] leading-none ${hot ? "text-[var(--accent)]" : "text-slate-100"}`}>{value}</p>
-      {sub && <p className="mt-1 font-mono text-[10px] text-slate-500">{sub}</p>}
-    </a>
-  );
+interface Lead { contact_id: string; business: string; lane: string; tier: string; email1_status: string; next_action: string }
+interface LeadsData { date: string; leads: Lead[] }
+
+type FolderId = "new" | "approved" | "sent" | "followup";
+const FOLDERS: { id: FolderId; label: string; art: ArtPreset; tone: "light" | "dark"; href: string }[] = [
+  { id: "new", label: "New Leads", art: "aurora", tone: "light", href: "/leads" },
+  { id: "approved", label: "Approved", art: "verdant", tone: "dark", href: "/leads?status=approved" },
+  { id: "sent", label: "Sent", art: "dusk", tone: "light", href: "/leads?status=sent" },
+  { id: "followup", label: "Due for Follow Up", art: "ember", tone: "dark", href: "/leads?status=sent" },
+];
+const NEW_STATUSES = ["undrafted", "drafted", "atNick", "PASS"];
+const STATUS_LABEL: Record<string, string> = { undrafted: "Needs draft", drafted: "Drafted", atNick: "At Nick", PASS: "Needs approval", approved: "Ready to send", sent: "Sent" };
+
+/** Sort today's leads into the four folders. Held and killed leads stay out. */
+function sortLeads(data: LeadsData | null): Record<FolderId, FolderFile[]> {
+  const out: Record<FolderId, FolderFile[]> = { new: [], approved: [], sent: [], followup: [] };
+  for (const l of data?.leads ?? []) {
+    const href = `/leads?open=${encodeURIComponent(l.contact_id)}`;
+    const file = (meta: string): FolderFile => ({ name: l.business, meta, href });
+    if (NEW_STATUSES.includes(l.email1_status)) out.new.push(file(STATUS_LABEL[l.email1_status]));
+    else if (l.email1_status === "approved") out.approved.push(file(STATUS_LABEL.approved));
+    else if (l.email1_status === "sent") {
+      const due = l.next_action.match(/^Follow-up due Email (\d) (\d{4}-\d{2}-\d{2})/);
+      if (due && data && due[2] <= data.date) out.followup.push(file(`Email ${due[1]} due`));
+      else out.sent.push(file(l.next_action.startsWith("Replied") ? "Replied" : "Sent"));
+    }
+  }
+  return out;
+}
+
+/** Container width, so the 2×2 folder grid fills whatever column it is in. */
+function useWidth() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.floor(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, w] as const;
 }
 
 export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; onChange?: () => void }) {
@@ -36,18 +71,48 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
     setBusy(true); setErr(null);
     try { await callTool("brain_set_gate", { domain_warmed: true }); onChange?.(); } catch (e) { setErr(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); setArmed(false); }
   };
+  const [leads, setLeads] = useState<LeadsData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => fetch("/api/leads").then((r) => (r.ok ? r.json() : null)).then((j) => alive && j?.leads && setLeads(j)).catch(() => {});
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [onChange]);
+  const sorted = sortLeads(leads);
+  const [gridRef, gridW] = useWidth();
+  const gap = 20;
+  const folderW = gridW ? Math.min(280, Math.max(130, Math.floor((gridW - gap) / 2))) : 0;
   return (
     <div data-testid="scoreboard" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur">
-      <a href="/leads" className="mb-3 flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
-        <span className="h-1 w-4 bg-[var(--accent)]" />Field scoreboard →
-      </a>
-      <div className="grid grid-cols-2 gap-2">
-        <Tile href="/leads?status=sent" testId="sb-sent" label="Sent today" value={d ? `${d.sent.value}/${d.sent.cap}` : "—"} hot={!!d && d.sent.value >= d.sent.cap} />
-        <Tile href="/leads?status=PASS" testId="sb-pass" label="PASS → approve" value={d ? String(d.passAwaitingApprove) : "—"} hot={!!d && d.passAwaitingApprove > 0} />
-        <Tile href="/leads?status=approved" testId="sb-approved" label="Approved, unsent" value={d ? String(d.approvedUnsent) : "—"} hot={!!d && d.approvedUnsent > 0} />
-        <Tile href="/activity" testId="sb-inbound" label="Inbound unanswered" value={d ? (d.inboundUnanswered === null ? "—" : String(d.inboundUnanswered)) : "—"} hot={!!d && (d.inboundUnanswered ?? 0) > 0} />
-        <Tile href="/leads" testId="sb-lanes" label="Queue core / website" value={d ? `${d.core} / ${d.website}` : "—"} />
-        <Tile href="/leads?status=sent" testId="sb-due" label="Follow-ups due" value={d ? String(d.sequenceDue) : "—"} hot={!!d && d.sequenceDue > 0} />
+      <div className="mb-10 flex items-center justify-between gap-2">
+        <a href="/leads" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
+          <span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s lead folders →
+        </a>
+        <span data-testid="sb-sent" className={`font-mono text-[10px] ${d && d.sent.value >= d.sent.cap ? "text-[var(--accent)]" : "text-slate-500"}`}>sent {d ? `${d.sent.value}/${d.sent.cap}` : "—"}</span>
+      </div>
+      <div ref={gridRef} data-testid="lead-folders" className="grid grid-cols-2 justify-items-center gap-x-5 gap-y-3">
+        {folderW > 0 && FOLDERS.map((f, i) => {
+          const files = sorted[f.id];
+          const ids = files.map((x) => x.href).join("|");
+          return (
+            <div key={f.id} data-testid={`folder-${f.id}`} className="relative hover:z-20 focus-within:z-20">
+              <GlassFolder
+                key={`${f.id}:${folderW}:${ids}`}
+                label={f.label}
+                tone={f.tone}
+                art={f.art}
+                seed={i * 5 + 3}
+                files={files}
+                action="more"
+                labelPlacement="top-left"
+                width={folderW}
+                appearDelay={i * 120}
+                menu={[{ label: "View all in Leads", onSelect: () => { window.location.href = f.href; } }]}
+              />
+            </div>
+          );
+        })}
       </div>
       {d && (
         <div data-testid="sb-warm" className={`mt-2 rounded-md px-2.5 py-1.5 text-[11px] ${d.domainWarmed ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
