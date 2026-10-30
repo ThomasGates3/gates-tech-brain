@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VoiceControl } from "@/components/voice/VoiceControl";
 import { Markdown } from "@/components/deck/Markdown";
 
@@ -78,6 +78,15 @@ export function BrainChat({
       setStreaming(false);
     }
   };
+
+  // "Ask NOVA" buttons elsewhere on the dashboard (e.g. reply drafts) post here.
+  const sendRef = useRef(send);
+  useEffect(() => { sendRef.current = send; });
+  useEffect(() => {
+    const onAsk = (e: Event) => { const t = (e as CustomEvent<string>).detail; if (t) void sendRef.current(t); };
+    window.addEventListener("nova:ask", onAsk);
+    return () => window.removeEventListener("nova:ask", onAsk);
+  }, []);
 
   return (
     <div
