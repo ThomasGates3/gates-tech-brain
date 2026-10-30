@@ -5,7 +5,7 @@ import { Experimental_Agent, tool, createAgentUIStream } from "ai";
 import { z } from "zod";
 import type { AgentEvent, SpecialistId, ModelTier } from "@/lib/types";
 import { claude, conductorModel } from "@/lib/models";
-import { specialists } from "./specialists";
+import { runSpecialist } from "./specialists";
 
 const CONDUCTOR_SYSTEM = `You are the AI Brain Conductor — a precise, competent orchestrator.
 You plan tasks, delegate to specialists (research, data, devops, comms), and synthesize results.
@@ -26,12 +26,7 @@ const delegateTool = tool({
     task: z.string().describe("Clear description of what the specialist should do"),
   }),
   execute: async ({ specialist, task }) => {
-    const agent = specialists[specialist as SpecialistId];
-    const result = await agent.generate({ prompt: task });
-    return {
-      specialist,
-      result: result.text ?? "(no text response)",
-    };
+    return { specialist, result: await runSpecialist(specialist as SpecialistId, task) };
   },
 });
 

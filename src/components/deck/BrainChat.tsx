@@ -50,7 +50,11 @@ export function BrainChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: t }),
       });
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok || !res.body) {
+        const why = (await res.text().catch(() => "")).trim();
+        setMessages((m) => m.map((msg) => (msg.id === brainId ? { ...msg, text: why || `I couldn't reach the model (HTTP ${res.status}).` } : msg)));
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

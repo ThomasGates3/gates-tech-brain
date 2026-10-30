@@ -10,7 +10,8 @@ import { claude, conductorModel, LIGHT } from "@/lib/models";
 import { budgetBlock } from "@/lib/budget";
 import { resolveModelTier } from "@/lib/settings";
 import { recordUsage } from "@/lib/usage";
-import { specialists } from "@/lib/orchestrator/specialists";
+import { runSpecialist } from "@/lib/orchestrator/specialists";
+import { todayIn } from "@/lib/field/config";
 import type { SpecialistId } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -34,9 +35,7 @@ const delegateTool = tool({
     task: z.string().describe("Clear description of what the specialist should do"),
   }),
   execute: async ({ specialist, task }) => {
-    const agent = specialists[specialist as SpecialistId];
-    const r = await agent.generate({ prompt: task });
-    return { specialist, result: r.text ?? "(no response)" };
+    return { specialist, result: await runSpecialist(specialist as SpecialistId, task) };
   },
 });
 
@@ -57,14 +56,15 @@ export async function POST(req: Request) {
 
   if (!process.env.ANTHROPIC_API_KEY) return new Response("Chat is offline: ANTHROPIC_API_KEY is not set.", { status: 503 });
   const [blocked, tier] = await Promise.all([budgetBlock(), resolveModelTier()]);
-  if (blocked) return new Response("Daily Claude budget reached. Chat resumes at midnight.", { status: 429 });
+  // Pass the real reason on: cap reached, or spend couldn't be read (paused to be safe).
+  if (blocked) return new Response(((await blocked.json().catch(() => ({}))) as { error?: string }).error ?? "Claude is paused by the daily budget.", { status: blocked.status });
 
   // Standard tier chats on Haiku (it mostly routes and summarizes); flagship stays on Opus.
   const model = tier === "flagship" ? conductorModel(tier) : (process.env.CHAT_MODEL as typeof LIGHT | undefined) ?? LIGHT;
   const started = Date.now();
   const result = streamText({
     model: claude(model),
-    system: SYSTEM,
+    system: `${SYSTEM}\nToday is ${todayIn()} (America/New_York).`,
     prompt: parsed.data.message,
     tools: { delegate_to: delegateTool },
     stopWhen: stepCountIs(4),

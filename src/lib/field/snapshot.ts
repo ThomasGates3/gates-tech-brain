@@ -44,8 +44,8 @@ export async function fieldSnapshot(date = todayIn()) {
     mailingAddress: Boolean(fieldEnv.mailingAddress()),
     domainWarmed: g.domainWarmed,
     warmNote: g.warmNote,
-    gatesSetBy: g.setBy,
-    gatesSetAt: g.setAt,
+    gatesLastChangedBy: g.setBy,
+    gatesLastChangedAt: g.setAt,
     aceCanSend: fieldEnv.aceCanSend(),
   };
   const next: string[] = [];
@@ -58,7 +58,8 @@ export async function fieldSnapshot(date = todayIn()) {
   if (inboundUnanswered) next.push(`${inboundUnanswered} repl${inboundUnanswered > 1 ? "ies" : "y"} waiting for an answer (Lisa).`);
   if (sequenceDue.total) next.push(`${sequenceDue.total} follow-up${sequenceDue.total > 1 ? "s" : ""} due (Email 2: ${sequenceDue.byStep[2]}, 3: ${sequenceDue.byStep[3]}, 4: ${sequenceDue.byStep[4]}).`);
   if (!gates.domainWarmed) next.push(g.warmNote);
-  if (budget.status !== "ok") next.push(budget.status === "blocked" ? "Claude budget hit: Claude paused until midnight." : `Claude spend past the $${budget.warnUsd} warning.`);
+  if (budget.unreadable) next.push("Couldn't read today's Claude spend, so Claude is paused to be safe. It resumes once the database answers.");
+  else if (budget.status !== "ok") next.push(budget.status === "blocked" ? `Claude budget hit ($${budget.spentTodayUsd.toFixed(2)} of $${budget.capUsd.toFixed(2)}): Claude paused until midnight.` : `Claude spend past the $${budget.warnUsd} warning.`);
   return { date, queue, approvedUnsent: queue.approved, sentToday, dailyCap: g.dailyCap, sequenceDue, inboundUnanswered, claudeBudget: budget, gates, next };
 }
 export type FieldSnapshot = Awaited<ReturnType<typeof fieldSnapshot>>;
