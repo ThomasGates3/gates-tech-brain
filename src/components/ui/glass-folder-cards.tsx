@@ -90,6 +90,8 @@ export type GlassFolderProps = {
   /** Items for the `more` menu. An Open / Close item is always first. */
   menu?: FolderMenuItem[]
   /** Where the label sits on the front panel. */
+  /** A number pill on the bottom-right of the glass. */
+  badge?: number | string
   labelPlacement?: "bottom-left" | "top-left" | "top-right" | "center"
   open?: boolean
   defaultOpen?: boolean
@@ -540,6 +542,7 @@ export default function GlassFolder({
   onAdd,
   onFilesChange,
   menu = [],
+  badge,
   labelPlacement = "bottom-left",
   open: openProp,
   defaultOpen = false,
@@ -767,6 +770,7 @@ export default function GlassFolder({
                 setOpen(!open)
               }}
             />
+            {badge !== undefined ? <span className="gf-badge" aria-hidden="true">{badge}</span> : null}
             <div className="gf-label">
               <span className="gf-title">{label}</span>
               <span className="gf-meta" key={metaLine}>
@@ -1187,8 +1191,12 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .gf-root[data-place="bottom-left"] .gf-label { left: 28px; bottom: 32px; }
 .gf-root[data-place="top-left"] .gf-label { left: 28px; top: 34px; }
 .gf-root[data-place="center"] .gf-label { left: 16px; right: 16px; top: 50%; max-width: none; align-items: center; text-align: center; transform: translateY(-50%); }
-.gf-root[data-place="center"] .gf-title { font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -.02em; white-space: normal; overflow: visible; color: #fff; text-shadow: 0 0 6px var(--gf-glow, rgba(255,255,255,.7)), 0 0 22px var(--gf-glow, rgba(255,255,255,.5)), 0 2px 10px rgba(0,0,0,.6); }
+.gf-root[data-place="center"] .gf-title { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -.02em; white-space: normal; overflow: visible; color: #fff; text-shadow: 0 0 6px var(--gf-glow, rgba(255,255,255,.7)), 0 0 22px var(--gf-glow, rgba(255,255,255,.5)), 0 2px 10px rgba(0,0,0,.6); }
 .gf-root[data-place="center"] .gf-meta { font-size: 26px; font-weight: 700; letter-spacing: .02em; color: #fff; opacity: .85; text-shadow: 0 0 12px var(--gf-glow, rgba(255,255,255,.5)), 0 1px 6px rgba(0,0,0,.6); }
+.gf-meta:empty { display: none; }
+.gf-badge { position: absolute; right: 18px; bottom: 18px; z-index: 3; min-width: 52px; height: 52px; padding: 0 14px; border-radius: 16px; display: grid; place-items: center; font: 800 28px/1 ui-sans-serif, system-ui, sans-serif; color: var(--gf-badge-ink, #fff); background: var(--gf-glow, #fff); box-shadow: 0 0 18px var(--gf-glow, rgba(255,255,255,.6)), inset 0 1px 0 rgba(255,255,255,.5); pointer-events: none; }
+.gf-root[data-place="center"] .gf-key { right: auto; left: 18px; bottom: 18px; width: 46px; height: 46px; border-radius: 15px; }
+.gf-root[data-place="center"] .gf-menu { right: auto; left: 18px; bottom: 72px; transform-origin: 0 100%; }
 .gf-root[data-place="top-right"] .gf-label { right: 32px; top: 52px; align-items: flex-start; }
 .gf-title {
   font-size: 18px;

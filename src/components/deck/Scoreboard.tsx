@@ -104,11 +104,13 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
                 label={f.label}
                 tone="dark"
                 art={f.art}
-                style={{ "--gf-glow": f.glow } as CSSProperties}
+                style={{ "--gf-glow": f.glow, "--gf-badge-ink": f.id === "followup" ? "#04121f" : "#fff" } as CSSProperties}
                 seed={i * 5 + 3}
                 files={files}
                 action="more"
                 labelPlacement="center"
+                meta=""
+                badge={files.length}
                 width={folderW}
                 appearDelay={i * 120}
                 menu={[{ label: "View all in Leads", onSelect: () => { window.location.href = f.href; } }]}
