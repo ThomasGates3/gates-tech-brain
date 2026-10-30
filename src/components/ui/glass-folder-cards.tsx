@@ -1187,8 +1187,8 @@ canvas.gf-sheet-art[data-ready] { opacity: 1; filter: none; }
 .gf-root[data-place="bottom-left"] .gf-label { left: 28px; bottom: 32px; }
 .gf-root[data-place="top-left"] .gf-label { left: 28px; top: 34px; }
 .gf-root[data-place="center"] .gf-label { left: 16px; right: 16px; top: 50%; max-width: none; align-items: center; text-align: center; transform: translateY(-50%); }
-.gf-root[data-place="center"] .gf-title { font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -.02em; white-space: normal; overflow: visible; }
-.gf-root[data-place="center"] .gf-meta { font-size: 26px; font-weight: 700; letter-spacing: .02em; color: var(--gf-ink); opacity: .75; }
+.gf-root[data-place="center"] .gf-title { font-size: 58px; font-weight: 800; line-height: 1; letter-spacing: -.02em; white-space: normal; overflow: visible; color: #fff; text-shadow: 0 0 6px var(--gf-glow, rgba(255,255,255,.7)), 0 0 22px var(--gf-glow, rgba(255,255,255,.5)), 0 2px 10px rgba(0,0,0,.6); }
+.gf-root[data-place="center"] .gf-meta { font-size: 26px; font-weight: 700; letter-spacing: .02em; color: #fff; opacity: .85; text-shadow: 0 0 12px var(--gf-glow, rgba(255,255,255,.5)), 0 1px 6px rgba(0,0,0,.6); }
 .gf-root[data-place="top-right"] .gf-label { right: 32px; top: 52px; align-items: flex-start; }
 .gf-title {
   font-size: 18px;

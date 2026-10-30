@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import GlassFolder, { type ArtPreset, type FolderFile } from "@/components/ui/glass-folder-cards";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import GlassFolder, { type ArtRecipe, type FolderFile } from "@/components/ui/glass-folder-cards";
 import { callTool } from "@/lib/ux/tools";
 
 /** Control Center scoreboard: the Field numbers that decide Thomas's next move. */
@@ -21,11 +21,13 @@ interface Lead { contact_id: string; business: string; lane: string; tier: strin
 interface LeadsData { date: string; leads: Lead[] }
 
 type FolderId = "new" | "approved" | "sent" | "followup";
-const FOLDERS: { id: FolderId; label: string; art: ArtPreset; tone: "light" | "dark"; href: string }[] = [
-  { id: "new", label: "New Leads", art: "aurora", tone: "light", href: "/leads" },
-  { id: "approved", label: "Approved", art: "verdant", tone: "dark", href: "/leads?status=approved" },
-  { id: "sent", label: "Sent", art: "dusk", tone: "light", href: "/leads?status=sent" },
-  { id: "followup", label: "Follow Up", art: "ember", tone: "dark", href: "/leads?status=sent" },
+const blue = (colors: string[], angle: number): ArtRecipe => ({ style: "marble", colors, scale: 0.7, warp: 3.2, angle, gloss: 0.5, veins: 0.35 });
+// A ladder of blues, light to deep, with Follow Up the brightest (silvery ice) so it stands out.
+const FOLDERS: { id: FolderId; label: string; art: ArtRecipe; glow: string; href: string }[] = [
+  { id: "new", label: "New Leads", glow: "rgba(0,229,255,.9)", href: "/leads", art: blue(["#031a2e", "#055a8c", "#18a8e0", "#0a3d66", "#5fd4ff", "#b8ecff", "#e6f9ff"], -0.5) },
+  { id: "approved", label: "Approved", glow: "rgba(70,140,255,.9)", href: "/leads?status=approved", art: blue(["#020c24", "#0a2f78", "#2a6bd6", "#071a4a", "#4f95ff", "#a9c9ff", "#e3eeff"], 0.8) },
+  { id: "sent", label: "Sent", glow: "rgba(90,110,255,.8)", href: "/leads?status=sent", art: blue(["#01040f", "#06113a", "#13286e", "#050b26", "#2a4297", "#6f86d6", "#c4cff5"], 2.1) },
+  { id: "followup", label: "Follow Up", glow: "rgba(255,255,255,.95)", href: "/leads?status=sent", art: { style: "streak", colors: ["#f7f9fc", "#dfe7f2", "#a9b9d0", "#eef2f8", "#c6d2e4", "#ffffff"], scale: 0.7, warp: 1.6, angle: 0.35, gloss: 0.3, veins: 0 } },
 ];
 const NEW_STATUSES = ["undrafted", "drafted", "atNick", "PASS"];
 const STATUS_LABEL: Record<string, string> = { undrafted: "Needs draft", drafted: "Drafted", atNick: "At Nick", PASS: "Needs approval", approved: "Ready to send", sent: "Sent" };
@@ -100,8 +102,9 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
               <GlassFolder
                 key={`${f.id}:${folderW}:${ids}`}
                 label={f.label}
-                tone={f.tone}
+                tone="dark"
                 art={f.art}
+                style={{ "--gf-glow": f.glow } as CSSProperties}
                 seed={i * 5 + 3}
                 files={files}
                 action="more"
