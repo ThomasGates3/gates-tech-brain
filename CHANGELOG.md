@@ -12,6 +12,11 @@
 - New: `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, `/api/oauth/register`, `/oauth/authorize`, `/api/oauth/token`. Stateless, signed with `AUTH_SECRET`; `OAUTH_TOKEN_GENERATION` revokes all; `OAUTH_REDIRECT_HOSTS` widens the redirect allowlist.
 - Unauthenticated `/api/mcp` calls now get a proper 401 + `WWW-Authenticate` from the route instead of a bare middleware 401. Sign-in keeps the query string on `callbackUrl`.
 
+## 2026-10-24: Gates Website Blueprint
+- New `docs/website-blueprint.md` (synced by `npm run website:sync`): the 4-part layout (hero video + CTA with free scrolling, See the Transformation, Real Reviews from verified Google reviews only, lead capture wired to the sheet / GoHighLevel webhook) and the mandatory 20-point launch checklist. It wins over the master prompt where they differ.
+- `brain_website_brief` now returns `blueprint` and `launch_checklist`, and `build_message` says to ship and verify all 20 before opening a PR.
+- Website-lane site audit grades the prospect's live site against the 20 points (also fetches robots.txt, sitemap.xml and a 404 probe) and lists the gaps; Email 1's three fixes come from those gaps, in owner words. Copy lint now also flags meta description, sitemap, robots.txt, canonical, schema, alt text, favicon, Open Graph and Lighthouse in website Email 1.
+
 ## 2026-10-12: Offer prices reset from market research
 - Roadmap step 1 note: Starter $297 setup + $297/mo; Core $997 + $697/mo ($1,500 + $997 for med spa, dental, legal); Website $1,500 + $147/mo; Lead reactivation $997 + $150 per booked appointment, then $497/mo. Prices live only on the private /calc page (gates-technologies PR #1), never in cold email.
 - Paid button and `brain_mark_paid` accept Starter.
