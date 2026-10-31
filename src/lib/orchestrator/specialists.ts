@@ -111,7 +111,7 @@ function makeAgent(id: SpecialistId, system: string, tools: ToolSet, model = OPS
 /** Read-only Field data for the Data specialist (real Neon data, no connectors needed). */
 const fieldTools = {
   field__snapshot: tool({
-    description: "Today's real Field status: queue counts by stage, sends today vs cap, Claude spend vs budget, gates, next actions.",
+    description: "Today's real Field status: queue counts by stage, sends today vs cap, Claude spend vs budget, gates, next actions. Omit `date` for today. gates.domainWarmed is the warm-up state; gatesLastChangedAt is only when any gate (warm-up or daily cap) was last edited, not a warm-up date.",
     inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
     execute: async ({ date }) => fieldSnapshot(date),
   }),
@@ -161,3 +161,12 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
     }
   ),
 };
+
+/**
+ * Run a specialist on one task. Models don't know today's date, and a guessed
+ * date passed to the Field tools reads the wrong day's queue, so say it up front.
+ */
+export async function runSpecialist(id: SpecialistId, task: string): Promise<string> {
+  const r = await specialists[id].generate({ prompt: `Today is ${todayIn()} (America/New_York). Omit the date argument on tools to read today.\n\n${task}` });
+  return r.text ?? "(no response)";
+}
