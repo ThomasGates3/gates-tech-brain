@@ -10,6 +10,7 @@ export const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/leads", label: "Leads" },
   { href: "/roadmap", label: "Roadmap" },
+  { href: "/mission", label: "Mission" },
   { href: "/field", label: "Field" },
   { href: "/content", label: "Content" },
   { href: "/activity", label: "Activity" },
@@ -30,8 +31,21 @@ function Clock() {
   return <span className="hidden font-mono text-[11px] text-slate-500 xl:inline">{now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>;
 }
 
+/** Count of Mission Control tasks waiting on Thomas; refreshed every minute. */
+function useWaiting() {
+  const [waiting, setWaiting] = useState(0);
+  useEffect(() => {
+    const load = () => fetch("/api/mission/badge").then((r) => r.json()).then((d) => setWaiting(Number(d.waiting) || 0)).catch(() => {});
+    const first = setTimeout(load, 0);
+    const t = setInterval(load, 60000);
+    return () => { clearTimeout(first); clearInterval(t); };
+  }, []);
+  return waiting;
+}
+
 export function TopNav() {
   const path = usePathname();
+  const waiting = useWaiting();
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   const mute = () => { try { localStorage.setItem("mute_briefing", "1"); } catch { /* ignore */ } cancelSpeech(); };
   return (
@@ -52,6 +66,9 @@ export function TopNav() {
               className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] transition-colors ${active(n.href) ? "bg-[var(--accent)] font-medium text-black" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
             >
               {n.label}
+              {n.href === "/mission" && waiting > 0 && (
+                <span data-testid="nav-mission-badge" aria-label={`${waiting} ${waiting === 1 ? "task" : "tasks"} waiting on Thomas`} className="ml-1.5 inline-grid min-w-[18px] place-items-center rounded-full bg-[#ff7a45] px-1 text-[10px] font-semibold leading-[18px] text-black">{waiting}</span>
+              )}
             </Link>
           ))}
         </div>
