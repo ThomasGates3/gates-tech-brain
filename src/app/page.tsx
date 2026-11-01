@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import CoreOrb, { type OrbState } from "@/components/hud/CoreOrb";
+import { type OrbState } from "@/components/hud/CoreOrb";
 import { BrainChat } from "@/components/deck/BrainChat";
 import { MobileConsole } from "@/components/deck/MobileConsole";
 import { BootSequence } from "@/components/deck/BootSequence";
@@ -12,6 +12,9 @@ import { Scoreboard, type ScoreboardData } from "@/components/deck/Scoreboard";
 import { LeadsCard } from "@/components/deck/LeadsCard";
 import { QuickLinks } from "@/components/deck/QuickLinks";
 import { TopNav } from "@/components/deck/TopNav";
+import { CommandHero } from "@/components/deck/CommandHero";
+import { PipelineFlow } from "@/components/deck/PipelineFlow";
+import { useLeads } from "@/lib/ux/useLeads";
 import type { BriefingHighlight } from "@/lib/persona/presets";
 import { getPreset } from "@/lib/persona/presets";
 import { getGreeting } from "@/lib/ux/helpers";
@@ -23,6 +26,21 @@ interface DeckState {
   ops: Stat[];
   scoreboard: ScoreboardData;
   readouts: { tier: string; activeAgents: number; sent: string; claude: string };
+  budget?: { spentUsd: number; capUsd: number; warnUsd: number; status: string };
+}
+
+/** Today's flow, Draft → Sent, as a glowing pipeline. */
+function PipelineCard() {
+  const { data } = useLeads();
+  return (
+    <section className="deck-card shrink-0 rounded-2xl px-4 pb-3 pt-3" data-testid="pipeline-card">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]"><span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s pipeline</span>
+        <span className="font-mono text-[10px] text-[var(--mute)]">{data ? `${data.leads.length} leads · ${data.date}` : "…"}</span>
+      </div>
+      <PipelineFlow leads={data?.leads ?? []} sentToday={data?.sentToday ?? 0} loading={!data} />
+    </section>
+  );
 }
 
 /** true on lg+ screens, false below, null during SSR: mounts one layout. */
@@ -32,23 +50,6 @@ function useIsDesktop(): boolean | null {
     (cb) => { const m = window.matchMedia(LG); m.addEventListener("change", cb); return () => m.removeEventListener("change", cb); },
     () => window.matchMedia(LG).matches,
     () => null
-  );
-}
-
-/** Greeting + what to do next (from brain_today's next actions). */
-function NextUp({ deck, orbState, name }: { deck: DeckState | null; orbState: OrbState; name: string }) {
-  return (
-    <div data-testid="next-up" className="flex items-start gap-3 rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur">
-      <CoreOrb state={orbState} className="h-12 w-12 shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold tracking-tight">{getGreeting()}, Thomas. <span className="font-normal text-slate-400">{name} is online.</span></p>
-        <ul className="mt-1 space-y-0.5 text-[13px]" data-testid="briefing-lead">
-          {(deck?.briefing.next.length ? deck.briefing.next.slice(0, 3) : ["Loading today's status…"]).map((n, i) => (
-            <li key={n} className={i === 0 ? "text-[var(--accent-soft)]" : "text-slate-400"}>{i === 0 ? "→ " : "· "}{n}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
   );
 }
 
@@ -116,9 +117,9 @@ export default function Home() {
   const sb = deck?.scoreboard;
 
   return (
-    <div className="min-h-screen bg-black font-sans text-slate-100">
+    <div className="relative isolate min-h-screen bg-[#02050c] font-sans text-slate-100">
       {booting && <BootSequence name={preset.name} accent={preset.accent} onDone={finishBoot} />}
-      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(900px 500px at 50% 8%, rgba(0,229,255,0.08), transparent 70%)" }} />
+      <div aria-hidden className="deck-bg" />
       <TopNav />
 
       {/* Desktop: one screen, no page scroll. Cards scroll inside themselves. */}
@@ -128,10 +129,11 @@ export default function Home() {
             <ActivityFeed limit={25} href="/activity" className="min-h-0 flex-1" />
             <Link href="/settings" className="block shrink-0"><SystemStatPanel /></Link>
           </div>
-          <div className="flex min-h-0 flex-col gap-4">
-            <NextUp deck={deck} orbState={orbState} name={preset.name} />
-            <LeadsCard fill topCount={12} />
-            <BrainChat personaName={preset.name} onSend={pulse} onVoiceActive={(v) => v && pulse()} />
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1 [scrollbar-width:thin]">
+            <CommandHero deck={deck} orbState={orbState} name={preset.name} />
+            <PipelineCard />
+            <div className="flex min-h-[240px] flex-1 flex-col"><LeadsCard fill topCount={12} /></div>
+            <BrainChat className="shrink-0" personaName={preset.name} onSend={pulse} onVoiceActive={(v) => v && pulse()} />
           </div>
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
             <Scoreboard data={sb ?? null} onChange={loadDeck} />
@@ -143,7 +145,8 @@ export default function Home() {
       {/* Phone: stacked cards; each opens its own page */}
       {isDesktop === false && (
         <main className="relative space-y-4 px-4 pb-28 pt-4">
-          <NextUp deck={deck} orbState={orbState} name={preset.name} />
+          <CommandHero deck={deck} orbState={orbState} name={preset.name} />
+          <div className="overflow-x-auto"><div className="min-w-[520px]"><PipelineCard /></div></div>
           <LeadsCard />
           <Scoreboard data={sb ?? null} onChange={loadDeck} />
           <QuickLinks ops={deck?.ops ?? []} pass={sb?.passAwaitingApprove} />

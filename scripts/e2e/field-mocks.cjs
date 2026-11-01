@@ -18,6 +18,10 @@ const body = (b) => `Hi there,\n\nI was looking at ${b} and noticed new customer
 async function install(page, calls) {
   // Stateful per page, like the server: approve → approved, hold → hold, edit → drafted (PASS cleared).
   const leads = base.map((l) => ({ ...l }));
+  // Hide the dev-only Next.js badge (it sits over the bottom tab bar in `next dev`).
+  await page.addInitScript(() => document.addEventListener("DOMContentLoaded", () => {
+    const st = document.createElement("style"); st.textContent = "nextjs-portal{display:none!important}"; document.head.appendChild(st);
+  }));
   const set = (id, patch) => Object.assign(leads.find((x) => x.contact_id === id) ?? {}, patch);
   await page.route("**/api/**", async (route) => {
     const req = route.request();
@@ -46,6 +50,7 @@ async function install(page, calls) {
       return json(200, {
         briefing: { lead: "3 PASS drafts waiting on your approval", items: [], next: ["Approve 3 Nick-PASS drafts", "Confirm warm-up before any send"] },
         ops: [], scoreboard: { sent: { value: 0, cap: 10 }, passAwaitingApprove: 3, approvedUnsent: 1, core: 5, website: 0, inboundUnanswered: 1, sequenceDue: 0, domainWarmed: false, warmNote: "Fixture" },
+        budget: { spentUsd: 0.42, capUsd: 5.5, warnUsd: 3, status: "ok" },
         readouts: { tier: "SONNET", activeAgents: 3, sent: "0/10", claude: "$0.42/$5.50" },
       });
     }
@@ -53,7 +58,12 @@ async function install(page, calls) {
       return json(200, { matched: [{ thread_id: "t1", from: "owner@test-plumb.example", subject: "Re: Quick question", snippet: "Sure, can you call me Tuesday afternoon?", last_at: "2026-11-01T15:00:00Z", unanswered: true, suggested: "reply_handoff_lisa", reason: "wants a call", contact: { contact_id: "test-plumb", name: "Test Plumbing Co", lane: "core", stage: "sent" } }], unmatched: [] });
     }
     if (p === "/api/automations") return json(200, { automations: [{ id: "morning-briefing", name: "Morning briefing" }] });
-    if (p === "/api/activity") return json(200, { items: [], activity: [] });
+    if (p === "/api/activity") return json(200, { activity: [
+      { id: "a1", kind: "generated", target: "Drafted Email 1 for Test Plumbing Co", agent: "darrell", at: new Date(Date.now() - 6e5).toISOString() },
+      { id: "a2", kind: "updated", target: "Nick PASS on Seed HVAC Services", because: "Specific, no price, clean lint", agent: "nick", at: new Date(Date.now() - 3e5).toISOString() },
+      { id: "a3", kind: "alert", target: "Send blocked for Demo Dental", because: "Warm-up not confirmed", agent: "ace", at: new Date(Date.now() - 6e4).toISOString() },
+    ] });
+    if (p === "/api/usage") return json(200, { tokens: 18400, spendUsd: 0.42, avgLatencyMs: 2100, calls: 7, modelTier: "standard" });
     return json(200, {});
   });
 }

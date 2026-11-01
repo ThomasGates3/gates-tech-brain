@@ -146,7 +146,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     : [];
 
   return (
-    <section data-testid="leads-board" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur">
+    <section data-testid="leads-board" className="deck-card rounded-2xl p-4 backdrop-blur">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
         <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Today&apos;s leads</span>

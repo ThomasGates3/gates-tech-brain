@@ -30,7 +30,7 @@ export function StatPanel({ title, stats, onClick, "data-testid": testId = "stat
     <div
       data-testid={testId}
       onClick={onClick}
-      className={`rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur ${onClick ? "cursor-pointer transition-colors hover:border-[var(--accent)]/50" : ""}`}
+      className={`deck-card rounded-2xl p-3 backdrop-blur ${onClick ? "cursor-pointer transition-colors hover:border-[var(--accent)]/50" : ""}`}
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
@@ -127,7 +127,7 @@ export function ActivityFeed({
   return (
     <div
       data-testid={testId}
-      className={`flex min-h-0 flex-col rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur ${className}`}
+      className={`flex min-h-0 flex-col deck-card rounded-2xl p-3 backdrop-blur ${className}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export function ActivityFeed({
               {hideBlocked ? `Show blocked (${blocked})` : `Hide blocked (${blocked})`}
             </button>
           )}
-          <span className="font-mono text-[10px] text-slate-600">live</span>
+          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--accent-soft)]"><span className="live-dot" />live</span>
         </div>
       </div>
       {filterable && (
@@ -166,14 +166,14 @@ export function ActivityFeed({
         </div>
       )}
       {loaded && items.length === 0 && (
-        <p className="py-6 text-center text-[12px] text-slate-600">Nothing yet. Bot calls, drafts and sends show up here.</p>
+        <p className="py-6 text-center text-[12px] text-[var(--mute)]">Nothing yet. Bot calls, drafts and sends show up here as they happen.</p>
       )}
       <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
         {shown.map((a) => {
           const m = KIND_META[a.kind];
           return (
-            <li key={a.id} data-testid={`activity-${a.id}`} className="flex gap-2.5">
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}33` }}>
+            <li key={a.id} data-testid={`activity-${a.id}`} className="log-line flex gap-2.5 border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
+              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
                 {m.icon}
               </span>
               <div className="min-w-0 flex-1">
@@ -188,6 +188,7 @@ export function ActivityFeed({
             </li>
           );
         })}
+        {loaded && <li className="log-cursor pl-2.5 font-mono text-[10px] text-[var(--mute)]" aria-hidden>listening for bot calls</li>}
       </ul>
     </div>
   );

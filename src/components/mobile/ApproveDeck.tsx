@@ -5,6 +5,10 @@ import { callTool } from "@/lib/ux/tools";
 import { approveQueue, approvedUnsent, capLeft, statusLine, swipeAction } from "@/lib/ux/approve-queue";
 import { toast } from "@/components/ui/Toast";
 import type { InboundItem } from "@/lib/field/inbound";
+import { RingGauge } from "@/components/deck/RingGauge";
+import { PipelineFlow } from "@/components/deck/PipelineFlow";
+import { BrainChat } from "@/components/deck/BrainChat";
+import { Check, Inbox, MessageCircle, Workflow } from "lucide-react";
 
 /**
  * Phone approve view (/m). One card per Nick-PASS draft: swipe right = Approve,
@@ -20,6 +24,8 @@ interface Lead {
 interface LeadsData { date: string; sentToday: number; gates: { domainWarmed: boolean; warmNote: string; dailyCap: number }; leads: Lead[] }
 interface Draft { subject: string; body: string; footer: string | null; nick: { verdict: string | null; note: string | null; on_current_draft: boolean }; lint: { rule: string; match: string }[] }
 type Kind = "approve" | "hold";
+type Tab = "approve" | "pipeline" | "inbox" | "nova";
+interface Budget { spentUsd: number; capUsd: number; warnUsd: number }
 interface Pending { id: string; kind: Kind; business: string; timer: ReturnType<typeof setTimeout> }
 
 const UNDO_MS = 5000;
@@ -30,6 +36,10 @@ export function ApproveDeck() {
   const [data, setData] = useState<LeadsData | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [budget, setBudget] = useState<string | null>(null);
+  const [budgetNum, setBudgetNum] = useState<Budget | null>(null);
+  const [tab, setTab] = useState<Tab>("approve");
+  const [pull, setPull] = useState(0);
+  const pullStart = useRef<number | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft | "error">>({});
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [replies, setReplies] = useState<InboundItem[]>([]);
@@ -48,22 +58,45 @@ export function ApproveDeck() {
     } catch (e) { setErr(errText(e)); }
   }, []);
 
-  useEffect(() => {
-    const first = setTimeout(load, 0);
-    const t = setInterval(load, 60_000);
-    fetch("/api/deck").then((r) => (r.ok ? r.json() : null)).then((d) => d?.readouts?.claude && setBudget(d.readouts.claude)).catch(() => {});
+  const loadExtras = useCallback(() => {
+    fetch("/api/deck").then((r) => (r.ok ? r.json() : null)).then((d) => {
+      if (d?.readouts?.claude) setBudget(d.readouts.claude);
+      if (d?.budget) setBudgetNum(d.budget);
+    }).catch(() => {});
     fetch("/api/inbound").then((r) => (r.ok ? r.json() : null)).then((r: { matched: InboundItem[]; unmatched: InboundItem[] } | null) => {
       if (!r) return;
       const rank = (i: InboundItem) => ["reply_handoff_lisa", "soft_hold", "suppress_opt_out"].indexOf(i.suggested);
       setReplies([...r.matched, ...r.unmatched].filter((i) => i.unanswered && i.suggested !== "ignore").sort((a, b) => rank(a) - rank(b) || b.last_at.localeCompare(a.last_at)));
     }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const first = setTimeout(() => { void load(); loadExtras(); }, 0);
+    const t = setInterval(load, 60_000);
     return () => { clearTimeout(first); clearInterval(t); };
-  }, [load]);
+  }, [load, loadExtras]);
+
+  // Pull down at the top of the page to refresh everything.
+  const onTouchStart = (e: React.TouchEvent) => { pullStart.current = window.scrollY <= 0 && tab !== "nova" ? e.touches[0].clientY : null; };
+  const onTouchMove = (e: React.TouchEvent) => { if (pullStart.current !== null) setPull(Math.max(0, Math.min(90, e.touches[0].clientY - pullStart.current))); };
+  const onTouchEnd = () => {
+    if (pull > 70) { buzz(8); void load(); loadExtras(); toast("Refreshed", { tone: "info", ms: 1500 }); }
+    pullStart.current = null;
+    setPull(0);
+  };
 
   const leads = data?.leads ?? [];
   const queue = approveQueue(leads, pendingIds);
   const ready = approvedUnsent(leads);
   const current = queue[0];
+
+  // Home-screen badge (installed app): how many drafts wait on Thomas.
+  const waitingCount = data ? queue.length : null;
+  useEffect(() => {
+    if (waitingCount === null) return;
+    const nav = navigator as Navigator & { setAppBadge?: (n: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+    (waitingCount ? nav.setAppBadge?.(waitingCount) : nav.clearAppBadge?.())?.catch(() => {});
+  }, [waitingCount]);
 
   // Load the full email for the top card and the one behind it.
   useEffect(() => {
@@ -121,11 +154,25 @@ export function ApproveDeck() {
   const cap = data?.gates.dailyCap ?? 0;
   const sent = data?.sentToday ?? 0;
 
+  const hotReplies = replies.filter((i) => i.suggested === "reply_handoff_lisa").length;
+
   return (
-    <div className="m-shell mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)]" data-testid="m-deck">
-      <header className="mb-3 flex items-center justify-between gap-3">
+    <div
+      className="m-shell relative isolate mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] pt-[calc(env(safe-area-inset-top)+12px)]"
+      data-testid="m-deck"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <div aria-hidden className="deck-bg" />
+      {pull > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center" style={{ transform: `translateY(${pull / 2}px)` }}>
+          <span className={`mt-2 rounded-full border px-3 py-1 font-mono text-[11px] ${pull > 70 ? "border-[var(--accent)]/60 text-[var(--accent)]" : "border-white/10 text-[var(--mute)]"}`}>{pull > 70 ? "Release to refresh" : "Pull to refresh"}</span>
+        </div>
+      )}
+      <header className="relative mb-3 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--mute)]">Gates Brain · Today</p>
+          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.22em] text-[var(--mute)]"><span className="live-dot" />Gates Brain · Today</p>
           <p className="mt-0.5 text-[15px] leading-snug text-slate-100" data-testid="m-status">
             {data ? statusLine({ waiting: queue.length, sent, cap, warmed }) : <span className="skeleton inline-block h-4 w-56 rounded" />}
           </p>
@@ -133,49 +180,133 @@ export function ApproveDeck() {
         </div>
         {/* Full page load on purpose: middleware sets the "desktop" cookie before redirecting. */}
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-        <a href="/?view=desktop" className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-[12px] text-slate-300" data-testid="m-desktop">Desktop view</a>
+        <a href="/?view=desktop" className="btn-ghost shrink-0 px-3 py-2 text-[12px]" data-testid="m-desktop">Desktop view</a>
       </header>
 
-      {err && <p className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-200">{err}</p>}
-      {data && !warmed && <WarmupGate note={data.gates.warmNote} onDone={load} />}
-      {replies.length > 0 && <InboxStrip items={replies} />}
+      {err && <p className="relative mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-200">{err}</p>}
 
-      <main className="relative flex flex-1 flex-col">
-        {!data && !err && <CardSkeleton />}
-        {data && current && (
-          <SwipeCard
-            key={current.contact_id}
-            lead={current}
-            draft={drafts[current.contact_id]}
-            left={queue.length}
-            onApprove={() => act(current, "approve")}
-            onHold={() => act(current, "hold")}
-            onEdit={() => setEditing(current)}
-          />
-        )}
-        {data && !current && (
-          <div className="glass flex flex-1 flex-col items-center justify-center rounded-2xl px-6 py-12 text-center" data-testid="m-empty">
-            <p className="text-[18px] font-medium text-slate-100">Nothing waiting on you</p>
-            <p className="mt-2 max-w-[28ch] text-[15px] text-[var(--mute)]">
-              Drafts show up here once Nick passes them.{ready.length ? " Your approved emails are ready to send below." : ""}
-            </p>
-          </div>
-        )}
-      </main>
-
-      {ready.length > 0 && (
-        <button
-          data-testid="m-send-open"
-          onClick={() => setSendOpen(true)}
-          className="mt-3 min-h-[56px] w-full rounded-2xl bg-[var(--accent)] text-[16px] font-semibold text-black active:scale-[.99] disabled:opacity-40"
-        >
-          Send {ready.length} approved
-        </button>
+      {tab === "approve" && (
+        <>
+          {data && !warmed && <WarmupGate note={data.gates.warmNote} onDone={load} />}
+          {replies.length > 0 && <InboxStrip items={replies} onAll={() => setTab("inbox")} />}
+          {ready.length > 0 && (
+            <button data-testid="m-send-open" onClick={() => setSendOpen(true)} className="btn-primary relative mb-3 min-h-[52px] w-full rounded-2xl text-[16px] font-semibold active:scale-[.99]">
+              Send {ready.length} approved →
+            </button>
+          )}
+          <main className="relative flex flex-1 flex-col">
+            {!data && !err && <CardSkeleton />}
+            {data && current && (
+              <SwipeCard
+                key={current.contact_id}
+                lead={current}
+                draft={drafts[current.contact_id]}
+                left={queue.length}
+                onApprove={() => act(current, "approve")}
+                onHold={() => act(current, "hold")}
+                onEdit={() => setEditing(current)}
+              />
+            )}
+            {data && !current && (
+              <div className="glass flex flex-1 flex-col items-center justify-center rounded-2xl px-6 py-12 text-center" data-testid="m-empty">
+                <p className="text-[18px] font-medium text-slate-100">Nothing waiting on you</p>
+                <p className="mt-2 max-w-[28ch] text-[15px] text-[var(--mute)]">
+                  Drafts show up here once Nick passes them.{ready.length ? " Your approved emails are ready to send above." : ""}
+                </p>
+              </div>
+            )}
+          </main>
+        </>
       )}
+
+      {tab === "pipeline" && (
+        <section className="relative space-y-4" data-testid="m-pipeline">
+          <div className="glass flex justify-around rounded-2xl py-4">
+            <RingGauge testId="m-ring-sends" label="Sends today" value={data ? sent : null} max={data ? cap : null} sub={data ? (warmed ? "warm-up ✓" : "warm-up ✗") : undefined} warnAt={0.9} />
+            <RingGauge testId="m-ring-claude" label="Claude today" value={budgetNum ? budgetNum.spentUsd : null} max={budgetNum ? budgetNum.capUsd : null} format={(n) => `$${n.toFixed(2)}`} warnAt={budgetNum && budgetNum.capUsd ? budgetNum.warnUsd / budgetNum.capUsd : 0.8} />
+          </div>
+          <div className="glass rounded-2xl p-4">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--mute)]">Today&apos;s pipeline</p>
+            <PipelineFlow leads={leads} sentToday={sent} vertical loading={!data} />
+          </div>
+          {data && !warmed && <WarmupGate note={data.gates.warmNote} onDone={load} />}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/?view=desktop" className="btn-ghost min-h-[48px] w-full rounded-2xl text-[15px]">Open the full dashboard</a>
+        </section>
+      )}
+
+      {tab === "inbox" && <RepliesList items={replies} />}
+
+      {tab === "nova" && (
+        <section className="relative h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-170px)]" data-testid="m-nova">
+          <BrainChat personaName="NOVA" className="h-full" />
+        </section>
+      )}
+
+      <TabBar tab={tab} onTab={(t) => { buzz(6); setTab(t); window.scrollTo({ top: 0 }); }} waiting={queue.length} replies={hotReplies || replies.length} />
 
       {editing && <EditSheet lead={editing} draft={drafts[editing.contact_id]} onClose={() => setEditing(null)} onSaved={() => { requested.current.delete(editing.contact_id); setDrafts((m) => { const n = { ...m }; delete n[editing.contact_id]; return n; }); setEditing(null); void load(); }} />}
       {sendOpen && <SendSheet leads={ready} warmed={warmed} left={capLeft(sent, cap)} onClose={() => { setSendOpen(false); void load(); }} />}
     </div>
+  );
+}
+
+const TABS: { id: Tab; label: string; Icon: typeof Check }[] = [
+  { id: "approve", label: "Approve", Icon: Check },
+  { id: "pipeline", label: "Pipeline", Icon: Workflow },
+  { id: "inbox", label: "Replies", Icon: Inbox },
+  { id: "nova", label: "NOVA", Icon: MessageCircle },
+];
+
+function TabBar({ tab, onTab, waiting, replies }: { tab: Tab; onTab: (t: Tab) => void; waiting: number; replies: number }) {
+  const badge: Partial<Record<Tab, number>> = { approve: waiting, inbox: replies };
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-[#03070f]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl" data-testid="m-tabs">
+      <div className="mx-auto grid max-w-md grid-cols-4">
+        {TABS.map(({ id, label, Icon }) => {
+          const on = tab === id;
+          return (
+            <button key={id} onClick={() => onTab(id)} data-testid={`m-tab-${id}`} aria-current={on ? "page" : undefined} className={`relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[11px] ${on ? "text-[var(--accent)]" : "text-[var(--mute)]"}`}>
+              {on && <span aria-hidden className="absolute top-0 h-0.5 w-10 rounded-full bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]" />}
+              <span className="relative">
+                <Icon size={22} strokeWidth={on ? 2.2 : 1.8} style={on ? { filter: "drop-shadow(0 0 6px rgba(0,229,255,.7))" } : undefined} />
+                {!!badge[id] && <span className="absolute -right-2.5 -top-1.5 min-w-[18px] rounded-full bg-[var(--accent)] px-1 text-center font-mono text-[10px] leading-[18px] text-black">{badge[id]}</span>}
+              </span>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+const REPLY_LABEL: Record<string, string> = { reply_handoff_lisa: "Wants to talk", soft_hold: "Not now", suppress_opt_out: "Opt-out" };
+
+function RepliesList({ items }: { items: InboundItem[] }) {
+  if (!items.length) {
+    return (
+      <div className="glass relative flex flex-1 flex-col items-center justify-center rounded-2xl px-6 py-12 text-center" data-testid="m-inbox-empty">
+        <p className="text-[18px] font-medium text-slate-100">No replies waiting</p>
+        <p className="mt-2 text-[15px] text-[var(--mute)]">Replies to your emails land here.</p>
+      </div>
+    );
+  }
+  return (
+    <ul className="relative space-y-2" data-testid="m-inbox-list">
+      {items.map((i) => (
+        <li key={i.thread_id}>
+          <a href={i.contact ? `/leads?open=${encodeURIComponent(i.contact.contact_id)}` : "/leads"} className={`glass block rounded-2xl px-4 py-3 ${i.suggested === "reply_handoff_lisa" ? "attn" : ""}`}>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="truncate text-[16px] text-slate-100">{i.contact?.name ?? i.from}</span>
+              <span className="shrink-0 font-mono text-[11px] text-[var(--accent-soft)]">{REPLY_LABEL[i.suggested] ?? i.suggested}</span>
+            </div>
+            {i.snippet && <p className="mt-1 line-clamp-3 text-[14px] text-[var(--body)]">“{i.snippet}”</p>}
+            <p className="mt-1 font-mono text-[11px] text-[var(--mute)]">{new Date(i.last_at).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -252,7 +383,7 @@ function SwipeCard({ lead, draft, left, onApprove, onHold, onEdit }: { lead: Lea
         </div>
       </article>
 
-      <div className="sticky bottom-0 z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] via-[#050914]/95 to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-4">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+60px)] z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] via-[#050914]/95 to-transparent px-4 pb-2 pt-4">
       <div className="grid grid-cols-3 gap-2">
         <button data-testid="m-hold" onClick={onHold} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Hold</button>
         <button data-testid="m-edit" onClick={onEdit} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Edit</button>
@@ -382,12 +513,15 @@ function WarmupGate({ note, onDone }: { note: string; onDone: () => void }) {
   );
 }
 
-function InboxStrip({ items }: { items: InboundItem[] }) {
+function InboxStrip({ items, onAll }: { items: InboundItem[]; onAll: () => void }) {
   const hot = items.filter((i) => i.suggested === "reply_handoff_lisa");
   const show = (hot.length ? hot : items).slice(0, 3);
   return (
-    <section className="mb-3" data-testid="m-inbox">
-      <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--mute)]">{hot.length ? `${hot.length} want to talk` : `${items.length} replies`}</p>
+    <section className="relative mb-3" data-testid="m-inbox">
+      <div className="mb-1.5 flex items-center justify-between">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--mute)]">{hot.length ? `${hot.length} want to talk` : `${items.length} replies`}</p>
+        <button onClick={onAll} className="text-[12px] text-[var(--accent-soft)]">See all</button>
+      </div>
       <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1">
         {show.map((i) => (
           <a key={i.thread_id} href={i.contact ? `/leads?open=${encodeURIComponent(i.contact.contact_id)}` : "/leads"} className="glass min-w-[78%] snap-start rounded-xl px-3 py-2.5">

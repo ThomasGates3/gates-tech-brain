@@ -17,7 +17,7 @@ export function QuickLinks({ ops, pass, drafted }: { ops: Stat[]; pass?: number;
     { href: "/settings", label: "Settings", sub: "model · voice" },
   ];
   return (
-    <div data-testid="quick-links" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-3 backdrop-blur">
+    <div data-testid="quick-links" className="deck-card rounded-2xl p-3 backdrop-blur">
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
         <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Go to</span>

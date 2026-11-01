@@ -36,7 +36,7 @@ export function Toaster() {
   }, []);
   if (!items.length) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+96px)] z-[90] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+10px)] z-[90] flex flex-col items-center gap-2 px-4 lg:top-auto lg:bottom-6" aria-live="polite">
       {items.map((t) => (
         <div key={t.id} data-testid="toast" role={t.tone === "error" ? "alert" : "status"} className={`toast-in pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-xl border bg-[#0a1224]/95 px-4 py-3 text-[14px] shadow-[0_12px_40px_-12px_rgba(0,0,0,.8)] backdrop-blur ${TONE[t.tone ?? "ok"]}`}>
           <span className="min-w-0 flex-1">{t.text}</span>

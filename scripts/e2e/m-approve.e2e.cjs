@@ -79,6 +79,16 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   assert.equal(sends[0].args.confirm, true);
   await page.getByText(/warm-up not confirmed/).first().waitFor();
 
+  // Tabs: pipeline shows the gauges and flow, replies lists the inbox, back to approve.
+  await page.getByTestId("m-send-sheet").getByRole("button", { name: /Done|Close/ }).first().click();
+  await page.getByTestId("m-tab-pipeline").click();
+  await page.getByTestId("m-ring-sends").waitFor();
+  await page.getByTestId("pipeline").waitFor();
+  await page.getByTestId("m-tab-inbox").click();
+  assert.match(await page.getByTestId("m-inbox-list").innerText(), /Tuesday afternoon/);
+  await page.getByTestId("m-tab-approve").click();
+  await page.getByTestId("m-status").waitFor();
+
   await ctx.close();
   await browser.close();
   console.log("m-approve e2e: all checks passed");
