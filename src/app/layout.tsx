@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/Toast";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,9 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Brain — Space Command Deck",
+  title: "Gates Tech Brain",
   description: "The nervous system for your business. Think. Research. Act.",
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
 };
+
+export const viewport: Viewport = { themeColor: "#050914", colorScheme: "dark" };
 
 export default function RootLayout({
   children,
@@ -29,6 +34,8 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#050914] text-white antialiased">
         {children}
+        <CommandPalette />
+        <Toaster />
       </body>
     </html>
   );
