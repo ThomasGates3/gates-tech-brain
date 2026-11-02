@@ -7,13 +7,16 @@
  */
 import { apiRateLimiter, securityHeaders, corsHeaders } from "@/lib/security";
 import { GATE_COOKIE, gateEnabled, verifyToken } from "@/lib/gate";
+import { isPhoneUA } from "@/lib/ux/approve-queue";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
+const VIEW_COOKIE = "brain_view";
 
 // /api/cron is protected by CRON_SECRET (not the password gate) so Vercel Cron can reach it.
 // /api/mcp checks its own auth (API key or OAuth) and must answer 401 + WWW-Authenticate itself.
 // OAuth discovery, client registration and token exchange are public by design (lib/oauth).
-const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json", "/api/mcp", "/.well-known", "/api/oauth/register", "/api/oauth/token"];
+const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json", "/api/mcp", "/.well-known", "/api/oauth/register", "/api/oauth/token", "/manifest.webmanifest"];
 // Machine APIs: a Bearer request is passed to the route, which verifies the key (env or DB) itself.
 const KEY_PATHS = ["/api/field/", "/api/v1/"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
@@ -44,6 +47,19 @@ export default async function middleware(req: NextRequest) {
       signIn.searchParams.set("callbackUrl", req.nextUrl.pathname + req.nextUrl.search);
       return NextResponse.redirect(signIn);
     }
+  }
+
+  // Phone view: phones opening / land on the /m approve view. "?view=desktop" (the
+  // "Desktop view" link) remembers the choice in a cookie; "?view=phone" clears it.
+  const view = req.nextUrl.searchParams.get("view");
+  if (view === "phone" || view === "desktop") {
+    const res = NextResponse.redirect(new URL(view === "phone" ? "/m" : "/", req.url));
+    if (view === "desktop") res.cookies.set(VIEW_COOKIE, "desktop", { path: "/", maxAge: 60 * 60 * 24 * 180, sameSite: "lax" });
+    else res.cookies.delete(VIEW_COOKIE);
+    return res;
+  }
+  if (pathname === "/" && req.method === "GET" && req.cookies.get(VIEW_COOKIE)?.value !== "desktop" && isPhoneUA(req.headers.get("user-agent"))) {
+    return NextResponse.redirect(new URL("/m", req.url));
   }
 
   const res = NextResponse.next();

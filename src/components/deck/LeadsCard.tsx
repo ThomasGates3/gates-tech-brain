@@ -43,35 +43,21 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
     return `Template drafts: ${r.succeeded} written${r.failed ? `, ${r.failed} failed` : ""}. Nick audits next.`;
   });
 
-  const mini: [string, string, string][] = [
-    ["Core / web", `${c.core ?? "—"} / ${c.website ?? "—"}`, "/leads"],
-    ["Undrafted", String(c.undrafted ?? "—"), "/leads?status=undrafted"],
-    ["At Nick", String((c.awaitingNick ?? 0) + (c.drafted ?? 0)), "/leads?status=drafted"],
-    ["PASS", String(c.passAwaitingApprove ?? "—"), "/leads?status=PASS"],
-  ];
 
   return (
-    <div data-testid="leads-card" className={`flex flex-col rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur ${fill ? "min-h-0 flex-1" : ""}`}>
+    <div data-testid="leads-card" className={`flex flex-col deck-card rounded-2xl p-4 backdrop-blur ${fill ? "min-h-0 flex-1" : ""}`}>
       <div className="mb-3 flex items-center justify-between">
         <a href="/leads" data-testid="leads-open" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
-          <span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s leads →
+          <span className="h-1 w-4 bg-[var(--accent)]" />Your queue →
         </a>
         <span className="font-mono text-[10px] text-slate-500">{data ? `${c.total} · ${data.date}` : "…"}</span>
-      </div>
-      <div className="mb-3 grid grid-cols-4 gap-2">
-        {mini.map(([label, value, href]) => (
-          <a key={label} href={href} className="min-h-[44px] rounded-lg border border-white/[0.06] bg-black/30 px-2 py-2 hover:border-[var(--accent)]/40">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
-            <p className="mt-0.5 font-mono text-base leading-none text-slate-100">{value}</p>
-          </a>
-        ))}
       </div>
       <ul className={`mb-3 space-y-1.5 ${fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`} data-testid="leads-top">
         {top.map((l) => (
           <li key={l.contact_id} className="flex items-center gap-2">
             <a href={`/leads?open=${encodeURIComponent(l.contact_id)}`} title="Read the email" className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03] lg:min-h-0">
               <span className="truncate text-[13px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span></span>
-              <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>
+              {l.email1_status !== "PASS" && <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>}
             </a>
             {l.email1_status === "PASS" && (
               <button

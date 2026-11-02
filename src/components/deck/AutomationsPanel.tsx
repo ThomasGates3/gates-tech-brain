@@ -46,7 +46,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
   return (
     <div
       data-testid={testId}
-      className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur"
+      className="deck-card rounded-2xl p-4 backdrop-blur"
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">

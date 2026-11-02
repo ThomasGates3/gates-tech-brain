@@ -52,6 +52,7 @@ export async function GET() {
       domainWarmed: snap.gates.domainWarmed,
       warmNote: snap.gates.warmNote,
     },
+    budget: { spentUsd: snap.claudeBudget.spentTodayUsd, capUsd: snap.claudeBudget.capUsd, warnUsd: snap.claudeBudget.warnUsd, status: snap.claudeBudget.status },
     readouts: { tier: tier.toUpperCase(), activeAgents: active, sent: `${snap.sentToday}/${snap.dailyCap}`, claude: `$${snap.claudeBudget.spentTodayUsd.toFixed(2)}/$${snap.claudeBudget.capUsd.toFixed(2)}` },
   });
 }

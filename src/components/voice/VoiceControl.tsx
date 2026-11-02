@@ -384,7 +384,7 @@ function MicIcon({
     : speaking
       ? "#a0c3ec"
       : processing
-        ? "#c4b5fd"
+        ? "#7fdfff"
         : "#7a93ad";
 
   return (

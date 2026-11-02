@@ -5,6 +5,7 @@ import { Fragment } from "react";
 import { LeadActions } from "./LeadActions";
 import { DraftPreview } from "./DraftPreview";
 import { callTool } from "@/lib/ux/tools";
+import { toast } from "@/components/ui/Toast";
 
 /** Control Center "Today's leads": every lead for a date with lane, state and next action (reads the Brain DB). */
 interface Lead {
@@ -18,7 +19,7 @@ interface Data { date: string; counts: Counts; sentToday: number; gates: { domai
 
 const STATUSES = ["undrafted", "drafted", "atNick", "PASS", "approved", "sent", "hold", "kill"];
 const STATUS_STYLE: Record<string, string> = {
-  undrafted: "bg-white/5 text-slate-400", drafted: "bg-sky-400/10 text-sky-300", atNick: "bg-violet-400/10 text-violet-300",
+  undrafted: "bg-white/5 text-slate-400", drafted: "bg-sky-400/10 text-sky-300", atNick: "bg-blue-400/10 text-blue-200",
   PASS: "bg-[var(--accent)]/15 text-[var(--accent)]", approved: "bg-emerald-400/15 text-emerald-300", sent: "bg-emerald-400/5 text-emerald-200/70",
   hold: "bg-amber-400/10 text-amber-200", kill: "bg-red-500/10 text-red-300",
 };
@@ -73,6 +74,51 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     return () => { clearTimeout(first); clearInterval(t); };
   }, [load]);
 
+  // Keyboard flow (desktop): J/K move, A approve (Nick PASS only), H hold, E open the email.
+  const [kbd, setKbd] = useState(-1);
+  useEffect(() => {
+    const re = () => void load();
+    window.addEventListener("brain:refresh", re);
+    return () => window.removeEventListener("brain:refresh", re);
+  }, [load]);
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      const list = data?.leads ?? [];
+      if (!list.length) return;
+      const k = e.key.toLowerCase();
+      if (k === "j" || k === "k") {
+        e.preventDefault();
+        setKbd((i) => {
+          const n = Math.max(0, Math.min(list.length - 1, i + (k === "j" ? 1 : -1)));
+          document.querySelector(`[data-testid="lead-${list[n].contact_id}"]`)?.scrollIntoView({ block: "nearest" });
+          return n;
+        });
+        return;
+      }
+      const l = list[kbd];
+      if (!l) return;
+      const run = async (label: string, name: string, args: Record<string, unknown>) => {
+        try { await callTool(name, { contact_id: l.contact_id, ...args }); toast(`${label}: ${l.business}`); await load(); }
+        catch (x) { toast(x instanceof Error ? x.message : String(x), { tone: "error", ms: 6000 }); }
+      };
+      if (k === "e") { e.preventDefault(); toggle(l.contact_id); }
+      else if (k === "a") {
+        e.preventDefault();
+        if (l.email1_status === "PASS") void run("Approved", "brain_approve", {});
+        else toast(`${l.business} isn't at Nick PASS yet (${l.email1_status}).`, { tone: "info" });
+      } else if (k === "h") {
+        e.preventDefault();
+        if (["undrafted", "drafted", "atNick", "PASS", "approved"].includes(l.email1_status)) void run("Held", "brain_hold", { hold: true });
+        else toast(`${l.business} can't be held from ${l.email1_status}.`, { tone: "info" });
+      }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, [data, kbd, load]);
+
   const c = data?.counts;
   const warmed = Boolean(data?.gates.domainWarmed);
   const nickReady = (data?.leads ?? []).filter((l) => l.email1_status === "drafted" && l.lint_issues === 0 && !l.revise_pending).length;
@@ -100,7 +146,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     : [];
 
   return (
-    <section data-testid="leads-board" className="rounded-xl border border-[var(--accent-deep)]/30 bg-[var(--panel)]/70 p-4 backdrop-blur">
+    <section data-testid="leads-board" className="deck-card rounded-2xl p-4 backdrop-blur">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
         <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Today&apos;s leads</span>
@@ -139,7 +185,9 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       </div>
 
       {err && <p className="rounded-md bg-red-500/10 px-3 py-2 text-[12px] text-red-300">{err}</p>}
+      {!data && !err && <div className="space-y-2" aria-busy="true" data-testid="board-skeleton">{[0, 1, 2, 3].map((i) => <span key={i} className="skeleton block h-10 w-full rounded-md" />)}</div>}
       {data && !data.leads.length && <p className="rounded-md bg-black/30 px-3 py-6 text-center text-[13px] text-slate-500">No leads for this filter. Ace loads the morning pack, Ashley and Prospectacle upsert leads.</p>}
+      {data && data.leads.length > 0 && wide && <p className="mb-2 font-mono text-[10px] text-slate-500">Keys: J/K move · A approve · H hold · E open email · ⌘K command palette</p>}
 
       {/* Desktop table */}
       {data && data.leads.length > 0 && wide && (
@@ -149,9 +197,9 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
               <tr>{["Lead", "Lane", "Source", "Tier", "Email 1", "Nick", "Subject", "Next action", "Actions"].map((h) => <th key={h} className="px-2 py-1.5 font-normal">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {data.leads.map((l) => (
+              {data.leads.map((l, i) => (
                 <Fragment key={l.contact_id}>
-                <tr data-testid={`lead-${l.contact_id}`} data-status={l.email1_status} className={`border-t border-white/[0.05] align-top hover:bg-white/[0.02] ${openId === l.contact_id ? "bg-white/[0.03]" : ""}`}>
+                <tr data-testid={`lead-${l.contact_id}`} data-kbd-active={i === kbd ? "true" : undefined} onClick={() => setKbd(i)} data-status={l.email1_status} className={`border-t border-white/[0.05] align-top hover:bg-white/[0.02] ${openId === l.contact_id ? "bg-white/[0.03]" : ""}`}>
                   <td className="px-2 py-2">
                     <button onClick={() => toggle(l.contact_id)} data-testid={`open-${l.contact_id}`} className="text-left text-slate-100 hover:text-[var(--accent-soft)]">
                       <span className="mr-1 font-mono text-[10px] text-slate-500">{openId === l.contact_id ? "▾" : "▸"}</span>{l.business}

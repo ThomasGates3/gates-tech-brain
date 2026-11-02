@@ -20,7 +20,7 @@ const STAGE_LABEL: Record<Stage, string> = {
 const STAGE_STYLE: Record<Stage, string> = {
   new: "border-white/15 text-slate-300",
   drafted: "border-sky-400/40 text-sky-300",
-  nick: "border-violet-400/40 text-violet-300",
+  nick: "border-blue-400/40 text-blue-200",
   approved: "border-[#5cefff]/60 text-[#7fdfff]",
   sending: "border-[#5cefff]/60 text-[#7fdfff] animate-pulse",
   sent: "border-emerald-400/40 text-emerald-300",
