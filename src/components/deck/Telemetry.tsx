@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { groupActivity } from "@/lib/activity/group";
 
 /**
  * Corner telemetry + outcome-phrased activity feed for the JARVIS deck.
@@ -69,6 +70,7 @@ export interface Activity {
   because?: string; // rationale for "updated … because …"
   agent?: string; // which specialist
   at: string; // "2m", "just now"
+  ts: string; // raw ISO time, used to group same-day items
 }
 
 const KIND_META: Record<ActivityKind, { verb: string; color: string; icon: string }> = {
@@ -98,6 +100,8 @@ export function ActivityFeed({
   const [agent, setAgent] = useState("");
   const [kind, setKind] = useState("");
   const [lookups, setLookups] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const toggleOpen = (key: string) => setOpen((prev) => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const [hideBlocked, setHideBlocked] = useState(() => { try { return typeof window !== "undefined" && localStorage.getItem(HIDE_KEY) === "1"; } catch { return false; } });
   const toggleBlocked = () => setHideBlocked((v) => { try { localStorage.setItem(HIDE_KEY, v ? "0" : "1"); } catch {} return !v; });
 
@@ -108,7 +112,7 @@ export function ActivityFeed({
         const res = await fetch(`/api/activity?limit=${limit}&lookups=${lookups ? 1 : 0}`);
         const data = await res.json();
         if (alive) {
-          setItems((data.activity ?? []).map((a: Activity) => ({ ...a, at: relAge(a.at) })));
+          setItems((data.activity ?? []).map((a: Activity) => ({ ...a, ts: a.at, at: relAge(a.at) })));
           setLoaded(true);
         }
       } catch {
@@ -123,6 +127,7 @@ export function ActivityFeed({
   const agents = [...new Set(items.map((a) => a.agent).filter(Boolean))] as string[];
   const blocked = items.filter(isWaitingBlock).length;
   const shown = items.filter((a) => (!agent || a.agent === agent) && (!kind || a.kind === kind) && !(hideBlocked && isWaitingBlock(a)));
+  const entries = groupActivity(shown);
 
   return (
     <div
@@ -169,27 +174,60 @@ export function ActivityFeed({
         <p className="py-6 text-center text-[12px] text-[var(--mute)]">Nothing yet. Bot calls, drafts and sends show up here as they happen.</p>
       )}
       <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
-        {shown.map((a) => {
-          const m = KIND_META[a.kind];
+        {entries.map((e) => {
+          if (e.type === "single") return <ActivityRow key={e.item.id} a={e.item} />;
+          const isOpen = open.has(e.key);
+          const first = e.items[0];
+          const m = KIND_META[first.kind];
+          const becauses = [...new Set(e.items.map((i) => i.because ?? ""))];
           return (
-            <li key={a.id} data-testid={`activity-${a.id}`} className="log-line flex gap-2.5 border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
-              <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
-                {m.icon}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] leading-snug" style={a.kind === "alert" ? { color: m.color } : undefined}>
-                  <span className={a.kind === "alert" ? "" : "text-slate-100"}>{a.target}</span>
-                </p>
-                {a.because && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{a.because}</p>}
-                <p className="mt-0.5 font-mono text-[10px] text-slate-600">
-                  {a.agent ? `${a.agent.charAt(0).toUpperCase()}${a.agent.slice(1)} · ` : ""}{a.at}
-                </p>
-              </div>
+            <li key={e.key} data-testid="activity-group" className="border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
+              <button type="button" onClick={() => toggleOpen(e.key)} aria-expanded={isOpen} data-testid="activity-group-toggle"
+                className="log-line flex w-full gap-2.5 text-left">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
+                  {m.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-start justify-between gap-2 text-[13px] leading-snug" style={first.kind === "alert" ? { color: m.color } : undefined}>
+                    <span className={first.kind === "alert" ? "" : "text-slate-100"}>{e.summary}</span>
+                    <span className={`mt-0.5 shrink-0 font-mono text-[10px] text-[var(--accent-soft)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden>▾</span>
+                  </p>
+                  {becauses.length === 1 && becauses[0] && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{becauses[0]}</p>}
+                  <p className="mt-0.5 font-mono text-[10px] text-slate-600">
+                    {first.agent ? `${first.agent.charAt(0).toUpperCase()}${first.agent.slice(1)} · ` : ""}latest {first.at} · {isOpen ? "tap to collapse" : `tap to see all ${e.items.length}`}
+                  </p>
+                </div>
+              </button>
+              {isOpen && (
+                <ul className="mt-2 ml-2 space-y-2 border-l border-[var(--accent)]/20 pl-2.5" data-testid="activity-group-items">
+                  {e.items.map((a) => <ActivityRow key={a.id} a={a} />)}
+                </ul>
+              )}
             </li>
           );
         })}
         {loaded && <li className="log-cursor pl-2.5 font-mono text-[10px] text-[var(--mute)]" aria-hidden>listening for bot calls</li>}
       </ul>
     </div>
+  );
+}
+
+function ActivityRow({ a }: { a: Activity }) {
+  const m = KIND_META[a.kind];
+  return (
+    <li data-testid={`activity-${a.id}`} className="log-line flex gap-2.5 border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
+      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
+        {m.icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] leading-snug" style={a.kind === "alert" ? { color: m.color } : undefined}>
+          <span className={a.kind === "alert" ? "" : "text-slate-100"}>{a.target}</span>
+        </p>
+        {a.because && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{a.because}</p>}
+        <p className="mt-0.5 font-mono text-[10px] text-slate-600">
+          {a.agent ? `${a.agent.charAt(0).toUpperCase()}${a.agent.slice(1)} · ` : ""}{a.at}
+        </p>
+      </div>
+    </li>
   );
 }
