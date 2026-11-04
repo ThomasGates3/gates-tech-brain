@@ -90,8 +90,11 @@ function toRow(page: { id: string; properties: Record<string, Prop> }): NotionRo
   };
 }
 
-/** All rows dated `date` (the morning pack). Soft rows included — the console holds them. */
-export async function fetchPack(date: string): Promise<NotionRow[]> {
+/**
+ * Rows dated `date` (the morning pack), or with `sinceDays` > 0 every row dated from `date - sinceDays`
+ * through `date`, so a missed pull catches up. Soft rows included — the console holds them.
+ */
+export async function fetchPack(date: string, sinceDays = 0): Promise<NotionRow[]> {
   const ds = fieldEnv.notionDataSource();
   if (!ds) throw new Error("NOTION_COLD_EMAILS_DATA_SOURCE_ID is not set.");
   const rows: NotionRow[] = [];
@@ -100,7 +103,9 @@ export async function fetchPack(date: string): Promise<NotionRow[]> {
     const data = await notion(`/data_sources/${ds}/query`, {
       method: "POST",
       body: {
-        filter: { property: "Date", date: { equals: date } },
+        filter: sinceDays > 0
+          ? { and: [{ property: "Date", date: { on_or_after: shiftDate(date, -sinceDays) } }, { property: "Date", date: { on_or_before: date } }] }
+          : { property: "Date", date: { equals: date } },
         page_size: 100,
         ...(cursor ? { start_cursor: cursor } : {}),
       },
@@ -109,6 +114,12 @@ export async function fetchPack(date: string): Promise<NotionRow[]> {
     cursor = data.has_more ? String(data.next_cursor) : undefined;
   } while (cursor);
   return rows;
+}
+
+function shiftDate(date: string, days: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 /** Notion rich_text caps each text object at 2000 chars. */

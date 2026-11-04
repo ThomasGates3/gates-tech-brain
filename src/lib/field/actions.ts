@@ -266,10 +266,13 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   }
 }
 
-/** Load the day's pack from Notion (High/Med/Soft rows) or a pasted CSV. */
+/** A Notion pull also picks up rows from this many days back, so skipped days carry over. Re-imports are no-ops. */
+export const NOTION_CATCHUP_DAYS = 14;
+
+/** Load the day's pack from Notion (High/Med/Soft rows, plus any missed in the last NOTION_CATCHUP_DAYS) or a pasted CSV. */
 export async function loadPack(source: "notion" | "csv", date: string, csv?: string) {
   return source === "notion"
-    ? importRows(await fetchPack(date), "notion", date)
+    ? importRows(await fetchPack(date, NOTION_CATCHUP_DAYS), "notion", date)
     : // A pasted pack is "the pack for the selected day", whatever its Date column says.
       importRows(csvToRows(csv ?? "").map((r) => ({ ...r, date: null })), "csv", date);
 }
