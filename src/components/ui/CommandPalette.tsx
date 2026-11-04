@@ -29,8 +29,11 @@ export function CommandPalette() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setQ(""); setIdx(0); setOpen((o) => !o); }
       else if (e.key === "Escape") setOpen(false);
     };
+    // The phone tab bar's Search button opens the palette too.
+    const openFromUi = () => { setQ(""); setIdx(0); setOpen(true); };
     window.addEventListener("keydown", on);
-    return () => window.removeEventListener("keydown", on);
+    window.addEventListener("brain:palette", openFromUi);
+    return () => { window.removeEventListener("keydown", on); window.removeEventListener("brain:palette", openFromUi); };
   }, []);
 
   useEffect(() => {

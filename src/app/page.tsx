@@ -144,7 +144,7 @@ export default function Home() {
 
       {/* Phone: stacked cards; each opens its own page */}
       {isDesktop === false && (
-        <main className="relative space-y-4 px-4 pb-28 pt-4">
+        <main className="relative space-y-4 px-4 pb-4 pt-4">
           <CommandHero deck={deck} orbState={orbState} name={preset.name} />
           <div className="overflow-x-auto"><div className="min-w-[520px]"><PipelineCard /></div></div>
           <LeadsCard />
