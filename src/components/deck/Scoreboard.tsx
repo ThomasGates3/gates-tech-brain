@@ -6,6 +6,7 @@ import { callTool } from "@/lib/ux/tools";
 import { FolderPanel } from "@/components/deck/FolderPanel";
 import { RepliesStrip } from "@/components/deck/RepliesStrip";
 import type { Lead } from "@/lib/field/leads";
+import { sortIntoFolders, type FolderId } from "@/lib/field/folders";
 
 /** Control Center scoreboard: the Field numbers that decide Thomas's next move. */
 export interface ScoreboardData {
@@ -22,44 +23,20 @@ export interface ScoreboardData {
 
 interface LeadsData { date: string; counts?: { carried?: number }; leads: Lead[] }
 
-type FolderId = "new" | "approved" | "sent" | "followup";
 const blue = (colors: string[], angle: number): ArtRecipe => ({ style: "marble", colors, scale: 0.7, warp: 3.2, angle, gloss: 0.5, veins: 0.35 });
 // A ladder of blues, light to deep, with Follow Up the brightest (silvery ice) so it stands out.
 const FOLDERS: { id: FolderId; label: string; art: ArtRecipe; glow: string; href: string }[] = [
-  { id: "new", label: "New Leads", glow: "rgba(0,229,255,.9)", href: "/leads", art: blue(["#031a2e", "#055a8c", "#18a8e0", "#0a3d66", "#5fd4ff", "#b8ecff", "#e6f9ff"], -0.5) },
-  { id: "approved", label: "Approved", glow: "rgba(70,140,255,.9)", href: "/leads?status=approved", art: blue(["#020c24", "#0a2f78", "#2a6bd6", "#071a4a", "#4f95ff", "#a9c9ff", "#e3eeff"], 0.8) },
-  { id: "sent", label: "Sent", glow: "rgba(90,110,255,.8)", href: "/leads?status=sent", art: blue(["#01040f", "#06113a", "#13286e", "#050b26", "#2a4297", "#6f86d6", "#c4cff5"], 2.1) },
-  { id: "followup", label: "Follow Up", glow: "rgba(255,255,255,.95)", href: "/leads?status=sent", art: { style: "streak", colors: ["#f7f9fc", "#dfe7f2", "#a9b9d0", "#eef2f8", "#c6d2e4", "#ffffff"], scale: 0.7, warp: 1.6, angle: 0.35, gloss: 0.3, veins: 0 } },
+  { id: "new", label: "New Leads", glow: "rgba(0,229,255,.9)", href: "/leads?folder=new", art: blue(["#031a2e", "#055a8c", "#18a8e0", "#0a3d66", "#5fd4ff", "#b8ecff", "#e6f9ff"], -0.5) },
+  { id: "approved", label: "Approved", glow: "rgba(70,140,255,.9)", href: "/leads?folder=approved", art: blue(["#020c24", "#0a2f78", "#2a6bd6", "#071a4a", "#4f95ff", "#a9c9ff", "#e3eeff"], 0.8) },
+  { id: "sent", label: "Sent", glow: "rgba(90,110,255,.8)", href: "/leads?folder=sent", art: blue(["#01040f", "#06113a", "#13286e", "#050b26", "#2a4297", "#6f86d6", "#c4cff5"], 2.1) },
+  { id: "followup", label: "Follow Up", glow: "rgba(255,255,255,.95)", href: "/leads?folder=followup", art: { style: "streak", colors: ["#f7f9fc", "#dfe7f2", "#a9b9d0", "#eef2f8", "#c6d2e4", "#ffffff"], scale: 0.7, warp: 1.6, angle: 0.35, gloss: 0.3, veins: 0 } },
 ];
-const NEW_STATUSES = ["undrafted", "drafted", "atNick", "PASS"];
-const STATUS_LABEL: Record<string, string> = { undrafted: "Needs draft", drafted: "Drafted", atNick: "At Nick", PASS: "Needs approval", approved: "Ready to send", sent: "Sent" };
-
-type Sorted = Record<FolderId, { lead: Lead; file: FolderFile }[]>;
-
-/** The Sent folder shows a rolling week of Email 1s; anything with a follow-up due moves to Follow Up regardless. */
-const SENT_FOLDER_DAYS = 7;
-const shortDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-const daysBefore = (date: string, n: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
-
-/**
- * Sort the rolling board into the four folders. Unfinished leads from earlier packs stay in their folder
- * (tagged with their pack day) until they move on, so skipped days add up. Held and killed leads stay out.
- */
-function sortLeads(data: LeadsData | null): Sorted {
-  const out: Sorted = { new: [], approved: [], sent: [], followup: [] };
-  const weekAgo = data ? daysBefore(data.date, SENT_FOLDER_DAYS) : "";
-  for (const l of data?.leads ?? []) {
-    const href = `/leads?open=${encodeURIComponent(l.contact_id)}`;
-    const from = data && l.pack_date < data.date ? ` · ${shortDate(l.pack_date)}` : "";
-    const put = (id: FolderId, meta: string) => out[id].push({ lead: l, file: { name: l.business, meta, href } });
-    if (NEW_STATUSES.includes(l.email1_status)) put("new", STATUS_LABEL[l.email1_status] + from);
-    else if (l.email1_status === "approved") put("approved", STATUS_LABEL.approved + from);
-    else if (l.email1_status === "sent") {
-      const due = l.next_action.match(/^Follow-up due Email (\d) (\d{4}-\d{2}-\d{2})/);
-      if (due && data && due[2] <= data.date) put("followup", `Email ${due[1]} due`);
-      else if (l.replied || (l.sent_at ?? "").slice(0, 10) >= weekAgo) put("sent", l.replied ? "Replied" : "Sent");
-    }
-  }
+/** Dashboard folders show a rolling week of Sent. */
+function sortLeads(data: LeadsData | null): Record<FolderId, { lead: Lead; file: FolderFile }[]> {
+  const sorted = sortIntoFolders(data?.leads ?? [], data?.date ?? "");
+  const out = { new: [], approved: [], sent: [], followup: [] } as Record<FolderId, { lead: Lead; file: FolderFile }[]>;
+  if (!data) return out;
+  for (const id of Object.keys(sorted) as FolderId[]) out[id] = sorted[id].map((x) => ({ lead: x.lead, file: { name: x.lead.business, meta: x.meta, href: x.href } }));
   return out;
 }
 
@@ -115,7 +92,7 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
           const files = sorted[f.id].map((x) => x.file);
           const ids = files.map((x) => x.href).join("|");
           return (
-            <div key={f.id} data-testid={`folder-${f.id}`} className="relative hover:z-20 focus-within:z-20">
+            <div key={f.id} data-testid={`folder-${f.id}`} onDoubleClick={() => { window.location.href = f.href; }} title="Double-click to open in Leads" className="relative hover:z-20 focus-within:z-20">
               <GlassFolder
                 key={`${f.id}:${folderW}:${ids}`}
                 label={f.label}
