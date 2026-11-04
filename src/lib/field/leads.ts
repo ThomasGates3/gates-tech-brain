@@ -4,10 +4,10 @@
  * brain_field_queue and the Control Center "Today's leads" board, so they always agree.
  */
 import { todayIn, fieldEnv } from "./config";
-import { listQueue, listSteps } from "./store";
+import { listOpen, listQueue, listSteps } from "./store";
 import { lintDraft } from "./lint";
 import { getGates } from "./gates";
-import { dueDate } from "./sequence";
+import { addDays, dueDate } from "./sequence";
 import type { FieldContact, Lane, Priority } from "./types";
 
 export const EMAIL1_STATUSES = ["undrafted", "drafted", "atNick", "PASS", "approved", "sent", "hold", "kill"] as const;
@@ -94,11 +94,19 @@ const sameBusiness = (a: string, b: string) => {
 };
 const PROGRESS: Record<Email1Status, number> = { sent: 7, approved: 6, PASS: 5, atNick: 4, drafted: 3, undrafted: 2, hold: 1, kill: 0 };
 
-export interface LeadFilter { date?: string; lane?: Lane; status?: Email1Status; tier?: Priority }
+/**
+ * scope "day" (default): only `date`'s pack. scope "open": the rolling board, every unfinished lead from
+ * `date` or earlier (skipped days add up instead of resetting) plus Email 1s sent in the last SENT_WINDOW_DAYS.
+ */
+export interface LeadFilter { date?: string; lane?: Lane; status?: Email1Status; tier?: Priority; scope?: "day" | "open" }
+
+/** How far back the rolling board keeps sent leads: past the Day 12 Email 4, with slack for late follow-ups. */
+export const SENT_WINDOW_DAYS = 21;
 
 export async function leadsFor(f: LeadFilter = {}) {
   const date = f.date ?? todayIn();
-  const [contacts, gates] = await Promise.all([listQueue(date), getGates()]);
+  const contacts$ = f.scope === "open" ? listOpen(date, `${addDays(date, -SENT_WINDOW_DAYS)}T00:00:00.000Z`) : listQueue(date);
+  const [contacts, gates] = await Promise.all([contacts$, getGates()]);
   const sentIds = contacts.filter((c) => c.stage === "sent").map((c) => c.id);
   const steps = await listSteps(sentIds);
   const ctxBase = { domainWarmed: gates.domainWarmed, aceCanSend: fieldEnv.aceCanSend() };
@@ -160,7 +168,8 @@ export async function leadsFor(f: LeadFilter = {}) {
     hold: by((l) => l.email1_status === "hold"),
     kill: by((l) => l.email1_status === "kill"),
     duplicates: by((l) => l.duplicate_of.length > 0),
+    carried: by((l) => l.pack_date < date && l.email1_status !== "sent"),
   };
   const leads = all.filter((l) => (!f.lane || l.lane === f.lane) && (!f.status || l.email1_status === f.status) && (!f.tier || l.tier === f.tier));
-  return { date, counts, gates: { domainWarmed: gates.domainWarmed, warmNote: gates.warmNote, dailyCap: gates.dailyCap, aceCanSend: ctxBase.aceCanSend }, leads };
+  return { date, scope: f.scope ?? "day", counts, gates: { domainWarmed: gates.domainWarmed, warmNote: gates.warmNote, dailyCap: gates.dailyCap, aceCanSend: ctxBase.aceCanSend }, leads };
 }

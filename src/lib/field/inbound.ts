@@ -8,6 +8,7 @@ import { listThreads } from "./agentmail";
 import { fieldEnv } from "./config";
 import { addSuppression, contactsByEmail, markReplied } from "./store";
 import { notifyOnce } from "@/lib/notify";
+import { getSetting, setSetting } from "@/lib/settings";
 import { advance, isWarmupSeed } from "@/lib/roadmap";
 
 export type InboundAction = "reply_handoff_lisa" | "soft_hold" | "suppress_opt_out" | "ignore";
@@ -47,6 +48,28 @@ export interface InboundItem {
   reason: string;
   contact?: { contact_id: string; name: string; lane: string; stage: string };
   suppressed?: boolean;
+  /** Thomas X'd it out on the dashboard. Comes back only if the thread gets a newer message. */
+  dismissed?: boolean;
+}
+
+// ── Dismissed threads (settings row: { threadId: lastAt at dismissal }) ─────
+const DISMISSED_KEY = "inbound_dismissed";
+const DISMISSED_KEEP = 300;
+/** unansweredCount() cache; cleared on dismiss. */
+let cache: { at: number; n: number } | null = null;
+
+async function dismissedMap(): Promise<Record<string, string>> {
+  try { return JSON.parse((await getSetting(DISMISSED_KEY)) ?? "{}"); } catch { return {}; }
+}
+const isDismissed = (m: Record<string, string>, threadId: string, lastAt: string) => Boolean(m[threadId] && m[threadId] >= lastAt);
+
+/** Hide a reply from the "waiting" strip. Doesn't touch the email, the lead or suppressions. */
+export async function dismissInbound(threadId: string, lastAt: string): Promise<void> {
+  const m = await dismissedMap();
+  m[threadId] = lastAt;
+  const kept = Object.entries(m).sort((a, b) => b[1].localeCompare(a[1])).slice(0, DISMISSED_KEEP);
+  await setSetting(DISMISSED_KEY, JSON.stringify(Object.fromEntries(kept)));
+  cache = null;
 }
 
 export async function fetchInbound(opts: { inbox?: string; limit?: number; confirmSuppress?: boolean; by: string }) {
@@ -56,6 +79,7 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
   const senderOf = (t: (typeof threads)[number]) => t.senders.find((s) => s && s !== inbox) ?? t.lastFrom;
   const contacts = await contactsByEmail(threads.map(senderOf));
   const byEmail = new Map(contacts.map((c) => [c.email.toLowerCase(), c]));
+  const dismissed = await dismissedMap();
 
   const matched: InboundItem[] = [];
   const unmatched: InboundItem[] = [];
@@ -63,6 +87,7 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
     const from = senderOf(t);
     const { action, reason } = classifyReply(t.lastFrom === inbox ? t.preview : t.lastText, from);
     const item: InboundItem = { thread_id: t.threadId, from, subject: t.subject, snippet: firstWords(t.lastText || t.preview).slice(0, 280), last_at: t.lastAt, unanswered: t.lastFrom !== inbox, suggested: action, reason };
+    if (isDismissed(dismissed, t.threadId, t.lastAt)) Object.assign(item, { dismissed: true, unanswered: false });
     const c = byEmail.get(from);
     if (c) {
       item.contact = { contact_id: c.id, name: c.name, lane: c.lane, stage: c.stage };
@@ -82,14 +107,14 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
   return { inbox, matched, unmatched, unanswered: all.filter((i) => i.unanswered).length, suppressed: all.filter((i) => i.suppressed).length };
 }
 
-let cache: { at: number; n: number } | null = null;
 /** Unanswered inbound count for the Control Center (cached 2 min; null if AgentMail is unavailable). */
 export async function unansweredCount(): Promise<number | null> {
   if (cache && Date.now() - cache.at < 120_000) return cache.n;
   try {
     const threads = await listThreads(fieldEnv.agentmailInbox().toLowerCase(), 25);
     const inbox = fieldEnv.agentmailInbox().toLowerCase();
-    const n = threads.filter((t) => t.lastFrom && t.lastFrom !== inbox).length;
+    const dismissed = await dismissedMap();
+    const n = threads.filter((t) => t.lastFrom && t.lastFrom !== inbox && !isDismissed(dismissed, t.threadId, t.lastAt)).length;
     cache = { at: Date.now(), n };
     return n;
   } catch {

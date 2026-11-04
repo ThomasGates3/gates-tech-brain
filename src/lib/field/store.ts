@@ -5,7 +5,7 @@
  * not pretend they worked.
  */
 import { createHash, randomUUID } from "crypto";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { fieldContacts, fieldSendLog, fieldSteps, fieldSuppressions } from "@/db/schema";
 import { draftHash } from "./workflow";
@@ -21,7 +21,28 @@ const norm = (email: string) => email.trim().toLowerCase();
 const PLACEHOLDER = /^(claude\s+)?tbd\.?$/i;
 
 export async function listQueue(date: string): Promise<(FieldContact & { suppressed: boolean })[]> {
-  const rows = await db.select().from(fieldContacts).where(eq(fieldContacts.packDate, date));
+  return withSuppressed(await db.select().from(fieldContacts).where(eq(fieldContacts.packDate, date)));
+}
+
+/** Stages still waiting on someone (draft, Nick, approve, send). */
+export const OPEN_STAGES = ["new", "drafted", "nick", "approved", "sending"] as const;
+
+/**
+ * The rolling queue: every open lead from `date`'s pack or any earlier one (so a skipped day carries over
+ * instead of vanishing), plus Email 1s sent on or after `sentSince` (their follow-ups are still running).
+ */
+export async function listOpen(date: string, sentSince: string): Promise<(FieldContact & { suppressed: boolean })[]> {
+  return withSuppressed(
+    await db.select().from(fieldContacts).where(
+      and(
+        lte(fieldContacts.packDate, date),
+        or(inArray(fieldContacts.stage, [...OPEN_STAGES]), and(eq(fieldContacts.stage, "sent"), gte(fieldContacts.sentAt, sentSince)))
+      )
+    )
+  );
+}
+
+async function withSuppressed(rows: Row[]): Promise<(FieldContact & { suppressed: boolean })[]> {
   const emails = [...new Set(rows.map((r) => norm(r.email)).filter(Boolean))];
   const sup = emails.length
     ? new Set((await db.select({ email: fieldSuppressions.email }).from(fieldSuppressions).where(inArray(fieldSuppressions.email, emails))).map((s) => s.email))

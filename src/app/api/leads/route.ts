@@ -1,4 +1,4 @@
-/** GET /api/leads?date=&lane=&status=&tier= — the Control Center board (same data as brain_today.leads). */
+/** GET /api/leads?date=&lane=&status=&tier=&scope= — the Control Center board (same data as brain_today.leads). scope=open is the rolling board. */
 import { z } from "zod";
 import { leadsFor, EMAIL1_STATUSES } from "@/lib/field/leads";
 import { sentSince } from "@/lib/field/store";
@@ -9,6 +9,7 @@ const Q = z.object({
   lane: z.enum(["core", "website"]).optional(),
   status: z.enum(EMAIL1_STATUSES).optional(),
   tier: z.enum(["High", "Med", "Soft"]).optional(),
+  scope: z.enum(["day", "open"]).optional(),
 });
 
 export async function GET(req: Request) {

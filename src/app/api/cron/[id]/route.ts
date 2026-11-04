@@ -7,6 +7,21 @@
 import { runAutomation } from "@/lib/automations/runner";
 import { getAutomation } from "@/lib/automations/catalog";
 import { eveningPings, morningPings } from "@/lib/field/pings";
+import { loadPack } from "@/lib/field/actions";
+import { fieldEnv, todayIn } from "@/lib/field/config";
+import { recordActivity } from "@/lib/activity";
+
+/** Daily Notion pull, run first thing in the morning cron so the briefing counts fresh leads. Never blocks the briefing. */
+async function morningNotionPull() {
+  if (!fieldEnv.database() || !fieldEnv.notionToken() || !fieldEnv.notionDataSource()) return "skipped";
+  try {
+    const r = await loadPack("notion", todayIn());
+    void recordActivity({ kind: "updated", target: `Notion pack: ${r.added} new, ${r.updated} updated`, because: "Daily scheduled Notion pull", agent: "ace" });
+    return r;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 export const maxDuration = 300;
 
@@ -20,9 +35,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   if (!getAutomation(id)) return new Response(`Unknown automation: ${id}`, { status: 404 });
 
+  const notion = id === "morning-briefing" ? await morningNotionPull() : undefined;
   const run = await runAutomation(id, {}, "cron");
   // Field pings ride on the two daily crons (each ping can be switched off in Settings).
   if (id === "morning-briefing") await morningPings().catch(() => {});
   if (id === "eod-recap") await eveningPings().catch(() => {});
-  return Response.json({ ok: run.status === "success", id, status: run.status, at: run.ranAt });
+  return Response.json({ ok: run.status === "success", id, status: run.status, at: run.ranAt, ...(notion && { notion }) });
 }

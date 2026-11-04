@@ -20,7 +20,7 @@ export interface ScoreboardData {
   warmNote: string;
 }
 
-interface LeadsData { date: string; leads: Lead[] }
+interface LeadsData { date: string; counts?: { carried?: number }; leads: Lead[] }
 
 type FolderId = "new" | "approved" | "sent" | "followup";
 const blue = (colors: string[], angle: number): ArtRecipe => ({ style: "marble", colors, scale: 0.7, warp: 3.2, angle, gloss: 0.5, veins: 0.35 });
@@ -36,18 +36,28 @@ const STATUS_LABEL: Record<string, string> = { undrafted: "Needs draft", drafted
 
 type Sorted = Record<FolderId, { lead: Lead; file: FolderFile }[]>;
 
-/** Sort today's leads into the four folders. Held and killed leads stay out. */
+/** The Sent folder shows a rolling week of Email 1s; anything with a follow-up due moves to Follow Up regardless. */
+const SENT_FOLDER_DAYS = 7;
+const shortDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const daysBefore = (date: string, n: number) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+
+/**
+ * Sort the rolling board into the four folders. Unfinished leads from earlier packs stay in their folder
+ * (tagged with their pack day) until they move on, so skipped days add up. Held and killed leads stay out.
+ */
 function sortLeads(data: LeadsData | null): Sorted {
   const out: Sorted = { new: [], approved: [], sent: [], followup: [] };
+  const weekAgo = data ? daysBefore(data.date, SENT_FOLDER_DAYS) : "";
   for (const l of data?.leads ?? []) {
     const href = `/leads?open=${encodeURIComponent(l.contact_id)}`;
+    const from = data && l.pack_date < data.date ? ` · ${shortDate(l.pack_date)}` : "";
     const put = (id: FolderId, meta: string) => out[id].push({ lead: l, file: { name: l.business, meta, href } });
-    if (NEW_STATUSES.includes(l.email1_status)) put("new", STATUS_LABEL[l.email1_status]);
-    else if (l.email1_status === "approved") put("approved", STATUS_LABEL.approved);
+    if (NEW_STATUSES.includes(l.email1_status)) put("new", STATUS_LABEL[l.email1_status] + from);
+    else if (l.email1_status === "approved") put("approved", STATUS_LABEL.approved + from);
     else if (l.email1_status === "sent") {
       const due = l.next_action.match(/^Follow-up due Email (\d) (\d{4}-\d{2}-\d{2})/);
       if (due && data && due[2] <= data.date) put("followup", `Email ${due[1]} due`);
-      else put("sent", l.next_action.startsWith("Replied") ? "Replied" : "Sent");
+      else if (l.replied || (l.sent_at ?? "").slice(0, 10) >= weekAgo) put("sent", l.replied ? "Replied" : "Sent");
     }
   }
   return out;
@@ -79,7 +89,7 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
   };
   const [leads, setLeads] = useState<LeadsData | null>(null);
   const [selected, setSelected] = useState<FolderId | null>(null);
-  const loadLeads = useCallback(() => fetch("/api/leads").then((r) => (r.ok ? r.json() : null)).then((j) => j?.leads && setLeads(j)).catch(() => {}), []);
+  const loadLeads = useCallback(() => fetch("/api/leads?scope=open").then((r) => (r.ok ? r.json() : null)).then((j) => j?.leads && setLeads(j)).catch(() => {}), []);
   useEffect(() => {
     const first = setTimeout(loadLeads, 0);
     const t = setInterval(loadLeads, 30000);
@@ -94,8 +104,9 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
     <div data-testid="scoreboard" className="deck-card rounded-2xl p-4 backdrop-blur">
       <div className="mb-3 flex items-center justify-between gap-2">
         <a href="/leads" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
-          <span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s lead folders →
+          <span className="h-1 w-4 bg-[var(--accent)]" />Lead folders →
         </a>
+        {!!leads?.counts?.carried && <span data-testid="sb-carried" title="Unfinished leads from earlier days stay here until they move on" className="font-mono text-[10px] text-amber-200/80">+{leads.counts.carried} carried over</span>}
         <span data-testid="sb-sent" className={`font-mono text-[10px] ${d && d.sent.value >= d.sent.cap ? "text-[var(--accent)]" : "text-slate-500"}`}>sent {d ? `${d.sent.value}/${d.sent.cap}` : "—"}</span>
       </div>
       <RepliesStrip />
