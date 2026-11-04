@@ -37,6 +37,11 @@ export function RepliesStrip() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
+  const dismiss = async (i: InboundItem) => {
+    setItems((all) => all.filter((x) => x.thread_id !== i.thread_id)); // hide now; the POST makes it stick
+    await fetch("/api/inbound", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ thread_id: i.thread_id, last_at: i.last_at }) }).catch(() => {});
+  };
+
   if (!items.length) return null;
   const hot = items.filter((i) => i.suggested === "reply_handoff_lisa").length;
 
@@ -57,7 +62,18 @@ export function RepliesStrip() {
               <li key={i.thread_id} className="rounded-md bg-black/30 px-2 py-1.5">
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="truncate text-[13px] text-slate-100">{who}</span>
-                  <span className="shrink-0 text-[10px] text-amber-200/80">{LABEL[i.suggested] ?? i.suggested}</span>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-[10px] text-amber-200/80">{LABEL[i.suggested] ?? i.suggested}</span>
+                    <button
+                      data-testid={`reply-dismiss-${i.thread_id}`}
+                      onClick={() => dismiss(i)}
+                      aria-label={`Dismiss reply from ${who}`}
+                      title="Dismiss (hides it here; comes back if they write again)"
+                      className="grid h-[28px] w-[28px] place-items-center rounded-md text-slate-500 hover:bg-white/5 hover:text-slate-200"
+                    >
+                      ✕
+                    </button>
+                  </span>
                 </div>
                 {i.snippet && <p className="mt-0.5 line-clamp-2 text-[12px] text-slate-400">“{i.snippet}”</p>}
                 <div className="mt-1.5 flex gap-1.5">
