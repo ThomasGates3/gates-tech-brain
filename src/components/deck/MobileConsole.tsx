@@ -24,7 +24,7 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
           data-testid="mobile-orb"
           aria-label={`${greeting}. Talk to ${personaName}`}
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-40 grid h-16 w-16 place-items-center rounded-full bg-black/70 ring-1 ring-[var(--accent)]/40 backdrop-blur transition-transform active:scale-95"
+          className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-4 z-40 grid h-16 w-16 place-items-center rounded-full bg-black/70 ring-1 ring-[var(--accent)]/40 backdrop-blur transition-transform active:scale-95"
         >
           {active && <span className="pointer-events-none absolute inset-0 rounded-full border border-[var(--accent)]/40" style={{ animation: "orb-ripple 1.4s ease-out infinite" }} />}
           <CoreOrb state={active ? "thinking" : "idle"} className="h-14 w-14" />
