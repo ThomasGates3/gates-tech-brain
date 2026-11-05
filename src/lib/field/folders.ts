@@ -23,6 +23,9 @@ export const daysBefore = (date: string, n: number) => { const d = new Date(`${d
  */
 export function sortIntoFolders(leads: Lead[], today: string, sentDays = 7): Sorted {
   const out: Sorted = { new: [], approved: [], sent: [], followup: [] };
+  // Before /api/leads answers, `today` is "" — new Date("T12:00:00Z") is invalid and toISOString() throws,
+  // which took down the whole dashboard. No date yet means nothing to sort yet.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) return out;
   const since = daysBefore(today, sentDays);
   for (const l of leads) {
     const href = `/leads?open=${encodeURIComponent(l.contact_id)}`;

@@ -1,15 +1,17 @@
 import type { MetadataRoute } from "next";
 
-/** Installable PWA: "Add to Home Screen" opens straight into the phone approve view. */
+/**
+ * Installable PWA. It opens on the dashboard: on a computer that is the full desktop deck (a narrow window
+ * gets the stacked phone layout), and phones are sent on to the /m approve view by the middleware.
+ */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Gates Tech Brain",
     short_name: "Brain",
     description: "Approve today's emails in a minute.",
-    start_url: "/m",
+    start_url: "/",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
     background_color: "#050914",
     theme_color: "#050914",
     icons: [
