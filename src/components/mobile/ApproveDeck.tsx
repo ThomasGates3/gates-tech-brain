@@ -8,6 +8,7 @@ import type { InboundItem } from "@/lib/field/inbound";
 import { RingGauge } from "@/components/deck/RingGauge";
 import { PipelineFlow } from "@/components/deck/PipelineFlow";
 import { BrainChat } from "@/components/deck/BrainChat";
+import { MobileTabBar } from "@/components/deck/MobileTabBar";
 import { Check, Inbox, MessageCircle, Workflow } from "lucide-react";
 
 /**
@@ -158,7 +159,7 @@ export function ApproveDeck() {
 
   return (
     <div
-      className="m-shell relative isolate mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] pt-[calc(env(safe-area-inset-top)+12px)]"
+      className="m-shell relative isolate mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 pb-4 pt-[calc(env(safe-area-inset-top)+12px)]"
       data-testid="m-deck"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
@@ -182,6 +183,8 @@ export function ApproveDeck() {
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a href="/?view=desktop" className="btn-ghost shrink-0 px-3 py-2 text-[12px]" data-testid="m-desktop">Desktop view</a>
       </header>
+
+      <SectionTabs tab={tab} onTab={(t) => { buzz(6); setTab(t); window.scrollTo({ top: 0 }); }} waiting={queue.length} replies={hotReplies || replies.length} />
 
       {err && <p className="relative mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-200">{err}</p>}
 
@@ -238,12 +241,13 @@ export function ApproveDeck() {
       {tab === "inbox" && <RepliesList items={replies} />}
 
       {tab === "nova" && (
-        <section className="relative h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-170px)]" data-testid="m-nova">
+        <section className="relative h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-240px)]" data-testid="m-nova">
           <BrainChat personaName="NOVA" className="h-full" />
         </section>
       )}
 
-      <TabBar tab={tab} onTab={(t) => { buzz(6); setTab(t); window.scrollTo({ top: 0 }); }} waiting={queue.length} replies={hotReplies || replies.length} />
+      {/* Inside the shell so the edit and send sheets (z-80) still cover it. */}
+      <MobileTabBar />
 
       {editing && <EditSheet lead={editing} draft={drafts[editing.contact_id]} onClose={() => setEditing(null)} onSaved={() => { requested.current.delete(editing.contact_id); setDrafts((m) => { const n = { ...m }; delete n[editing.contact_id]; return n; }); setEditing(null); void load(); }} />}
       {sendOpen && <SendSheet leads={ready} warmed={warmed} left={capLeft(sent, cap)} onClose={() => { setSendOpen(false); void load(); }} />}
@@ -258,25 +262,21 @@ const TABS: { id: Tab; label: string; Icon: typeof Check }[] = [
   { id: "nova", label: "NOVA", Icon: MessageCircle },
 ];
 
-function TabBar({ tab, onTab, waiting, replies }: { tab: Tab; onTab: (t: Tab) => void; waiting: number; replies: number }) {
+/** This page's own sections. The glass bar at the bottom is the site-wide navigation. */
+function SectionTabs({ tab, onTab, waiting, replies }: { tab: Tab; onTab: (t: Tab) => void; waiting: number; replies: number }) {
   const badge: Partial<Record<Tab, number>> = { approve: waiting, inbox: replies };
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-[#03070f]/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl" data-testid="m-tabs">
-      <div className="mx-auto grid max-w-md grid-cols-4">
-        {TABS.map(({ id, label, Icon }) => {
-          const on = tab === id;
-          return (
-            <button key={id} onClick={() => onTab(id)} data-testid={`m-tab-${id}`} aria-current={on ? "page" : undefined} className={`relative flex min-h-[60px] flex-col items-center justify-center gap-1 text-[11px] ${on ? "text-[var(--accent)]" : "text-[var(--mute)]"}`}>
-              {on && <span aria-hidden className="absolute top-0 h-0.5 w-10 rounded-full bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]" />}
-              <span className="relative">
-                <Icon size={22} strokeWidth={on ? 2.2 : 1.8} style={on ? { filter: "drop-shadow(0 0 6px rgba(0,229,255,.7))" } : undefined} />
-                {!!badge[id] && <span className="absolute -right-2.5 -top-1.5 min-w-[18px] rounded-full bg-[var(--accent)] px-1 text-center font-mono text-[10px] leading-[18px] text-black">{badge[id]}</span>}
-              </span>
-              {label}
-            </button>
-          );
-        })}
-      </div>
+    <nav aria-label="Sections" className="tabbar-glass sticky top-[calc(env(safe-area-inset-top)+8px)] z-30 mb-3 flex gap-0.5 rounded-2xl p-1" data-testid="m-tabs">
+      {TABS.map(({ id, label, Icon }) => {
+        const on = tab === id;
+        return (
+          <button key={id} onClick={() => onTab(id)} data-testid={`m-tab-${id}`} aria-current={on ? "page" : undefined} className={`flex min-h-[44px] flex-auto items-center justify-center gap-1 rounded-xl px-1.5 text-[12px] transition-colors active:scale-[.97] ${on ? "bg-[var(--accent)]/15 font-medium text-[var(--accent-bright)]" : "text-[var(--mute)]"}`}>
+            <Icon size={15} strokeWidth={on ? 2.2 : 1.8} aria-hidden className="shrink-0" />
+            {label}
+            {!!badge[id] && <span className="min-w-[16px] rounded-full bg-[var(--accent)] px-1 text-center font-mono text-[10px] leading-[16px] text-black">{badge[id]}</span>}
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -383,7 +383,7 @@ function SwipeCard({ lead, draft, left, onApprove, onHold, onEdit }: { lead: Lea
         </div>
       </article>
 
-      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+60px)] z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] via-[#050914]/95 to-transparent px-4 pb-2 pt-4">
+      <div className="sticky bottom-0 z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] from-[90%] to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] pt-4">
       <div className="grid grid-cols-3 gap-2">
         <button data-testid="m-hold" onClick={onHold} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Hold</button>
         <button data-testid="m-edit" onClick={onEdit} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Edit</button>
