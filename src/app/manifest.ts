@@ -9,6 +9,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Gates Tech Brain",
     short_name: "Brain",
     description: "Approve today's emails in a minute.",
+    // The app id used to default to start_url ("/m"). Pin it so already-installed apps keep their
+    // identity and pick up the new start_url instead of being treated as a different app.
+    id: "/m",
     start_url: "/",
     scope: "/",
     display: "standalone",
