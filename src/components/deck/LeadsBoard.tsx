@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Fragment } from "react";
 import { LeadActions } from "./LeadActions";
 import { DraftPreview } from "./DraftPreview";
 import { callTool } from "@/lib/ux/tools";
 import { toast } from "@/components/ui/Toast";
+import { sortIntoFolders, shortDate, FOLDER_LABEL, type FolderId } from "@/lib/field/folders";
+import type { Lead as FolderLead } from "@/lib/field/leads";
 
 /** Control Center "Today's leads": every lead for a date with lane, state and next action (reads the Brain DB). */
 interface Lead {
@@ -13,11 +15,11 @@ interface Lead {
   email1_status: string; nick_verdict: string | null; nick_note: string | null; approved: boolean; sent_at: string | null; subject: string | null;
   lint_issues: number; suppressed: boolean; replied: boolean; duplicate_of: string[]; hold_reason: string | null; revise_pending: boolean; booked: boolean; paid_offer: string | null;
   duplicates: { contact_id: string; source: string; tier: string; email1_status: string }[]; next_action: string;
+  pack_date: string; city: string; gap: string; site_url: string | null; notes: string | null;
 }
-interface Counts { core: number; website: number; drafted: number; awaitingNick: number; passAwaitingApprove: number; approvedUnsent: number; softHold: number; total: number; duplicates: number }
+interface Counts { carried?: number; core: number; website: number; drafted: number; awaitingNick: number; passAwaitingApprove: number; approvedUnsent: number; softHold: number; total: number; duplicates: number }
 interface Data { date: string; counts: Counts; sentToday: number; gates: { domainWarmed: boolean; warmNote: string; dailyCap: number }; leads: Lead[] }
 
-const STATUSES = ["undrafted", "drafted", "atNick", "PASS", "approved", "sent", "hold", "kill"];
 const STATUS_STYLE: Record<string, string> = {
   undrafted: "bg-white/5 text-slate-400", drafted: "bg-sky-400/10 text-sky-300", atNick: "bg-blue-400/10 text-blue-200",
   PASS: "bg-[var(--accent)]/15 text-[var(--accent)]", approved: "bg-emerald-400/15 text-emerald-300", sent: "bg-emerald-400/5 text-emerald-200/70",
@@ -40,12 +42,30 @@ const useWide = () =>
     () => true
   );
 
-export type LeadFilters = { date?: string; lane?: string; status?: string; tier?: string; open?: string };
+export type LeadFilters = { date?: string; lane?: string; status?: string; tier?: string; open?: string; folder?: string };
+
+type View = FolderId | "held";
+const VIEWS: View[] = ["new", "approved", "sent", "followup", "held"];
+const VIEW_LABEL: Record<View, string> = { ...FOLDER_LABEL, held: "Held / killed" };
+const VIEW_STATUSES: Record<View, string[]> = {
+  new: ["undrafted", "drafted", "atNick", "PASS"], approved: ["approved"], sent: ["sent"], followup: ["sent"], held: ["hold", "kill"],
+};
+const VIEW_HINT: Record<View, string> = {
+  new: "Leads you haven't acted on yet, plus drafts waiting on a decision. Open any row to read or edit the email.",
+  approved: "Approved and ready to send.",
+  sent: "Email 1s sent in the last 21 days.",
+  followup: "Sent leads with a follow-up email due.",
+  held: "Parked or killed leads.",
+};
+const viewFromStatus = (s?: string): View | undefined => (s ? VIEWS.find((v) => VIEW_STATUSES[v].includes(s)) : undefined);
 
 export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
   const [date, setDate] = useState(initial.date ?? "");
   const [lane, setLane] = useState(initial.lane ?? "");
   const [status, setStatus] = useState(initial.status ?? "");
+  const explicitView = (VIEWS as string[]).includes(initial.folder ?? "");
+  const initialView: View = explicitView ? (initial.folder as View) : (viewFromStatus(initial.status) ?? "new");
+  const [picked, setPicked] = useState<View | null>(null);
   const [tier, setTier] = useState(initial.tier ?? "");
   const [openId, setOpenId] = useState<string | null>(initial.open ?? null);
   const wide = useWide();
@@ -55,7 +75,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const q = new URLSearchParams(Object.entries({ date, lane, status, tier }).filter(([, v]) => v));
+    const q = new URLSearchParams({ scope: "open", ...(date && { date }) });
     try {
       const r = await fetch(`/api/leads?${q}`);
       const d = await r.json();
@@ -66,13 +86,28 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     }
-  }, [date, lane, status, tier]);
+  }, [date]);
 
   useEffect(() => {
     const first = setTimeout(load, 0);
     const t = setInterval(load, 30000);
     return () => { clearTimeout(first); clearInterval(t); };
   }, [load]);
+
+  const today = data?.date ?? "";
+  const folders = useMemo(() => sortIntoFolders((data?.leads ?? []) as unknown as FolderLead[], today, 21), [data, today]);
+  const held = useMemo(() => (data?.leads ?? []).filter((l) => l.email1_status === "hold" || l.email1_status === "kill"), [data]);
+  const byId = useMemo(() => new Map((data?.leads ?? []).map((l) => [l.contact_id, l])), [data]);
+  // A deep link (?open=<id>) lands in whichever folder holds that lead, until a tab is picked.
+  const linkedView = useMemo(
+    () => (initial.open ? VIEWS.find((x) => (x === "held" ? held : folders[x].map((i) => i.lead)).some((m) => m.contact_id === initial.open)) : undefined),
+    [initial.open, held, folders]
+  );
+  const view: View = picked ?? (explicitView ? initialView : (linkedView ?? initialView));
+  const inView = useMemo<Lead[]>(() => (view === "held" ? held : folders[view].map((x) => byId.get(x.lead.contact_id)!)), [view, held, folders, byId]);
+  const viewCount = (v: View) => (v === "held" ? held.length : folders[v].length);
+  const visible = useMemo(() => inView.filter((l) => (!lane || l.lane === lane) && (!status || l.email1_status === status) && (!tier || l.tier === tier)), [inView, lane, status, tier]);
+  const pickView = (v: View) => { setPicked(v); setStatus(""); setOpenId(null); setKbd(-1); };
 
   // Keyboard flow (desktop): J/K move, A approve (Nick PASS only), H hold, E open the email.
   const [kbd, setKbd] = useState(-1);
@@ -86,7 +121,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-      const list = data?.leads ?? [];
+      const list = visible;
       if (!list.length) return;
       const k = e.key.toLowerCase();
       if (k === "j" || k === "k") {
@@ -117,7 +152,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     };
     window.addEventListener("keydown", on);
     return () => window.removeEventListener("keydown", on);
-  }, [data, kbd, load]);
+  }, [visible, kbd, load]);
 
   const c = data?.counts;
   const warmed = Boolean(data?.gates.domainWarmed);
@@ -149,8 +184,8 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
     <section data-testid="leads-board" className="deck-card rounded-2xl p-4 backdrop-blur">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Today&apos;s leads</span>
-        <span className="font-mono text-[10px] text-slate-500">{data ? `${data.leads.length} of ${c?.total} · ${data.date}` : "…"}</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Leads</span>
+        <span className="font-mono text-[10px] text-slate-500">{data ? `${visible.length} shown · open leads as of ${data.date}${c?.carried ? ` · ${c.carried} carried over` : ""}` : "…"}</span>
         {data && (
           <span data-testid="board-warm" className={`ml-auto rounded px-2 py-0.5 text-[11px] ${data.gates.domainWarmed ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
             {data.gates.domainWarmed ? "Domain warmed: sends open" : "Warm-up not confirmed: no sends"}
@@ -159,12 +194,12 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       </div>
 
       <div className="mb-3 flex flex-wrap gap-2">
-        <input type="date" value={date || data?.date || ""} onChange={(e) => setDate(e.target.value)} data-testid="board-date" aria-label="Date" className={sel} />
+        <input type="date" value={date || data?.date || ""} onChange={(e) => setDate(e.target.value)} data-testid="board-date" aria-label="As of date" title="Show leads as of this date (open leads from this day and earlier)" className={sel} />
         <select value={lane} onChange={(e) => setLane(e.target.value)} data-testid="board-lane" aria-label="Lane" className={sel}>
           <option value="">All lanes</option><option value="core">Core</option><option value="website">Website</option>
         </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)} data-testid="board-status" aria-label="Status" className={sel}>
-          <option value="">All statuses</option>{STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          <option value="">All statuses</option>{VIEW_STATUSES[view].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={tier} onChange={(e) => setTier(e.target.value)} data-testid="board-tier" aria-label="Tier" className={sel}>
           <option value="">All tiers</option><option>High</option><option>Med</option><option>Soft</option>
@@ -174,6 +209,16 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
         </button>
         {nickMsg && <span className="self-center text-[12px] text-slate-300" data-testid="board-nick-msg">{nickMsg}</span>}
       </div>
+
+      <div role="tablist" aria-label="Lead folders" data-testid="board-folders" className="mb-1 flex flex-wrap gap-2">
+        {VIEWS.map((v) => (
+          <button key={v} role="tab" aria-selected={view === v} onClick={() => pickView(v)} data-testid={`folder-tab-${v}`}
+            className={`min-h-[40px] rounded-lg border px-3 text-[13px] transition-colors ${view === v ? "border-[var(--accent)]/70 bg-[var(--accent)]/15 text-slate-50" : "border-white/10 bg-black/30 text-slate-400 hover:border-white/25"} ${v === "held" ? "ml-auto" : ""}`}>
+            {VIEW_LABEL[v]} <span className={`ml-1 font-mono text-[11px] ${view === v ? "text-[var(--accent)]" : "text-slate-500"}`}>{data ? viewCount(v) : "–"}</span>
+          </button>
+        ))}
+      </div>
+      <p className="mb-3 text-[12px] text-slate-500">{VIEW_HINT[view]}</p>
 
       <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8" data-testid="board-counts">
         {strip.map(([label, value, hot]) => (
@@ -186,18 +231,18 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
 
       {err && <p className="rounded-md bg-red-500/10 px-3 py-2 text-[12px] text-red-300">{err}</p>}
       {!data && !err && <div className="space-y-2" aria-busy="true" data-testid="board-skeleton">{[0, 1, 2, 3].map((i) => <span key={i} className="skeleton block h-10 w-full rounded-md" />)}</div>}
-      {data && !data.leads.length && <p className="rounded-md bg-black/30 px-3 py-6 text-center text-[13px] text-slate-500">No leads for this filter. Ace loads the morning pack, Ashley and Prospectacle upsert leads.</p>}
-      {data && data.leads.length > 0 && wide && <p className="mb-2 font-mono text-[10px] text-slate-500">Keys: J/K move · A approve · H hold · E open email · ⌘K command palette</p>}
+      {data && !visible.length && <p className="rounded-md bg-black/30 px-3 py-6 text-center text-[13px] text-slate-500">Nothing in this folder{lane || status || tier ? " for these filters" : " right now"}. Ace loads the morning pack, Ashley and Prospectacle upsert leads.</p>}
+      {data && visible.length > 0 && wide && <p className="mb-2 font-mono text-[10px] text-slate-500">Keys: J/K move · A approve · H hold · E open email · ⌘K command palette</p>}
 
       {/* Desktop table */}
-      {data && data.leads.length > 0 && wide && (
+      {data && visible.length > 0 && wide && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[12px]">
             <thead className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">
               <tr>{["Lead", "Lane", "Source", "Tier", "Email 1", "Nick", "Subject", "Next action", "Actions"].map((h) => <th key={h} className="px-2 py-1.5 font-normal">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {data.leads.map((l, i) => (
+              {visible.map((l, i) => (
                 <Fragment key={l.contact_id}>
                 <tr data-testid={`lead-${l.contact_id}`} data-kbd-active={i === kbd ? "true" : undefined} onClick={() => setKbd(i)} data-status={l.email1_status} className={`border-t border-white/[0.05] align-top hover:bg-white/[0.02] ${openId === l.contact_id ? "bg-white/[0.03]" : ""}`}>
                   <td className="px-2 py-2">
@@ -206,6 +251,10 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                     </button>
                     {l.duplicate_of.length > 0 && <Badge testId="lead-dup" className="ml-1.5 bg-amber-400/15 text-amber-200">dup</Badge>}
                     <p className="text-[11px] text-slate-500">{[l.contact_name, l.email].filter(Boolean).join(" · ")}</p>
+                    <p className="text-[11px] text-slate-500">{[l.city, l.pack_date !== today && today ? `from ${shortDate(l.pack_date)}` : null].filter(Boolean).join(" · ")}</p>
+                    {view === "new" && l.gap && <p className="mt-0.5 max-w-[320px] text-[11px] text-slate-400">Gap: {l.gap}</p>}
+                    {view === "new" && l.site_url && <a href={l.site_url} target="_blank" rel="noreferrer" className="block max-w-[320px] truncate text-[11px] text-[var(--accent-soft)] hover:underline">{l.site_url}</a>}
+                    {view === "new" && l.notes && <p className="mt-0.5 max-w-[320px] text-[11px] italic text-slate-500">{l.notes}</p>}
                     {l.duplicates.length > 0 && <p className="text-[10px] text-amber-200/80">also: {l.duplicates.map((d) => `${d.source} ${d.tier} ${d.email1_status}`).join(", ")}</p>}
                   </td>
                   <td className="px-2 py-2"><Badge testId="lead-lane" className={l.lane === "website" ? "bg-[var(--accent)]/15 text-[var(--accent-soft)]" : "bg-white/5 text-slate-300"}>{l.lane}</Badge></td>
@@ -229,7 +278,7 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                   </td></tr>
                 )}
                 {openId === l.contact_id && (
-                  <tr className="bg-white/[0.02]"><td colSpan={9} className="px-2 pb-4 pt-1"><DraftPreview contactId={l.contact_id} version={version} /></td></tr>
+                  <tr className="bg-white/[0.02]"><td colSpan={9} className="px-2 pb-4 pt-1"><DraftPreview contactId={l.contact_id} version={version} onSaved={load} /></td></tr>
                 )}
                 </Fragment>
               ))}
@@ -239,14 +288,15 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
       )}
 
       {/* Phone cards */}
-      {data && data.leads.length > 0 && !wide && (
+      {data && visible.length > 0 && !wide && (
         <div className="space-y-2">
-          {data.leads.map((l) => (
+          {visible.map((l) => (
             <div key={l.contact_id} data-testid={`leadcard-${l.contact_id}`} className="block rounded-lg border border-white/[0.06] bg-black/30 p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-slate-100">{l.business}</p>
-                  <p className="truncate text-[11px] text-slate-500">{l.email}</p>
+                  <p className="truncate text-[11px] text-slate-500">{[l.contact_name, l.email].filter(Boolean).join(" · ")}</p>
+                  {(l.city || (today && l.pack_date !== today)) && <p className="truncate text-[11px] text-slate-500">{[l.city, today && l.pack_date !== today ? `from ${shortDate(l.pack_date)}` : null].filter(Boolean).join(" · ")}</p>}
                 </div>
                 <Badge className={STATUS_STYLE[l.email1_status] ?? ""}>{l.email1_status}</Badge>
               </div>
@@ -258,12 +308,19 @@ export function LeadsBoard({ initial = {} }: { initial?: LeadFilters }) {
                 {l.hold_reason && <Badge className="bg-amber-400/10 text-amber-200/90">{HOLD_LABEL[l.hold_reason] ?? l.hold_reason}</Badge>}
                 {l.duplicate_of.length > 0 && <Badge className="bg-amber-400/15 text-amber-200">dup</Badge>}
               </div>
+              {view === "new" && (l.gap || l.site_url || l.notes) && (
+                <div className="mt-2 space-y-0.5 text-[12px] text-slate-400">
+                  {l.gap && <p>Gap: {l.gap}</p>}
+                  {l.site_url && <a href={l.site_url} target="_blank" rel="noreferrer" className="block truncate text-[var(--accent-soft)]">{l.site_url}</a>}
+                  {l.notes && <p className="italic text-slate-500">{l.notes}</p>}
+                </div>
+              )}
               {l.subject && (
                 <button onClick={() => toggle(l.contact_id)} data-testid={`open-card-${l.contact_id}`} className="mt-2 flex min-h-[44px] w-full items-center justify-between gap-2 rounded-md border border-white/[0.06] px-2 text-left text-[12px] text-slate-300">
                   <span className="truncate">{l.subject}</span><span className="shrink-0 text-[var(--accent-soft)]">{openId === l.contact_id ? "Hide email" : "Read email"}</span>
                 </button>
               )}
-              {openId === l.contact_id && <div className="mt-2"><DraftPreview contactId={l.contact_id} version={version} /></div>}
+              {openId === l.contact_id && <div className="mt-2"><DraftPreview contactId={l.contact_id} version={version} onSaved={load} /></div>}
               <p className={`mt-1.5 text-[12px] ${ACTION_HOT.test(l.next_action) ? "text-[var(--accent-soft)]" : "text-slate-400"}`}>→ {l.next_action}</p>
               {l.nick_verdict === "REVISE" && l.nick_note && <p className="mt-1.5 rounded-md bg-amber-400/5 px-2 py-1 text-[12px] text-amber-100/90">Nick: {l.nick_note}</p>}
               <div className="mt-2"><LeadActions lead={l} warmed={warmed} onDone={load} /></div>

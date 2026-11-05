@@ -12,9 +12,23 @@ interface Draft {
 
 const SOURCE: Record<string, string> = { claude: "Claude", template: "template", manual: "written by a bot or by hand", notion: "Notion", csv: "CSV" };
 
-export function DraftPreview({ contactId, version }: { contactId: string; version: number }) {
+export function DraftPreview({ contactId, version, onSaved }: { contactId: string; version: number; onSaved?: () => void }) {
   const [d, setD] = useState<Draft | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
+
+  const startEdit = () => { if (d) { setSubject(d.subject); setBody(d.body); setSaveErr(null); setEditing(true); } };
+  const save = async () => {
+    setSaving(true); setSaveErr(null);
+    try {
+      const r = await callTool<Draft>("brain_set_draft", { contact_id: contactId, subject, body });
+      setD(r); setEditing(false); onSaved?.();
+    } catch (e) { setSaveErr(e instanceof Error ? e.message : String(e)); } finally { setSaving(false); }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -33,9 +47,23 @@ export function DraftPreview({ contactId, version }: { contactId: string; versio
       <div className="rounded-lg border border-white/10 bg-black/50 p-3">
         <p className="mb-2 border-b border-white/10 pb-2 text-[12px] text-slate-400">
           To <span className="text-slate-200">{d.contact_name ? `${d.contact_name} <${d.email}>` : d.email}</span>
-          <br />Subject <span className="font-medium text-slate-100" data-testid="draft-subject-full">{d.subject}</span>
+          {!editing && <button onClick={startEdit} data-testid={`edit-draft-${contactId}`} className="float-right min-h-[28px] rounded-md border border-white/10 px-2.5 text-[11px] text-slate-300 hover:border-[var(--accent)]/50">Edit</button>}
+          {!editing && <><br />Subject <span className="font-medium text-slate-100" data-testid="draft-subject-full">{d.subject}</span></>}
         </p>
-        <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-slate-200" data-testid="draft-body">{d.body}</pre>
+        {editing ? (
+          <div className="space-y-2">
+            <input value={subject} onChange={(e) => setSubject(e.target.value)} aria-label="Subject" data-testid="draft-edit-subject" maxLength={200} className="min-h-[36px] w-full rounded-md border border-white/10 bg-black/40 px-2 text-[13px] text-slate-100 outline-none focus:border-[var(--accent)]/60" />
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} aria-label="Body" data-testid="draft-edit-body" maxLength={5000} rows={12} className="w-full rounded-md border border-white/10 bg-black/40 p-2 font-sans text-[13px] leading-relaxed text-slate-100 outline-none focus:border-[var(--accent)]/60" />
+            <p className="text-[11px] text-amber-200/80">Saving clears Nick&apos;s PASS and any approval, so it goes back through Nick.</p>
+            {saveErr && <p className="text-[12px] text-red-300">{saveErr}</p>}
+            <div className="flex gap-2">
+              <button onClick={save} disabled={saving || !subject.trim() || !body.trim()} data-testid="draft-edit-save" className="min-h-[32px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40">{saving ? "Saving…" : "Save draft"}</button>
+              <button onClick={() => setEditing(false)} disabled={saving} className="min-h-[32px] rounded-md border border-white/10 px-3 text-[12px] text-slate-300">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <pre className="whitespace-pre-wrap font-sans text-[13px] leading-relaxed text-slate-200" data-testid="draft-body">{d.body}</pre>
+        )}
         {d.footer && <pre className="mt-3 whitespace-pre-wrap border-t border-dashed border-white/10 pt-2 font-sans text-[12px] leading-relaxed text-slate-500">{d.footer}</pre>}
       </div>
       <div className="space-y-2 text-[12px]">

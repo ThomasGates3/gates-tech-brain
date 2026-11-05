@@ -40,6 +40,10 @@ export interface Lead {
   duplicates: { contact_id: string; source: string; tier: Priority; email1_status: Email1Status }[];
   next_action: string;
   pack_date: string;
+  city: string;
+  gap: string;
+  site_url: string | null;
+  notes: string | null;
 }
 
 export function email1Status(c: FieldContact): Email1Status {
@@ -130,6 +134,7 @@ export async function leadsFor(f: LeadFilter = {}) {
       revise_pending: c.nickVerdict === "REVISE" && Boolean(c.nickHash) && c.nickHash === c.draftHash,
       duplicate_of: [], duplicates: [],
       next_action: nextAction(c, status, lint, { ...ctxBase, nextStepDue }), pack_date: c.packDate,
+      city: c.city, gap: c.gap, site_url: c.siteUrl, notes: c.notes,
     };
   });
 
