@@ -16,7 +16,7 @@ function Card({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen items-center justify-center bg-black px-6">
       <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(700px 400px at 50% 20%, rgba(0,229,255,0.12), transparent 70%)" }} />
       <div className="relative w-full max-w-sm rounded-2xl border border-[var(--accent-deep,#0077b6)]/40 bg-[#08101f]/80 p-7 backdrop-blur">
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">AI Brain</p>
+        <p className="font-mono text-[13px] uppercase tracking-[0.4em] text-slate-500">AI Brain</p>
         {children}
       </div>
     </div>

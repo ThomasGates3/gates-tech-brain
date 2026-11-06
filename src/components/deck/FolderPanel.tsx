@@ -50,7 +50,7 @@ export function FolderPanel({ title, kind, leads, warmed, onDone, onClose }: {
   return (
     <div data-testid={`folder-panel-${kind}`} className="mt-4 rounded-lg border border-white/[0.06] bg-black/30 p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--accent-soft)]">{title} · {leads.length}</p>
+        <p className="font-mono text-[13px] uppercase tracking-[0.2em] text-[var(--accent-soft)]">{title} · {leads.length}</p>
         <div className="flex items-center gap-2">
           {bulk && bulk.targets.length > 0 && (
             <button
@@ -58,7 +58,7 @@ export function FolderPanel({ title, kind, leads, warmed, onDone, onClose }: {
               onClick={runBulk}
               disabled={!!progress || !!bulkBlocked}
               title={bulkBlocked}
-              className={`min-h-[30px] rounded-md px-2.5 text-[11px] font-medium disabled:opacity-40 ${armed ? "border border-amber-300 bg-amber-300/20 text-amber-100" : "bg-[var(--accent)] text-black hover:bg-[var(--accent-bright)]"}`}
+              className={`min-h-[30px] rounded-md px-2.5 text-[13px] font-medium disabled:opacity-40 ${armed ? "border border-amber-300 bg-amber-300/20 text-amber-100" : "bg-[var(--accent)] text-black hover:bg-[var(--accent-bright)]"}`}
             >
               {progress ?? (armed ? `Confirm: ${bulk.verb.toLowerCase()} ${bulk.targets.length}` : `${bulk.verb} all ${kind === "new" ? "PASS " : ""}(${bulk.targets.length})`)}
             </button>
@@ -66,22 +66,22 @@ export function FolderPanel({ title, kind, leads, warmed, onDone, onClose }: {
           <button onClick={onClose} aria-label="Close panel" className="grid h-[30px] w-[30px] place-items-center rounded-md text-slate-500 hover:bg-white/5 hover:text-slate-200">✕</button>
         </div>
       </div>
-      {msg && <p className="mb-2 text-[11px] text-slate-300" data-testid="folder-panel-msg">{msg}</p>}
+      {msg && <p className="mb-2 text-[13px] text-slate-300" data-testid="folder-panel-msg">{msg}</p>}
       <ul className="max-h-[240px] space-y-2 overflow-y-auto pr-1">
         {leads.map((l) => (
           <li key={l.contact_id} className="rounded-md border border-white/[0.04] px-2 py-1.5">
             <div className="flex items-center justify-between gap-2">
-              <a href={`/leads?open=${encodeURIComponent(l.contact_id)}`} className="min-w-0 truncate text-[13px] text-slate-200 hover:text-[var(--accent)]" title="Read the email">
-                {l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span>
+              <a href={`/leads?open=${encodeURIComponent(l.contact_id)}`} className="min-w-0 truncate text-[15px] text-slate-200 hover:text-[var(--accent)]" title="Read the email">
+                {l.business}<span className="ml-1.5 font-mono text-[13px] text-slate-500">{l.lane}</span>
               </a>
-              <span className="shrink-0 text-[11px] text-[var(--accent-soft)]">{l.next_action}</span>
+              <span className="shrink-0 text-[13px] text-[var(--accent-soft)]">{l.next_action}</span>
             </div>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               <LeadActions lead={l} warmed={warmed} onDone={onDone} />
             </div>
           </li>
         ))}
-        {!leads.length && <li className="text-[12px] text-slate-500">Empty.</li>}
+        {!leads.length && <li className="text-[14px] text-slate-500">Empty.</li>}
       </ul>
     </div>
   );

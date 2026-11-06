@@ -40,7 +40,7 @@ function SignInForm() {
     <div className="flex min-h-screen items-center justify-center bg-black px-6">
       <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(700px 400px at 50% 20%, rgba(0,229,255,0.12), transparent 70%)" }} />
       <form onSubmit={submit} className="relative w-full max-w-sm rounded-2xl border border-[var(--accent-deep,#0077b6)]/40 bg-[#08101f]/80 p-7 backdrop-blur" data-testid="signin-form">
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">AI Brain</p>
+        <p className="font-mono text-[13px] uppercase tracking-[0.4em] text-slate-500">AI Brain</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-100">Enter your password</h1>
         <p className="mt-1 text-sm text-slate-500">This command deck is private.</p>
 
@@ -53,7 +53,7 @@ function SignInForm() {
           data-testid="password-input"
           className="mt-5 min-h-[48px] w-full rounded-xl border border-white/10 bg-black/50 px-4 text-sm text-slate-100 placeholder:text-slate-600 outline-none focus:border-[#00e5ff]/60"
         />
-        {error && <p className="mt-2 text-[13px] text-[#ff3b30]" data-testid="signin-error">{error}</p>}
+        {error && <p className="mt-2 text-[15px] text-[#ff3b30]" data-testid="signin-error">{error}</p>}
 
         <button
           type="submit"

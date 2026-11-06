@@ -43,8 +43,8 @@ export function PipelineFlow({ leads, sentToday, vertical = false, loading = fal
               {loading ? "—" : <Ticker value={s.count} />}
             </Link>
             <div className={vertical ? "min-w-0" : "mt-2 text-center"}>
-              <p className={`text-[12px] ${hot ? "text-[var(--accent-soft)]" : "text-[var(--body)]"}`}>{s.label}</p>
-              {s.you && <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--mute)]">your move</p>}
+              <p className={`text-[14px] ${hot ? "text-[var(--accent-soft)]" : "text-[var(--body)]"}`}>{s.label}</p>
+              {s.you && <p className="font-mono text-[13px] uppercase tracking-[0.14em] text-[var(--mute)]">your move</p>}
             </div>
           </li>
         );

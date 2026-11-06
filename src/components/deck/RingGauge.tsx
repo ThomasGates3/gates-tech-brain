@@ -39,12 +39,12 @@ export function RingGauge({ label, value, max, format, sub, size = 92, warnAt = 
             <p className="font-mono text-[17px] leading-none text-slate-50 glow-text">
               {value === null ? "—" : <Ticker value={value} format={format} />}
             </p>
-            {max !== null && <p className="mt-1 font-mono text-[10px] text-[var(--mute)]">/ {format ? format(max) : max}</p>}
+            {max !== null && <p className="mt-1 font-mono text-[13px] text-[var(--mute)]">/ {format ? format(max) : max}</p>}
           </div>
         </div>
       </div>
-      <p className="mt-1.5 text-[12px] text-[var(--body)]">{label}</p>
-      {sub && <p className="font-mono text-[10px] text-[var(--mute)]">{sub}</p>}
+      <p className="mt-1.5 text-[14px] text-[var(--body)]">{label}</p>
+      {sub && <p className="font-mono text-[13px] text-[var(--mute)]">{sub}</p>}
     </div>
   );
 }

@@ -80,11 +80,11 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
   return (
     <div data-testid="scoreboard" className="deck-card rounded-2xl p-4 backdrop-blur">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <a href="/leads" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
+        <a href="/leads" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
           <span className="h-1 w-4 bg-[var(--accent)]" />Lead folders →
         </a>
-        {!!leads?.counts?.carried && <span data-testid="sb-carried" title="Unfinished leads from earlier days stay here until they move on" className="font-mono text-[10px] text-amber-200/80">+{leads.counts.carried} carried over</span>}
-        <span data-testid="sb-sent" className={`font-mono text-[10px] ${d && d.sent.value >= d.sent.cap ? "text-[var(--accent)]" : "text-slate-500"}`}>sent {d ? `${d.sent.value}/${d.sent.cap}` : "—"}</span>
+        {!!leads?.counts?.carried && <span data-testid="sb-carried" title="Unfinished leads from earlier days stay here until they move on" className="font-mono text-[13px] text-amber-200/80">+{leads.counts.carried} carried over</span>}
+        <span data-testid="sb-sent" className={`font-mono text-[13px] ${d && d.sent.value >= d.sent.cap ? "text-[var(--accent)]" : "text-slate-500"}`}>sent {d ? `${d.sent.value}/${d.sent.cap}` : "—"}</span>
       </div>
       <RepliesStrip />
       <div ref={gridRef} data-testid="lead-folders" className="grid grid-cols-2 pt-5 justify-items-center gap-x-5 gap-y-3">
@@ -126,11 +126,11 @@ export function Scoreboard({ data, onChange }: { data: ScoreboardData | null; on
         />
       )}
       {d && (
-        <div data-testid="sb-warm" className={`mt-4 rounded-md px-2.5 py-1.5 text-[11px] ${d.domainWarmed ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
+        <div data-testid="sb-warm" className={`mt-4 rounded-md px-2.5 py-1.5 text-[13px] ${d.domainWarmed ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
           <p>{d.warmNote}</p>
           {!d.domainWarmed && <p className="mt-1 text-amber-100/80">Confirm warm-up = allow Field sends. Does not send mail by itself.</p>}
           {!d.domainWarmed && (
-            <button onClick={confirmWarm} disabled={busy} data-testid="sb-warm-confirm" title="Thomas only. Opens sending for approved emails." className={`mt-1.5 min-h-[32px] rounded-md border px-2.5 text-[11px] font-medium ${armed ? "border-amber-300 bg-amber-300/20 text-amber-100" : "border-amber-400/40 text-amber-200 hover:bg-amber-400/10"} disabled:opacity-50`}>
+            <button onClick={confirmWarm} disabled={busy} data-testid="sb-warm-confirm" title="Thomas only. Opens sending for approved emails." className={`mt-1.5 min-h-[32px] rounded-md border px-2.5 text-[13px] font-medium ${armed ? "border-amber-300 bg-amber-300/20 text-amber-100" : "border-amber-400/40 text-amber-200 hover:bg-amber-400/10"} disabled:opacity-50`}>
               {busy ? "Saving…" : armed ? "Click again to confirm warm-up" : "Confirm warm-up"}
             </button>
           )}

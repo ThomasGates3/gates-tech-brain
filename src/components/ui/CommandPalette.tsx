@@ -97,16 +97,16 @@ export function CommandPalette() {
               <button
                 onMouseEnter={() => setIdx(i)}
                 onClick={() => void c.run()}
-                className={`flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-[14px] ${i === sel ? "bg-sky-400/10 text-slate-50" : "text-slate-300"}`}
+                className={`flex w-full items-center justify-between gap-3 px-5 py-2.5 text-left text-[15px] ${i === sel ? "bg-sky-400/10 text-slate-50" : "text-slate-300"}`}
               >
                 <span className="truncate">{c.label}</span>
-                <span className="shrink-0 font-mono text-[11px] text-[var(--mute)]">{c.hint}</span>
+                <span className="shrink-0 font-mono text-[13px] text-[var(--mute)]">{c.hint}</span>
               </button>
             </li>
           ))}
-          {!shown.length && <li className="px-5 py-6 text-center text-[14px] text-[var(--mute)]">No match.</li>}
+          {!shown.length && <li className="px-5 py-6 text-center text-[15px] text-[var(--mute)]">No match.</li>}
         </ul>
-        <p className="border-t border-white/[0.07] px-5 py-2 font-mono text-[11px] text-[var(--mute)]">↑↓ move · Enter run · Esc close · on Leads: J/K move, A approve, H hold, E open</p>
+        <p className="border-t border-white/[0.07] px-5 py-2 font-mono text-[13px] text-[var(--mute)]">↑↓ move · Enter run · Esc close · on Leads: J/K move, A approve, H hold, E open</p>
       </div>
     </div>
   );

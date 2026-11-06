@@ -102,11 +102,11 @@ export function BrainChat({
       <div className="flex items-center justify-between border-b border-[var(--accent-deep)]/30 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-[var(--accent-soft)]">
+          <span className="font-mono text-[13px] uppercase tracking-[0.3em] text-[var(--accent-soft)]">
             {personaName} · direct line
           </span>
         </div>
-        <span className="font-mono text-[10px] text-slate-600">CMD+K</span>
+        <span className="font-mono text-[13px] text-slate-600">CMD+K</span>
       </div>
 
       {/* messages — collapses to nothing when idle */}

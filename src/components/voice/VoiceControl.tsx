@@ -321,7 +321,7 @@ export function VoiceControl({
       {!compact && (
         <p
           data-testid={`${testId}-state-label`}
-          className="font-mono text-[11px] uppercase tracking-[1.2px] text-[#7a93ad]"
+          className="font-mono text-[13px] uppercase tracking-[1.2px] text-[#7a93ad]"
         >
           {isListening
             ? "Listening"
@@ -343,7 +343,7 @@ export function VoiceControl({
           data-testid={`${testId}-transcript`}
           className="max-w-xs rounded-[8px] border border-[#16263d] bg-[#0a1224] px-3 py-2"
         >
-          <p className="text-[14px] leading-[20px] text-[#b7d0e6]">
+          <p className="text-[15px] leading-[20px] text-[#b7d0e6]">
             {transcript || interimTranscript}
             {interimTranscript && !transcript && (
               <span className="text-[#7a93ad]"> …</span>
@@ -357,7 +357,7 @@ export function VoiceControl({
         <p
           data-testid={`${testId}-error`}
           role="alert"
-          className="text-[12px] leading-[16px] text-[#00e5ff]"
+          className="text-[14px] leading-[16px] text-[#00e5ff]"
         >
           {errorMsg}
         </p>

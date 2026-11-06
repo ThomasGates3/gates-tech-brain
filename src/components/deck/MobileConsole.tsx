@@ -40,7 +40,7 @@ export function MobileConsole({ personaName, greeting }: { personaName: string; 
                 <CoreOrb state={active ? "thinking" : "idle"} className="h-10 w-10" />
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-500">AI Brain</p>
+                <p className="font-mono text-[13px] uppercase tracking-[0.3em] text-slate-500">AI Brain</p>
                 <p className="text-sm font-semibold text-[var(--accent)]">{personaName}</p>
               </div>
             </div>

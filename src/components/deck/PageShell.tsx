@@ -9,7 +9,7 @@ export function PageShell({ title, subtitle, children }: { title: string; subtit
       <main className="relative w-full px-4 py-5 lg:px-6">
         <div className="mb-4">
           <h1 className="text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
-          {subtitle && <p className="mt-0.5 text-[13px] text-slate-500">{subtitle}</p>}
+          {subtitle && <p className="mt-0.5 text-[15px] text-slate-500">{subtitle}</p>}
         </div>
         {children}
       </main>

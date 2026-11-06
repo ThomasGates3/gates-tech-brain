@@ -9,7 +9,7 @@ interface Data { date: string; counts: Record<string, number>; leads: Lead[] }
 
 // Most urgent first: Thomas's approvals, then sends, Nick, drafts.
 const RANK: Record<string, number> = { PASS: 0, approved: 1, atNick: 2, drafted: 3, undrafted: 4 };
-const btn = "min-h-[36px] rounded-md px-3 text-[12px] font-medium transition-colors disabled:opacity-40";
+const btn = "min-h-[36px] rounded-md px-3 text-[14px] font-medium transition-colors disabled:opacity-40";
 
 export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topCount?: number }) {
   const [data, setData] = useState<Data | null>(null);
@@ -47,17 +47,17 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
   return (
     <div data-testid="leads-card" className={`flex flex-col deck-card rounded-2xl p-4 backdrop-blur ${fill ? "min-h-0 flex-1" : ""}`}>
       <div className="mb-3 flex items-center justify-between">
-        <a href="/leads" data-testid="leads-open" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
+        <a href="/leads" data-testid="leads-open" className="flex min-h-[44px] items-center gap-2 font-mono lg:min-h-0 text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">
           <span className="h-1 w-4 bg-[var(--accent)]" />Your queue →
         </a>
-        <span className="font-mono text-[10px] text-slate-500">{data ? `${c.total} · ${data.date}` : "…"}</span>
+        <span className="font-mono text-[13px] text-slate-500">{data ? `${c.total} · ${data.date}` : "…"}</span>
       </div>
       <ul className={`mb-3 space-y-1.5 ${fill ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`} data-testid="leads-top">
         {top.map((l) => (
           <li key={l.contact_id} className="flex items-center gap-2">
             <a href={`/leads?open=${encodeURIComponent(l.contact_id)}`} title="Read the email" className="flex min-h-[44px] min-w-0 flex-1 items-center justify-between gap-3 rounded px-1 py-0.5 hover:bg-white/[0.03] lg:min-h-0">
-              <span className="truncate text-[13px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[10px] text-slate-500">{l.lane}</span></span>
-              {l.email1_status !== "PASS" && <span className="shrink-0 text-[12px] text-[var(--accent-soft)]">{l.next_action}</span>}
+              <span className="truncate text-[15px] text-slate-200">{l.business}<span className="ml-1.5 font-mono text-[13px] text-slate-500">{l.lane}</span></span>
+              {l.email1_status !== "PASS" && <span className="shrink-0 text-[14px] text-[var(--accent-soft)]">{l.next_action}</span>}
             </a>
             {l.email1_status === "PASS" && (
               <button
@@ -65,14 +65,14 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
                 disabled={!!busy}
                 title="Approve (does not send)"
                 onClick={() => act(`approve-${l.contact_id}`, async () => { await callTool("brain_approve", { contact_id: l.contact_id }); return `Approved ${l.business}. It waits for warm-up before it can send.`; })}
-                className="min-h-[44px] shrink-0 rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40 lg:min-h-[28px] lg:px-2 lg:text-[11px]"
+                className="min-h-[44px] shrink-0 rounded-md bg-[var(--accent)] px-3 text-[14px] font-medium text-black hover:bg-[var(--accent-bright)] disabled:opacity-40 lg:min-h-[28px] lg:px-2 lg:text-[13px]"
               >
                 {busy === `approve-${l.contact_id}` ? "…" : "Approve"}
               </button>
             )}
           </li>
         ))}
-        {data && !top.length && <li className="text-[12px] text-slate-500">Nothing waiting. Load the morning pack to start.</li>}
+        {data && !top.length && <li className="text-[14px] text-slate-500">Nothing waiting. Load the morning pack to start.</li>}
       </ul>
       <div className="flex flex-wrap gap-2">
         <a href="/leads" className={`${btn} grid place-items-center bg-[var(--accent)] text-black hover:bg-[var(--accent-bright)]`}>Open leads</a>
@@ -83,7 +83,7 @@ export function LeadsCard({ fill = false, topCount = 3 }: { fill?: boolean; topC
           </button>
         )}
       </div>
-      {msg && <p className="mt-2 text-[12px] text-slate-300" data-testid="leads-msg">{msg}</p>}
+      {msg && <p className="mt-2 text-[14px] text-slate-300" data-testid="leads-msg">{msg}</p>}
     </div>
   );
 }

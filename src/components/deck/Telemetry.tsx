@@ -35,16 +35,16 @@ export function StatPanel({ title, stats, onClick, "data-testid": testId = "stat
     >
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">{title}</span>
+        <span className="font-mono text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">{title}</span>
       </div>
       <div className="space-y-2">
         {stats.map((s) => (
           <div key={s.label} data-testid={`stat-${s.label}`}>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{s.label}</span>
+              <span className="font-mono text-[13px] uppercase tracking-wider text-slate-500">{s.label}</span>
               <span className="font-mono text-sm text-slate-100">
                 {s.value}
-                {s.sub && <span className="ml-1 text-[10px] text-slate-500">{s.sub}</span>}
+                {s.sub && <span className="ml-1 text-[13px] text-slate-500">{s.sub}</span>}
               </span>
             </div>
             {typeof s.bar === "number" && (
@@ -138,40 +138,40 @@ export function ActivityFeed({
         <div className="flex items-center gap-2">
           <span className="h-1 w-4 bg-[var(--accent)]" />
           {href ? (
-            <a href={href} data-testid="activity-open" className="inline-flex min-h-[44px] items-center font-mono lg:min-h-0 text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">Activity →</a>
+            <a href={href} data-testid="activity-open" className="inline-flex min-h-[44px] items-center font-mono lg:min-h-0 text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)] hover:text-[var(--accent)]">Activity →</a>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
+            <span className="font-mono text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Activity</span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {loaded && (blocked > 0 || hideBlocked) && (
             <button onClick={toggleBlocked} data-testid="activity-hide-blocked" aria-pressed={hideBlocked}
               title="Failures caused by warm-up not confirmed or nothing approved yet"
-              className={`min-h-[28px] rounded-md border px-2 font-mono text-[10px] ${hideBlocked ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]" : "border-white/10 text-slate-400 hover:border-[var(--accent)]/40"}`}>
+              className={`min-h-[28px] rounded-md border px-2 font-mono text-[13px] ${hideBlocked ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent)]" : "border-white/10 text-slate-400 hover:border-[var(--accent)]/40"}`}>
               {hideBlocked ? `Show blocked (${blocked})` : `Hide blocked (${blocked})`}
             </button>
           )}
-          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--accent-soft)]"><span className="live-dot" />live</span>
+          <span className="flex items-center gap-1.5 font-mono text-[13px] text-[var(--accent-soft)]"><span className="live-dot" />live</span>
         </div>
       </div>
       {filterable && (
         <div className="mb-3 flex flex-wrap gap-2">
-          <select value={agent} onChange={(e) => setAgent(e.target.value)} data-testid="activity-agent" aria-label="Agent" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200">
+          <select value={agent} onChange={(e) => setAgent(e.target.value)} data-testid="activity-agent" aria-label="Agent" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[14px] text-slate-200">
             <option value="">All agents</option>
             {agents.map((a) => <option key={a}>{a}</option>)}
           </select>
-          <select value={kind} onChange={(e) => setKind(e.target.value)} data-testid="activity-kind" aria-label="Kind" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[12px] text-slate-200">
+          <select value={kind} onChange={(e) => setKind(e.target.value)} data-testid="activity-kind" aria-label="Kind" className="min-h-[36px] rounded-md border border-white/10 bg-black/40 px-2 text-[14px] text-slate-200">
             <option value="">All kinds</option>
             {Object.keys(KIND_META).map((k) => <option key={k}>{k}</option>)}
           </select>
-          <label className="flex items-center gap-1.5 self-center text-[12px] text-slate-400">
+          <label className="flex items-center gap-1.5 self-center text-[14px] text-slate-400">
             <input type="checkbox" checked={lookups} onChange={(e) => setLookups(e.target.checked)} data-testid="activity-lookups" /> Show lookups
           </label>
-          <span className="self-center font-mono text-[10px] text-slate-500">{shown.length} shown</span>
+          <span className="self-center font-mono text-[13px] text-slate-500">{shown.length} shown</span>
         </div>
       )}
       {loaded && items.length === 0 && (
-        <p className="py-6 text-center text-[12px] text-[var(--mute)]">Nothing yet. Bot calls, drafts and sends show up here as they happen.</p>
+        <p className="py-6 text-center text-[14px] text-[var(--mute)]">Nothing yet. Bot calls, drafts and sends show up here as they happen.</p>
       )}
       <ul className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
         {entries.map((e) => {
@@ -184,16 +184,16 @@ export function ActivityFeed({
             <li key={e.key} data-testid="activity-group" className="border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
               <button type="button" onClick={() => toggleOpen(e.key)} aria-expanded={isOpen} data-testid="activity-group-toggle"
                 className="log-line flex w-full gap-2.5 text-left">
-                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[13px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
                   {m.icon}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-start justify-between gap-2 text-[13px] leading-snug" style={first.kind === "alert" ? { color: m.color } : undefined}>
+                  <p className="flex items-start justify-between gap-2 text-[15px] leading-snug" style={first.kind === "alert" ? { color: m.color } : undefined}>
                     <span className={first.kind === "alert" ? "" : "text-slate-100"}>{e.summary}</span>
-                    <span className={`mt-0.5 shrink-0 font-mono text-[10px] text-[var(--accent-soft)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden>▾</span>
+                    <span className={`mt-0.5 shrink-0 font-mono text-[13px] text-[var(--accent-soft)] transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden>▾</span>
                   </p>
-                  {becauses.length === 1 && becauses[0] && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{becauses[0]}</p>}
-                  <p className="mt-0.5 font-mono text-[10px] text-slate-600">
+                  {becauses.length === 1 && becauses[0] && <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-slate-500">{becauses[0]}</p>}
+                  <p className="mt-0.5 font-mono text-[13px] text-slate-600">
                     {first.agent ? `${first.agent.charAt(0).toUpperCase()}${first.agent.slice(1)} · ` : ""}latest {first.at} · {isOpen ? "tap to collapse" : `tap to see all ${e.items.length}`}
                   </p>
                 </div>
@@ -206,7 +206,7 @@ export function ActivityFeed({
             </li>
           );
         })}
-        {loaded && <li className="log-cursor pl-2.5 font-mono text-[10px] text-[var(--mute)]" aria-hidden>listening for bot calls</li>}
+        {loaded && <li className="log-cursor pl-2.5 font-mono text-[13px] text-[var(--mute)]" aria-hidden>listening for bot calls</li>}
       </ul>
     </div>
   );
@@ -216,15 +216,15 @@ function ActivityRow({ a }: { a: Activity }) {
   const m = KIND_META[a.kind];
   return (
     <li data-testid={`activity-${a.id}`} className="log-line flex gap-2.5 border-l border-white/[0.05] pl-2.5 hover:border-[var(--accent)]/50">
-      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[11px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
+      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md text-[13px]" style={{ color: m.color, background: "rgba(255,255,255,0.03)", boxShadow: `inset 0 0 0 1px ${m.color}40, 0 0 10px -2px ${m.color}66` }}>
         {m.icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] leading-snug" style={a.kind === "alert" ? { color: m.color } : undefined}>
+        <p className="text-[15px] leading-snug" style={a.kind === "alert" ? { color: m.color } : undefined}>
           <span className={a.kind === "alert" ? "" : "text-slate-100"}>{a.target}</span>
         </p>
-        {a.because && <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-slate-500">{a.because}</p>}
-        <p className="mt-0.5 font-mono text-[10px] text-slate-600">
+        {a.because && <p className="mt-0.5 line-clamp-2 text-[14px] leading-snug text-slate-500">{a.because}</p>}
+        <p className="mt-0.5 font-mono text-[13px] text-slate-600">
           {a.agent ? `${a.agent.charAt(0).toUpperCase()}${a.agent.slice(1)} · ` : ""}{a.at}
         </p>
       </div>

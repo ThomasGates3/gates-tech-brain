@@ -202,7 +202,7 @@ export default function CoreOrb({
       {showLabel && (
         <div
           className="absolute -bottom-5 left-1/2 -translate-x-1/2 font-mono uppercase"
-          style={{ color: cfg.color, fontSize: 10, letterSpacing: "3px" }}
+          style={{ color: cfg.color, fontSize: 13, letterSpacing: "3px" }}
         >
           {cfg.label}
         </div>

@@ -51,9 +51,9 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="h-1 w-4 bg-[var(--accent)]" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Automations</span>
+          <span className="font-mono text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Automations</span>
         </div>
-        <span className="font-mono text-[10px] text-slate-600">{shown.length} available</span>
+        <span className="font-mono text-[13px] text-slate-600">{shown.length} available</span>
       </div>
 
       {/* category filter */}
@@ -63,7 +63,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
             key={c.id}
             data-testid={`autocat-${c.id}`}
             onClick={() => setCat(c.id)}
-            className={`min-h-[32px] rounded-full px-3 text-[11px] transition-colors ${
+            className={`min-h-[32px] rounded-full px-3 text-[13px] transition-colors ${
               cat === c.id ? "bg-[var(--accent)] text-black" : "bg-white/5 text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -83,9 +83,9 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-100">{a.name}</p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-slate-500">{a.description}</p>
+                  <p className="mt-0.5 text-[14px] leading-snug text-slate-500">{a.description}</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[var(--accent-soft)]">
+                <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 font-mono text-[12px] uppercase tracking-wide text-[var(--accent-soft)]">
                   {TRIGGER_BADGE[a.trigger.kind]}
                 </span>
               </div>
@@ -100,7 +100,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                       placeholder={p}
                       value={vars[p] ?? ""}
                       onChange={(e) => setVars((v) => ({ ...v, [p]: e.target.value }))}
-                      className="min-h-[38px] w-full rounded-md border border-white/10 bg-black/40 px-2.5 text-[13px] text-slate-100 placeholder:text-slate-600 outline-none focus:border-[var(--accent)]/60"
+                      className="min-h-[38px] w-full rounded-md border border-white/10 bg-black/40 px-2.5 text-[15px] text-slate-100 placeholder:text-slate-600 outline-none focus:border-[var(--accent)]/60"
                     />
                   ))}
                 </div>
@@ -111,7 +111,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                   <button
                     data-testid={`auto-open-${a.id}`}
                     onClick={() => setOpenId(a.id)}
-                    className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[12px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10"
+                    className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[14px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10"
                   >
                     Configure & run
                   </button>
@@ -122,7 +122,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                       onClick={() => run(a.id, true)}
                       disabled={st?.loading}
                       title="Generate only. Nothing is delivered."
-                      className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[12px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
+                      className="min-h-[36px] rounded-md border border-[var(--accent)]/40 px-3 text-[14px] text-[var(--accent-soft)] hover:bg-[var(--accent)]/10 disabled:opacity-50"
                     >
                       {st?.loading ? "Running…" : "Dry run"}
                     </button>
@@ -131,7 +131,7 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
                       onClick={() => run(a.id, false)}
                       disabled={st?.loading}
                       title="Generate and deliver the draft to its channels (deck, Discord). Never sends outreach."
-                      className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[12px] font-medium text-black transition-colors hover:bg-[var(--accent-bright)] disabled:opacity-50"
+                      className="min-h-[36px] rounded-md bg-[var(--accent)] px-3 text-[14px] font-medium text-black transition-colors hover:bg-[var(--accent-bright)] disabled:opacity-50"
                     >
                       Run + deliver
                     </button>
@@ -143,9 +143,9 @@ export function AutomationsPanel({ "data-testid": testId = "automations-panel" }
               {st && !st.loading && (st.output || st.error) && (
                 <div className="mt-3 rounded-md border border-white/5 bg-black/40 p-2.5" data-testid={`auto-result-${a.id}`}>
                   {st.error ? (
-                    <p className="text-[12px] text-[var(--orb-error,#ff3b30)]">{st.error}</p>
+                    <p className="text-[14px] text-[var(--orb-error,#ff3b30)]">{st.error}</p>
                   ) : (
-                    <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-slate-300">{st.output}</pre>
+                    <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-[14px] leading-relaxed text-slate-300">{st.output}</pre>
                   )}
                 </div>
               )}

@@ -133,21 +133,21 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <PriorityBadge priority={c.priority} />
           <StageBadge stage={c.stage} />
-          {c.suppressed && <span className="rounded-full border border-red-500/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-red-400">Suppressed</span>}
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-600">{c.source}</span>
+          {c.suppressed && <span className="rounded-full border border-red-500/40 px-2 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-red-400">Suppressed</span>}
+          <span className="font-mono text-[13px] uppercase tracking-[0.14em] text-slate-600">{c.source}</span>
         </div>
         <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-50">{c.name}</h2>
         <p className="mt-0.5 text-sm text-slate-400">
           {c.email || <span className="text-red-400">no email</span>} · {c.city || "—"} · {c.batch || "—"}
         </p>
         {c.gap && (
-          <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[13px] leading-relaxed text-slate-300">
-            <span className="mr-2 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Gap</span>
+          <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[15px] leading-relaxed text-slate-300">
+            <span className="mr-2 font-mono text-[13px] uppercase tracking-[0.2em] text-slate-500">Gap</span>
             {c.gap}
           </p>
         )}
-        {c.priority === "Soft" && <p className="mt-3 text-[13px] text-amber-200/80">Soft tier — Hold only. Not draftable or sendable in v1.</p>}
-        {c.lastError && c.stage === "approved" && <p className="mt-3 text-[13px] text-red-400">Last send attempt failed: {c.lastError}</p>}
+        {c.priority === "Soft" && <p className="mt-3 text-[15px] text-amber-200/80">Soft tier — Hold only. Not draftable or sendable in v1.</p>}
+        {c.lastError && c.stage === "approved" && <p className="mt-3 text-[15px] text-red-400">Last send attempt failed: {c.lastError}</p>}
       </div>
 
       {/* 1 — Draft */}
@@ -169,8 +169,8 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           )}
         </div>
 
-        <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[12px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#00e5ff]/30 bg-[#00e5ff]/[0.06] text-[#7fdfff]")} data-testid="price-banner">
-          <strong className="font-mono text-[10px] uppercase tracking-[0.2em]">Outreach brief</strong> · no prices, stats, client claims, HIPAA claims, &quot;week&quot;/&quot;weak&quot;, em dashes or hype. Under 110 words.
+        <div className={cx("mb-3 rounded-lg border px-3 py-2 text-[14px]", lint.length ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-[#00e5ff]/30 bg-[#00e5ff]/[0.06] text-[#7fdfff]")} data-testid="price-banner">
+          <strong className="font-mono text-[13px] uppercase tracking-[0.2em]">Outreach brief</strong> · no prices, stats, client claims, HIPAA claims, &quot;week&quot;/&quot;weak&quot;, em dashes or hype. Under 110 words.
           {lint.length > 0 && <span className="mt-1 block">Found: {lint.map((i) => `“${i.match}” (${i.rule})`).join(", ")}</span>}
         </div>
 
@@ -200,10 +200,10 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         </label>
         {editable && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-600">Insert</span>
-            <button type="button" onClick={() => insert(c.name)} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-slate-300 hover:bg-white/5">business</button>
+            <span className="font-mono text-[13px] uppercase tracking-[0.2em] text-slate-600">Insert</span>
+            <button type="button" onClick={() => insert(c.name)} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[14px] text-slate-300 hover:bg-white/5">business</button>
             {c.city && (
-              <button type="button" onClick={() => insert(c.city.replace(/\s*\(.*?\)\s*/g, " ").trim())} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[12px] text-slate-300 hover:bg-white/5">city</button>
+              <button type="button" onClick={() => insert(c.city.replace(/\s*\(.*?\)\s*/g, " ").trim())} className="min-h-[32px] rounded-lg border border-white/10 px-2 text-[14px] text-slate-300 hover:bg-white/5">city</button>
             )}
             <div className="ml-auto flex gap-2">
               {dirty && (
@@ -216,7 +216,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
           </div>
         )}
         {dirty && (c.nickVerdict === "PASS" || c.stage === "approved") && (
-          <p className="mt-2 text-[12px] text-amber-200/80">Saving edits clears Nick PASS{c.stage === "approved" ? " and Thomas's approval" : ""}.</p>
+          <p className="mt-2 text-[14px] text-amber-200/80">Saving edits clears Nick PASS{c.stage === "approved" ? " and Thomas's approval" : ""}.</p>
         )}
       </section>
 
@@ -232,10 +232,10 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         </div>
         {c.nickVerdict ? (
           <p className="mb-3 text-sm text-slate-300">
-            <span className={cx("mr-2 font-mono text-[11px] tracking-widest", c.nickVerdict === "PASS" ? "text-emerald-300" : c.nickVerdict === "REVISE" ? "text-amber-200" : "text-red-400")}>{c.nickVerdict}</span>
+            <span className={cx("mr-2 font-mono text-[13px] tracking-widest", c.nickVerdict === "PASS" ? "text-emerald-300" : c.nickVerdict === "REVISE" ? "text-amber-200" : "text-red-400")}>{c.nickVerdict}</span>
             {c.nickNote && <span className="text-slate-400">“{c.nickNote}”</span>}
-            <span className="ml-2 font-mono text-[10px] text-slate-600">{c.nickBy} · {c.nickAt ? new Date(c.nickAt).toLocaleString() : ""}</span>
-            {c.nickVerdict === "PASS" && c.nickHash !== c.draftHash && <span className="mt-1 block text-[12px] text-amber-200/80">Draft changed after this PASS — needs a fresh audit.</span>}
+            <span className="ml-2 font-mono text-[13px] text-slate-600">{c.nickBy} · {c.nickAt ? new Date(c.nickAt).toLocaleString() : ""}</span>
+            {c.nickVerdict === "PASS" && c.nickHash !== c.draftHash && <span className="mt-1 block text-[14px] text-amber-200/80">Draft changed after this PASS — needs a fresh audit.</span>}
           </p>
         ) : (
           <p className="mb-3 text-sm text-slate-500">{c.stage === "nick" ? "Waiting on Nick." : "No verdict yet."}</p>
@@ -264,7 +264,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
             </div>
           </>
         )}
-        {dirty && (c.stage === "drafted" || c.stage === "nick") && <p className="text-[12px] text-slate-500">Save the draft before recording a verdict.</p>}
+        {dirty && (c.stage === "drafted" || c.stage === "nick") && <p className="text-[14px] text-slate-500">Save the draft before recording a verdict.</p>}
       </section>
 
       {/* 3 — Approve / Send */}
@@ -289,7 +289,7 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
                 Send via AgentMail
               </Button>
             </div>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-600" data-testid="greenlight-why">
+            <p className="mt-2 font-mono text-[13px] uppercase tracking-[0.14em] text-slate-600" data-testid="greenlight-why">
               {c.stage === "approved" ? sendWhy ?? "Ready — one email, explicit confirm." : approveWhy ?? "Ready to approve."}
             </p>
           </>
@@ -309,8 +309,8 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
         </div>
       )}
 
-      {err && <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[13px] text-red-300" role="alert" data-testid="panel-error">{err}</p>}
-      {info && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[13px] text-slate-300" role="status" data-testid="panel-info">{info}</p>}
+      {err && <p className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[15px] text-red-300" role="alert" data-testid="panel-error">{err}</p>}
+      {info && <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[15px] text-slate-300" role="status" data-testid="panel-info">{info}</p>}
 
       {confirm && (
         <Modal title="Send Email 1 · confirm" onClose={() => busy !== "send" && setConfirm(false)} data-testid="send-confirm">
@@ -322,10 +322,10 @@ function Panel({ contact: c, config, onChanged, onSent }: Props) {
             <dt className="text-slate-500">Subject</dt>
             <dd className="text-slate-200">{c.subject}</dd>
           </dl>
-          <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 font-sans text-[13px] leading-relaxed text-slate-300">
+          <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/50 p-3 font-sans text-[15px] leading-relaxed text-slate-300">
             {composeOutgoing(c.body, config.footer)}
           </pre>
-          {!config.domainWarmed && <p className="mt-3 text-[12px] text-amber-200/80">Domain warm-up isn&apos;t confirmed (FIELD_DOMAIN_WARMED). Keep volume to one-at-a-time.</p>}
+          {!config.domainWarmed && <p className="mt-3 text-[14px] text-amber-200/80">Domain warm-up isn&apos;t confirmed (FIELD_DOMAIN_WARMED). Keep volume to one-at-a-time.</p>}
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="quiet" disabled={busy === "send"} onClick={() => setConfirm(false)}>Cancel</Button>
             <Button variant="primary" disabled={busy === "send"} onClick={send} data-testid="send-confirm-button">

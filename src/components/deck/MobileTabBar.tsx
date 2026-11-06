@@ -83,12 +83,12 @@ export function MobileTabBar() {
                 key={m.href}
                 href={m.href}
                 aria-current={isOn(path, m.href) ? "page" : undefined}
-                className={`flex min-h-[52px] items-center justify-center rounded-2xl border px-2 text-[13px] transition-colors active:scale-[0.98] ${isOn(path, m.href) ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-bright)]" : "border-white/8 bg-white/[0.03] text-slate-300"}`}
+                className={`flex min-h-[52px] items-center justify-center rounded-2xl border px-2 text-[15px] transition-colors active:scale-[0.98] ${isOn(path, m.href) ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--accent-bright)]" : "border-white/8 bg-white/[0.03] text-slate-300"}`}
               >
                 {m.label}
               </Link>
             ))}
-            <button onClick={openPalette} className="flex min-h-[52px] items-center justify-center gap-1.5 rounded-2xl border border-white/8 bg-white/[0.03] px-2 text-[13px] text-slate-300 active:scale-[0.98]">
+            <button onClick={openPalette} className="flex min-h-[52px] items-center justify-center gap-1.5 rounded-2xl border border-white/8 bg-white/[0.03] px-2 text-[15px] text-slate-300 active:scale-[0.98]">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               Search
             </button>

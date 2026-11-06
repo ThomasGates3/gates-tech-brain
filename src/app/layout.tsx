@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/Toast";
 import { CommandPalette } from "@/components/ui/CommandPalette";
@@ -10,7 +10,8 @@ const geistSans = Geist({
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
+// JetBrains Mono keeps "i" and "1" distinct at small sizes, where Geist Mono read as "1nbox".
+const geistMono = JetBrains_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
