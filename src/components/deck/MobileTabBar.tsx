@@ -36,7 +36,8 @@ const TABS: Tab[] = [
 const TAB_HREFS: string[] = TABS.map((t) => t.href);
 const MORE = NAV.filter((n) => !TAB_HREFS.includes(n.href));
 
-const isOn = (path: string, href: string) => (href === "/" ? path === "/" : path.startsWith(href));
+// Phones opening / are redirected to /m, so /m is Home for them.
+const isOn = (path: string, href: string) => (href === "/" ? path === "/" || path === "/m" : path.startsWith(href));
 
 export function MobileTabBar() {
   const path = usePathname() ?? "/";
@@ -108,7 +109,7 @@ export function MobileTabBar() {
             className="tabbar-bump pointer-events-none absolute -top-[19px] left-0 flex w-1/5 justify-center"
             style={{ transform: `translateX(${idx * 100}%)` }}
           >
-            <svg width="100%" height="22" viewBox="0 0 96 22" preserveAspectRatio="none" fill="none" className="max-w-[88px] overflow-visible">
+            <svg width="100%" height="22" viewBox="0 0 96 22" preserveAspectRatio="none" fill="none" className="max-w-[52px] overflow-visible">
               <path d="M0 21 C 20 21 24 2 48 2 C 72 2 76 21 96 21 L96 24 L0 24 Z" fill="var(--tabbar-bg)" />
               <path d="M0 21 C 20 21 24 2 48 2 C 72 2 76 21 96 21" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" vectorEffect="non-scaling-stroke" style={{ filter: "drop-shadow(0 0 6px var(--accent-glow))" }} />
             </svg>

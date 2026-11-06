@@ -337,7 +337,7 @@ tr[data-kbd-active="true"] { box-shadow: inset 2px 0 0 var(--accent); background
 .live-dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: orb-pulse 1.8s ease-in-out infinite; }
 
 /* ─── Navigation: desktop lamp + phone glass tab bar ─────────────────────── */
-:root { --tabbar-bg: rgba(8, 16, 31, 0.92); }
+:root { --tabbar-bg: rgba(8, 16, 31, 0.58); }
 
 /* Desktop lamp: a bright bar on the nav's top edge with a cone of light falling on the active link. */
 .nav-lamp {
@@ -360,11 +360,11 @@ tr[data-kbd-active="true"] { box-shadow: inset 2px 0 0 var(--accent); background
 
 /* Phone tab bar */
 .tabbar-glass {
-  background: linear-gradient(180deg, rgba(14, 26, 46, 0.86), var(--tabbar-bg));
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-  border: 1px solid rgba(127, 223, 255, 0.14);
-  box-shadow: inset 0 1px 0 rgba(234, 247, 255, 0.07), 0 18px 40px -16px rgba(0, 0, 0, 0.9);
+  background: linear-gradient(180deg, rgba(40, 62, 92, 0.42), var(--tabbar-bg));
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(190, 235, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(234, 247, 255, 0.16), 0 18px 40px -16px rgba(0, 0, 0, 0.9);
 }
 .tabbar-bump { transition: transform .42s cubic-bezier(.25,1,.32,1); }
 .tabbar-underglow {
