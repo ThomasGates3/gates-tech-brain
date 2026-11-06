@@ -362,3 +362,11 @@ test("activity: warm-up / approval blocks are hideable, real failures are not", 
   assert.equal(a("Auto-draft for Soul Medical didn't go through", "Daily Claude budget reached"), false);
   assert.equal(a("Field gates: domainWarmed false → true", "set by thomas", "updated"), false);
 });
+
+test("sortIntoFolders: no date yet (before /api/leads loads) returns empty folders instead of throwing", async () => {
+  const { sortIntoFolders } = await import("./folders");
+  for (const today of ["", "undefined", "not-a-date"]) {
+    const s = sortIntoFolders([], today);
+    assert.deepEqual(s, { new: [], approved: [], sent: [], followup: [] });
+  }
+});
