@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { operatorForPassword, issueToken, GATE_COOKIE, cookieOptions, gateEnabled } from "@/lib/gate";
+import { clearLoginFailures, loginBlocked, recordLoginFailure, WINDOW_MINUTES } from "@/lib/login-limit";
 
 const Schema = z.object({ password: z.string().min(1).max(200) });
 
@@ -19,11 +20,18 @@ export async function POST(req: Request) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return Response.json({ ok: false, error: "Password required" }, { status: 400 });
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (await loginBlocked(ip)) {
+    return Response.json({ ok: false, error: `Too many attempts. Try again in ${WINDOW_MINUTES} minutes.` }, { status: 429 });
+  }
+
   const operator = operatorForPassword(parsed.data.password);
   if (!operator) {
+    await recordLoginFailure(ip);
     return Response.json({ ok: false, error: "Incorrect password" }, { status: 401 });
   }
 
+  await clearLoginFailures(ip);
   const token = await issueToken(operator);
   const res = Response.json({ ok: true, operator });
   res.headers.append(

@@ -10,7 +10,6 @@ import { claude, LIGHT, OPS } from "@/lib/models";
 import { executeToolCall } from "@/lib/tools/router";
 import { registry } from "@/lib/connectors/registry";
 import { createNotebook, addSource, askNotebook, generateBriefing } from "@/lib/notebooklm";
-import { dispatchDevTask, DEV_TARGETS } from "@/lib/builder/dev-agent";
 import { fieldSnapshot } from "@/lib/field/snapshot";
 import { listLog, listQueue } from "@/lib/field/store";
 import { todayIn } from "@/lib/field/config";
@@ -88,17 +87,6 @@ const notebooklmTools = {
   }),
 };
 
-/** Dev-agent (Lynx builds): spins up a coding agent against a Gates repo, on a branch. Local only. */
-const devTool = tool({
-  description:
-    "Dispatch a coding agent to do a development task on one of the business apps (create a feature, fix a bug, refactor). Runs on a branch; returns the agent's output.",
-  inputSchema: z.object({
-    repo: z.enum(DEV_TARGETS as [string, ...string[]]).describe("Which repo to work on"),
-    task: z.string().describe("Clear, self-contained dev task"),
-  }),
-  execute: async ({ repo, task }) => dispatchDevTask(repo, task),
-});
-
 function makeAgent(id: SpecialistId, system: string, tools: ToolSet, model = OPS) {
   return new Experimental_Agent({
     id,
@@ -143,7 +131,7 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
   ),
   devops: makeAgent(
     "devops",
-    "You are the DevOps specialist (supports Lynx). Use GitHub and Vercel to inspect the gatestech.solutions and Brain repos and deployments. Read and report; never run destructive operations.",
+    "You are the DevOps specialist (supports Lynx). Use GitHub and Vercel to inspect the gatestech.solutions and Brain repos and deployments. Read and report; never run destructive operations. Anything that changes something waits on Thomas to approve it.",
     connectorTools(["github", "vercel"])
   ),
   comms: makeAgent(
@@ -154,11 +142,8 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
   ),
   operator: makeAgent(
     "operator",
-    "You are the Operator specialist for Gates Technologies. Use the Gates Tech site (bookings/intake) and Speed to Lead connectors to look things up and prepare drafts. You cannot send outreach: anything outbound goes through the Field path (Nick PASS, then Thomas approves). For build work, dispatch the coding agent to the Brain repo on a branch.",
-    {
-      ...connectorTools(["gates-tech", "speed-to-lead"]),
-      dev_task: devTool,
-    }
+    "You are the Operator specialist for Gates Technologies. Use the Gates Tech site (bookings/intake) and Speed to Lead connectors to look things up and prepare drafts. You cannot send outreach: anything outbound goes through the Field path (Nick PASS, then Thomas approves).",
+    connectorTools(["gates-tech", "speed-to-lead"])
   ),
 };
 

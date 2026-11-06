@@ -4,6 +4,7 @@
  * Fail-closed: rejects unless the secret is set AND matches — so it's never open,
  * even though it bypasses the password gate.
  */
+import { sameString } from "@/lib/gate";
 import { runAutomation } from "@/lib/automations/runner";
 import { getAutomation } from "@/lib/automations/catalog";
 import { eveningPings, morningPings } from "@/lib/field/pings";
@@ -28,7 +29,7 @@ export const maxDuration = 300;
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!secret || !sameString(auth ?? "", `Bearer ${secret}`)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

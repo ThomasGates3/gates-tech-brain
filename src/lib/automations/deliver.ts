@@ -43,9 +43,9 @@ async function deliverDiscord({ title, body }: DeliveryPayload): Promise<void> {
         ],
       }),
     });
-    audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { ok: res.ok, status: res.status } });
+    await audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { ok: res.ok, status: res.status } });
   } catch (e) {
-    audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { error: e instanceof Error ? e.message : "unknown" } });
+    await audit.record({ action: "job_run", actor: "delivery", target: "discord", detail: { error: e instanceof Error ? e.message : "unknown" } });
   }
 }
 
@@ -66,14 +66,14 @@ async function deliverSlack({ title, body }: DeliveryPayload): Promise<void> {
         ],
       }),
     });
-    audit.record({ action: "job_run", actor: "delivery", target: "slack", detail: { ok: res.ok, status: res.status } });
+    await audit.record({ action: "job_run", actor: "delivery", target: "slack", detail: { ok: res.ok, status: res.status } });
   } catch (e) {
-    audit.record({ action: "job_run", actor: "delivery", target: "slack", detail: { error: e instanceof Error ? e.message : "unknown" } });
+    await audit.record({ action: "job_run", actor: "delivery", target: "slack", detail: { error: e instanceof Error ? e.message : "unknown" } });
   }
 }
 
 async function deliverEmail({ title }: DeliveryPayload): Promise<void> {
   // Stub: wire a provider (Resend/SMTP) here. Set RESEND_API_KEY + EMAIL_TO.
   if (!process.env.RESEND_API_KEY) return;
-  audit.record({ action: "job_run", actor: "delivery", target: "email", detail: { title, note: "email provider not implemented" } });
+  await audit.record({ action: "job_run", actor: "delivery", target: "email", detail: { title, note: "email provider not implemented" } });
 }

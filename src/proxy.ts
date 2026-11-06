@@ -1,8 +1,7 @@
 /**
- * Edge middleware — password gate + rate limiting + security headers.
+ * Proxy — password gate + rate limiting + security headers.
  *
- * The gate turns ON automatically when ACCESS_PASSWORD is set (so production is
- * locked down as soon as you add the env var). Public paths: /sign-in, /api/auth.
+ * The gate is always on in production (lib/gate). Public paths are listed below.
  * Unauthenticated → /sign-in (pages) or 401 (API).
  */
 import { apiRateLimiter, securityHeaders, corsHeaders } from "@/lib/security";
@@ -21,7 +20,7 @@ const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.jso
 const KEY_PATHS = ["/api/field/", "/api/v1/"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const origin = req.headers.get("origin");
 

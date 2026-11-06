@@ -123,7 +123,7 @@ export interface ToolCall {
 
 export interface ToolResult {
   toolCallId: string;
-  status: Extract<ToolCallStatus, "success" | "error">;
+  status: Extract<ToolCallStatus, "success" | "error" | "awaiting_approval">;
   data?: unknown;
   error?: string;
   latencyMs: number;
@@ -162,36 +162,14 @@ export interface ApprovalRequest {
   expiresAt?: string;
 }
 
-export interface ApprovalResolution {
-  requestId: string;
-  decision: ApprovalDecision;
-  decidedBy: string; // user id
-  decidedAt: string;
-  note?: string;
-}
-
 // ─────────────────────────────────────────────────────────────────────────
-// Autonomous jobs — scheduler + triggers (F5)
+// Automation triggers
 // ─────────────────────────────────────────────────────────────────────────
 
 export type JobTrigger =
   | { kind: "cron"; expression: string }
   | { kind: "webhook"; secretRef: string }
   | { kind: "manual" };
-
-export type JobStatus = "idle" | "queued" | "running" | "success" | "failed";
-
-export interface Job {
-  id: string;
-  name: string;
-  prompt: string; // task handed to the Conductor
-  trigger: JobTrigger;
-  status: JobStatus;
-  vertical?: Vertical;
-  lastRunAt?: string;
-  nextRunAt?: string;
-  report?: { summary: string; deliverTo?: ("deck" | "slack" | "email")[] };
-}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Audit — every action recorded (Security, F6)

@@ -1,19 +1,14 @@
 /**
  * Tool Router — maps a ToolCall → connector HTTP call → ToolResult.
- * Enforces risk-level approval gates (write/destructive pause for human approval).
+ * write/destructive calls don't run here: they're saved for Thomas (lib/approvals)
+ * and run from POST /api/approvals/[id] once he approves.
  */
 import type { ToolCall, ToolResult, ToolSpec, Connector } from "@/lib/types";
 import { registry } from "@/lib/connectors/registry";
 import { vault } from "@/lib/vault";
-import { stubApprovals } from "@/lib/approvals";
-import type { ApprovalHook } from "@/lib/approvals";
-
-let approvalHook: ApprovalHook = stubApprovals;
-
-/** Security agent calls this to wire in the real approval implementation. */
-export function setApprovalHook(hook: ApprovalHook) {
-  approvalHook = hook;
-}
+import { APPROVAL_TTL_HOURS, requestApproval } from "@/lib/approvals";
+import { notifyOnce } from "@/lib/notify";
+import audit from "@/lib/audit";
 
 function buildUrl(connector: Connector, spec: ToolSpec, args: Record<string, unknown>): string {
   let path = spec.path;
@@ -70,7 +65,31 @@ function extractResult(data: unknown, resultPath?: string): unknown {
   return (data as Record<string, unknown>)[resultPath];
 }
 
+/** What agents call. A failure to save the approval returns an error; the action never runs unapproved. */
 export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
+  const spec = registry.get(call.connectorId)?.tools.find((t) => t.name === call.toolName);
+  if (spec?.risk !== "write" && spec?.risk !== "destructive") return runToolCall(call);
+
+  try {
+    const { id, created } = await requestApproval(call, `${call.toolName} has risk level ${spec.risk}.`);
+    if (created) {
+      await audit.record({ action: "approval", actor: call.agentId, target: `${call.connectorId} ${call.toolName}`, detail: { approvalId: id, decision: "requested", args: call.args } });
+      await notifyOnce("approval_waiting", id, "An action needs your approval", `${call.agentId} wants to run ${call.connectorId} ${call.toolName}. Approve or deny it on the Operations page.`);
+    }
+    return {
+      toolCallId: call.id,
+      status: "awaiting_approval",
+      data: { approvalId: id, message: `Not done yet: this is waiting on Thomas to approve it on the Operations page (expires in ${APPROVAL_TTL_HOURS} hours). Tell him that, and don't try it again.` },
+      latencyMs: 0,
+    };
+  } catch (e) {
+    console.error("[tool-router] approval failed", e);
+    return { toolCallId: call.id, status: "error", error: "Couldn't save the approval request, so the action did not run.", latencyMs: 0 };
+  }
+}
+
+/** Runs the HTTP call with no approval check. Only for read tools and calls Thomas has approved. */
+export async function runToolCall(call: ToolCall): Promise<ToolResult> {
   const start = Date.now();
 
   const connector = registry.get(call.connectorId);
@@ -86,26 +105,6 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
       error: `Tool '${call.toolName}' not found in connector '${call.connectorId}'`,
       latencyMs: 0,
     };
-  }
-
-  // Risk gate: write + destructive require approval
-  if (spec.risk === "write" || spec.risk === "destructive") {
-    const decision = await approvalHook.requestApproval({
-      id: `apr_${call.id}`,
-      toolCall: call,
-      reason: `Tool '${call.toolName}' has risk level '${spec.risk}' and requires approval.`,
-      requestedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    });
-
-    if (decision === "denied") {
-      return {
-        toolCallId: call.id,
-        status: "error",
-        error: "Action denied by approval gate",
-        latencyMs: Date.now() - start,
-      };
-    }
   }
 
   try {

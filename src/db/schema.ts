@@ -1,24 +1,9 @@
 /**
  * Drizzle schema — Neon Postgres.
- * Tables: jobs, knowledge_items (pgvector), audit_log, approvals, field_* (Field Console).
+ * Tables: knowledge_items (pgvector), audit_log, approvals, field_* (Field Console).
  * JSON columns hold the typed shapes from @/lib/types (cast on read).
  */
 import { pgTable, text, jsonb, timestamp, boolean, integer } from "drizzle-orm/pg-core";
-
-export const jobs = pgTable("jobs", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  prompt: text("prompt").notNull(),
-  trigger: jsonb("trigger").notNull(),
-  status: text("status").notNull().default("idle"),
-  vertical: text("vertical"),
-  lastRunAt: text("last_run_at"),
-  nextRunAt: text("next_run_at"),
-  report: jsonb("report"),
-  createdAt: text("created_at")
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()),
-});
 
 export const knowledgeItems = pgTable("knowledge_items", {
   id: text("id").primaryKey(),
@@ -66,6 +51,12 @@ export const activity = pgTable("activity", {
   because: text("because"), // rationale ("updated X because Y")
   agent: text("agent"), // which specialist / actor
   at: text("at").notNull(), // ISO timestamp
+});
+
+export const loginAttempts = pgTable("login_attempts", {
+  ip: text("ip").primaryKey(),
+  failures: integer("failures").notNull().default(0),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const approvals = pgTable("approvals", {

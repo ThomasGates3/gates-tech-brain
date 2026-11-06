@@ -255,7 +255,7 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   // The email is out. From here on, failures must be reported, never retried as a resend.
   try {
     const log = await recordSend({ ...contact, subject: view.subject }, { ...sent, inbox: fieldEnv.agentmailInbox(), operator }, n);
-    audit.record({ action: "email_send", actor: operator, target: contact.email, detail: { contactId: contact.id, emailN: n, messageId: sent.messageId } });
+    await audit.record({ action: "email_send", actor: operator, target: contact.email, detail: { contactId: contact.id, emailN: n, messageId: sent.messageId } });
     void recordActivity({ kind: "sent", target: `Email ${n} → ${contact.name}`, because: `Nick PASS + ${view.approvedBy ?? "thomas"} approve`, agent: "ace" });
     void pingIfDayDone();
     // A send proves the approve step happened too; warm-up seeds never count.

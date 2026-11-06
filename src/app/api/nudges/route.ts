@@ -24,8 +24,6 @@ export async function GET() {
   const acts = await recentActivity(5);
   const errors = acts.filter((a) => a.kind === "alert");
   if (errors.length) nudges.push({ id: "alert", tone: "warn", text: `${errors.length} thing${errors.length > 1 ? "s" : ""} flagged recently — top: ${errors[0].target}.` });
-  const spawned = acts.find((a) => a.kind === "spawned");
-  if (spawned) nudges.push({ id: "dev", tone: "good", text: `A dev task ran recently: ${spawned.target}.` });
 
   // Connectors with no credential set (can't actually run yet).
   const noKey = registry.all().filter((c) => c.enabled && !c.credential).length;

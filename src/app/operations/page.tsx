@@ -1,5 +1,6 @@
 import { PageShell } from "@/components/deck/PageShell";
 import { OperationsPanel } from "@/components/deck/DeckModals";
+import { ApprovalsPanel } from "@/components/deck/ApprovalsPanel";
 
 const TABS = ["connections", "agents", "access"] as const;
 
@@ -9,7 +10,8 @@ export default async function OperationsPage({ searchParams }: { searchParams: P
   const { tab } = await searchParams;
   const initial = (TABS as readonly string[]).includes(tab ?? "") ? (tab as (typeof TABS)[number]) : "connections";
   return (
-    <PageShell title="Operations" subtitle="Connections, the Grok bot roster, and API keys for the MCP server.">
+    <PageShell title="Operations" subtitle="Approvals, connections, the Grok bot roster, and API keys for the MCP server.">
+      <ApprovalsPanel />
       <OperationsPanel initialTab={initial} wide />
     </PageShell>
   );

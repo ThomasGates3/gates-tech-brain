@@ -8,6 +8,7 @@ import { deliver } from "@/lib/automations/deliver";
 import { recordActivity } from "@/lib/activity";
 
 export const NOTIFICATIONS = [
+  { id: "approval_waiting", label: "An action needs your approval", when: "Right away, when an agent wants to do something that changes data outside the Brain.", default: true },
   { id: "emails_done", label: "All of today's emails are out", when: "Right after the last approved email of the day sends.", default: true },
   { id: "cap_reached", label: "Daily send cap hit", when: "When the cap stops sends while approved emails are still waiting.", default: false },
   { id: "send_failed", label: "A send failed", when: "Right away, when AgentMail rejects an email.", default: false },
