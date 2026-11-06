@@ -65,7 +65,7 @@ export async function runAutomation(
     void recordUsage({ model: OPS, inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, latencyMs: Date.now() - started, source: "automation" });
     const output = r.text || "(no output)";
 
-    audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, dryRun, chars: output.length } });
+    await audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, dryRun, chars: output.length } });
     const delivered = dryRun ? [] : tpl.deliverTo;
     if (!dryRun) await deliver(tpl.deliverTo.filter((c) => c !== "deck"), { title: tpl.name, body: output });
     await recordActivity({ kind: "generated", target: `${tpl.name}${dryRun ? " (dry run)" : ""}`, because: dryRun ? "dry run: not delivered" : `delivered: ${delivered.join(", ")}`, agent: actor });
@@ -73,7 +73,7 @@ export async function runAutomation(
     return { ...base, id: tpl.id, name: tpl.name, status: "success", delivered, output };
   } catch (e) {
     const error = e instanceof Error ? e.message : "Unknown error";
-    audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, error } });
+    await audit.record({ action: "job_run", actor, target: tpl.id, detail: { name: tpl.name, error } });
     return { ...base, id: tpl.id, name: tpl.name, status: "error", error };
   }
 }

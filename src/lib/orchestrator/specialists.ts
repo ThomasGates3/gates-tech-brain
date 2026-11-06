@@ -131,7 +131,7 @@ export const specialists: Record<SpecialistId, Experimental_Agent> = {
   ),
   devops: makeAgent(
     "devops",
-    "You are the DevOps specialist (supports Lynx). Use GitHub and Vercel to inspect the gatestech.solutions and Brain repos and deployments. Read and report; never run destructive operations.",
+    "You are the DevOps specialist (supports Lynx). Use GitHub and Vercel to inspect the gatestech.solutions and Brain repos and deployments. Read and report; never run destructive operations. Anything that changes something waits on Thomas to approve it.",
     connectorTools(["github", "vercel"])
   ),
   comms: makeAgent(

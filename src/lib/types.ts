@@ -123,7 +123,7 @@ export interface ToolCall {
 
 export interface ToolResult {
   toolCallId: string;
-  status: Extract<ToolCallStatus, "success" | "error">;
+  status: Extract<ToolCallStatus, "success" | "error" | "awaiting_approval">;
   data?: unknown;
   error?: string;
   latencyMs: number;
@@ -160,14 +160,6 @@ export interface ApprovalRequest {
   reason: string; // why approval is required
   requestedAt: string; // ISO
   expiresAt?: string;
-}
-
-export interface ApprovalResolution {
-  requestId: string;
-  decision: ApprovalDecision;
-  decidedBy: string; // user id
-  decidedAt: string;
-  note?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

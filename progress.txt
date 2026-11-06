@@ -66,3 +66,4 @@ Shared contracts (/lib/types.ts): Connector, ToolCall, ToolResult, AgentEvent, A
 ✓ Glass nav: phone bottom tab bar (Home · Leads · Field · Content · More sheet with the rest + Search), glowing bump slides to the active tab; desktop top nav gets a sliding lamp
 ✓ Phone glass nav everywhere: /m uses the shared glass bar (Home tab), its sections move to a top switcher, bar made see-through, Hold/Edit no longer show text through
 ✓ Audit Phase 1: removed dev agent + unused scheduler, Next 16.4.5 + proxy.ts, auth fails closed in production, Neon login lockout, route auth tests, CSP report-only
+✓ Audit Phase 2: approvals in Neon (agents queue write actions, Thomas approves once on /operations, Discord ping, 24h expiry), audit log persisted to audit_log

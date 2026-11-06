@@ -1,134 +1,54 @@
 /**
- * Approval Gate — human-in-the-loop for write/destructive tool calls.
+ * Approval gate — human sign-off for write/destructive connector calls, in Neon.
  *
- * Storage: in-memory map (survives the request cycle on a long-running server).
- * DB-backed path: persist ApprovalRequest rows to Neon and poll/subscribe —
- * swap `store` below with DB calls when the orchestrator agent wires the DB.
- *
- * The Tool Router calls `requestApproval` before executing any tool with
- * risk !== "read". It then awaits `waitForResolution` (with a timeout).
+ * Nothing waits: the Tool Router saves a pending row and tells the agent it's
+ * waiting on Thomas. When he approves, POST /api/approvals/[id] runs the stored
+ * call. Claiming a row is atomic, so a call can run at most once. Rows nobody
+ * decides expire after APPROVAL_TTL_HOURS and can never run.
  */
-
 import { randomUUID } from "crypto";
-import type { ApprovalRequest, ApprovalResolution, ApprovalDecision, ToolCall } from "@/lib/types";
+import { isDeepStrictEqual } from "node:util";
+import { and, asc, eq, gt } from "drizzle-orm";
+import { db } from "@/db";
+import { approvals } from "@/db/schema";
+import type { ApprovalDecision, ApprovalRequest, ToolCall } from "@/lib/types";
 
-export type { ApprovalRequest, ApprovalResolution };
+export const APPROVAL_TTL_HOURS = 24;
+const TTL_MS = APPROVAL_TTL_HOURS * 60 * 60 * 1000;
+const oldestLive = () => new Date(Date.now() - TTL_MS).toISOString();
 
-// ── In-memory store ────────────────────────────────────────────────────────
-
-interface StoredApproval {
-  request: ApprovalRequest;
-  resolution?: ApprovalResolution;
-  resolve?: (r: ApprovalResolution) => void;
+export async function listPending(): Promise<ApprovalRequest[]> {
+  const rows = await db
+    .select()
+    .from(approvals)
+    .where(and(eq(approvals.resolved, false), gt(approvals.requestedAt, oldestLive())))
+    .orderBy(asc(approvals.requestedAt));
+  return rows.map((r) => ({
+    id: r.id,
+    toolCall: r.toolCall as ToolCall,
+    reason: r.reason,
+    requestedAt: r.requestedAt,
+    expiresAt: new Date(new Date(r.requestedAt).getTime() + TTL_MS).toISOString(),
+  }));
 }
 
-const store = new Map<string, StoredApproval>();
-
-// ── Public interface ────────────────────────────────────────────────────────
-
-export interface ApprovalGate {
-  /**
-   * Create an approval request for a risky tool call.
-   * The Tool Router should surface this to the deck via SSE (AgentEvent approval_request).
-   */
-  requestApproval(toolCall: ToolCall, reason?: string): Promise<ApprovalRequest>;
-
-  /**
-   * Record a human decision. Called by the POST /api/approvals/[id] route.
-   */
-  resolveApproval(resolution: ApprovalResolution): Promise<void>;
-
-  /**
-   * Wait for a resolution (poll every 500 ms, reject after `timeoutMs`).
-   * Returns the resolution or throws on timeout.
-   */
-  waitForResolution(requestId: string, timeoutMs?: number): Promise<ApprovalResolution>;
-
-  /** Retrieve a pending request by id (for the approval UI). */
-  getRequest(requestId: string): ApprovalRequest | undefined;
-
-  /** All pending (unresolved) approval requests. */
-  listPending(): ApprovalRequest[];
+/** Save a pending approval. An identical call already waiting is reused, so a retry can't queue the action twice. */
+export async function requestApproval(call: ToolCall, reason: string): Promise<{ id: string; created: boolean }> {
+  const same = (await listPending()).find(
+    (p) => p.toolCall.connectorId === call.connectorId && p.toolCall.toolName === call.toolName && isDeepStrictEqual(p.toolCall.args, call.args)
+  );
+  if (same) return { id: same.id, created: false };
+  const id = `apr_${randomUUID()}`;
+  await db.insert(approvals).values({ id, toolCall: call, reason, requestedAt: new Date().toISOString() });
+  return { id, created: true };
 }
 
-const approvals: ApprovalGate = {
-  async requestApproval(toolCall: ToolCall, reason?: string): Promise<ApprovalRequest> {
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 min TTL
-    const request: ApprovalRequest = {
-      id: randomUUID(),
-      toolCall,
-      reason: reason ?? `Tool "${toolCall.toolName}" has risk level "${toolCall.risk}" and requires approval.`,
-      requestedAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
-    store.set(request.id, { request });
-    return request;
-  },
-
-  async resolveApproval(resolution: ApprovalResolution): Promise<void> {
-    const entry = store.get(resolution.requestId);
-    if (!entry) throw new Error(`[approvals] Unknown request: ${resolution.requestId}`);
-    entry.resolution = resolution;
-    entry.resolve?.(resolution);
-  },
-
-  waitForResolution(requestId: string, timeoutMs = 15 * 60 * 1000): Promise<ApprovalResolution> {
-    return new Promise((resolve, reject) => {
-      const entry = store.get(requestId);
-      if (!entry) return reject(new Error(`[approvals] Unknown request: ${requestId}`));
-      if (entry.resolution) return resolve(entry.resolution);
-
-      // Attach one-shot resolver so resolveApproval() unblocks us instantly.
-      entry.resolve = resolve;
-
-      setTimeout(() => {
-        if (!entry.resolution) {
-          reject(new Error(`[approvals] Timed out waiting for approval: ${requestId}`));
-        }
-      }, timeoutMs);
-    });
-  },
-
-  getRequest(requestId: string): ApprovalRequest | undefined {
-    return store.get(requestId)?.request;
-  },
-
-  listPending(): ApprovalRequest[] {
-    return [...store.values()]
-      .filter((e) => !e.resolution)
-      .map((e) => e.request);
-  },
-};
-
-export { approvals };
-export default approvals;
-
-// ── Tool Router seam ────────────────────────────────────────────────────────
-// The Tool Router depends on this minimal hook. `stubApprovals` is the dev
-// default (auto-approves so local runs don't block). Wire `realApprovalHook`
-// via `setApprovalHook()` in production to enforce human-in-the-loop.
-
-export interface ApprovalHook {
-  requestApproval(req: ApprovalRequest): Promise<ApprovalDecision>;
+/** Record a decision. Returns the call only for the one caller who claimed a live, undecided row. */
+export async function resolveApproval(id: string, decision: ApprovalDecision, decidedBy: string): Promise<ToolCall | null> {
+  const [row] = await db
+    .update(approvals)
+    .set({ resolved: true, decision, decidedBy })
+    .where(and(eq(approvals.id, id), eq(approvals.resolved, false), gt(approvals.requestedAt, oldestLive())))
+    .returning({ toolCall: approvals.toolCall });
+  return row ? (row.toolCall as ToolCall) : null;
 }
-
-export const stubApprovals: ApprovalHook = {
-  async requestApproval(req) {
-    console.warn("[approvals] stub: auto-approving", req.toolCall.toolName);
-    return "approved";
-  },
-};
-
-/** Production hook: registers the request and blocks until a human resolves it. */
-export const realApprovalHook: ApprovalHook = {
-  async requestApproval(req) {
-    store.set(req.id, { request: req });
-    try {
-      const res = await approvals.waitForResolution(req.id);
-      return res.decision;
-    } catch {
-      return "denied"; // timeout or unknown → fail safe
-    }
-  },
-};
