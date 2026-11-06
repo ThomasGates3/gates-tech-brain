@@ -383,7 +383,7 @@ function SwipeCard({ lead, draft, left, onApprove, onHold, onEdit }: { lead: Lea
         </div>
       </article>
 
-      <div className="sticky bottom-0 z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] from-[90%] to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] pt-4">
+      <div className="sticky bottom-0 z-20 -mx-4 mt-3 bg-gradient-to-t from-[#050914] from-[90%] to-transparent px-4 pb-[calc(env(safe-area-inset-bottom)+84px)] pt-4 lg:pb-2">
       <div className="grid grid-cols-3 gap-2">
         <button data-testid="m-hold" onClick={onHold} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Hold</button>
         <button data-testid="m-edit" onClick={onEdit} className="min-h-[56px] rounded-2xl border border-white/12 bg-white/[0.03] text-[16px] font-medium text-slate-200 active:scale-[.98]">Edit</button>
