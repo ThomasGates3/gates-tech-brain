@@ -42,22 +42,22 @@ export function LogView() {
     <div className="grid gap-6 lg:grid-cols-[1fr_340px]" data-testid="log-view">
       <section>
         <Caption className="mb-3">Send log</Caption>
-        {err && <p className="mb-3 text-[13px] text-red-400" role="alert">{err}</p>}
+        {err && <p className="mb-3 text-[15px] text-red-400" role="alert">{err}</p>}
         {log === null ? (
           <p className="text-sm text-slate-500">Loading…</p>
         ) : log.length === 0 ? (
           <p className="text-sm text-slate-500">No sends yet.</p>
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[640px] text-left text-[13px]">
-              <thead className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">
+            <table className="w-full min-w-[640px] text-left text-[15px]">
+              <thead className="font-mono text-[13px] uppercase tracking-[0.18em] text-slate-500">
                 <tr className="border-b border-white/10">
-                  <th className="px-3 py-2 font-normal">Sent at</th>
-                  <th className="px-3 py-2 font-normal">Recipient</th>
-                  <th className="px-3 py-2 font-normal">Subject</th>
-                  <th className="px-3 py-2 font-normal">AgentMail id</th>
-                  <th className="px-3 py-2 font-normal">Supp.</th>
-                  <th className="px-3 py-2 font-normal">Operator</th>
+                  <th className="px-3 py-2 font-medium">Sent at</th>
+                  <th className="px-3 py-2 font-medium">Recipient</th>
+                  <th className="px-3 py-2 font-medium">Subject</th>
+                  <th className="px-3 py-2 font-medium">AgentMail id</th>
+                  <th className="px-3 py-2 font-medium">Supp.</th>
+                  <th className="px-3 py-2 font-medium">Operator</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,10 +66,10 @@ export function LogView() {
                     <td className="whitespace-nowrap px-3 py-2 text-slate-400">{new Date(r.sentAt).toLocaleString()}</td>
                     <td className="px-3 py-2 text-slate-200">
                       {r.recipient}
-                      <span className="block text-[11px] text-slate-500">{r.contactName}</span>
+                      <span className="block text-[13px] text-slate-500">{r.contactName}</span>
                     </td>
                     <td className="px-3 py-2 text-slate-300">{r.subject}</td>
-                    <td className="max-w-[180px] truncate px-3 py-2 font-mono text-[11px] text-slate-500" title={r.agentmailMessageId}>{r.agentmailMessageId}</td>
+                    <td className="max-w-[180px] truncate px-3 py-2 font-mono text-[13px] text-slate-500" title={r.agentmailMessageId}>{r.agentmailMessageId}</td>
                     <td className="px-3 py-2 text-slate-300">{r.suppressed ? "yes" : "no"}</td>
                     <td className="px-3 py-2 capitalize text-slate-300">{r.operator}</td>
                   </tr>
@@ -105,12 +105,12 @@ export function LogView() {
             <Button type="submit" variant="ghost">Suppress</Button>
           </div>
         </form>
-        <ul className="max-h-[420px] divide-y divide-white/5 overflow-auto rounded-2xl border border-white/10 text-[13px]">
+        <ul className="max-h-[420px] divide-y divide-white/5 overflow-auto rounded-2xl border border-white/10 text-[15px]">
           {sup.length === 0 && <li className="p-3 text-slate-500">Empty.</li>}
           {sup.map((s) => (
             <li key={s.email} className="flex items-center justify-between gap-2 p-3">
               <span className="truncate text-slate-200">{s.email}</span>
-              <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-slate-500">{s.reason.replace("_", " ")}</span>
+              <span className="shrink-0 font-mono text-[13px] uppercase tracking-wider text-slate-500">{s.reason.replace("_", " ")}</span>
             </li>
           ))}
         </ul>

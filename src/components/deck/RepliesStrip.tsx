@@ -48,11 +48,11 @@ export function RepliesStrip() {
   return (
     <div data-testid="replies-strip" className={`mb-3 rounded-lg border px-3 py-2 ${hot ? "border-amber-300/50 bg-amber-300/10" : "border-white/10 bg-black/30"}`}>
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-2 text-left" aria-expanded={open}>
-        <span className="flex items-center gap-2 text-[13px] font-semibold text-amber-100">
+        <span className="flex items-center gap-2 text-[15px] font-semibold text-amber-100">
           {hot > 0 && <span className="h-2 w-2 animate-pulse rounded-full bg-amber-300" />}
           {items.length} {items.length === 1 ? "reply" : "replies"} waiting{hot ? ` · ${hot} need${hot === 1 ? "s" : ""} an answer` : ""}
         </span>
-        <span className="font-mono text-[10px] text-amber-200/70">{open ? "hide" : "show"}</span>
+        <span className="font-mono text-[13px] text-amber-200/70">{open ? "hide" : "show"}</span>
       </button>
       {open && (
         <ul className="mt-2 max-h-[220px] space-y-2 overflow-y-auto pr-1">
@@ -61,9 +61,9 @@ export function RepliesStrip() {
             return (
               <li key={i.thread_id} className="rounded-md bg-black/30 px-2 py-1.5">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-[13px] text-slate-100">{who}</span>
+                  <span className="truncate text-[15px] text-slate-100">{who}</span>
                   <span className="flex shrink-0 items-center gap-1.5">
-                    <span className="text-[10px] text-amber-200/80">{LABEL[i.suggested] ?? i.suggested}</span>
+                    <span className="text-[13px] text-amber-200/80">{LABEL[i.suggested] ?? i.suggested}</span>
                     <button
                       data-testid={`reply-dismiss-${i.thread_id}`}
                       onClick={() => dismiss(i)}
@@ -75,13 +75,13 @@ export function RepliesStrip() {
                     </button>
                   </span>
                 </div>
-                {i.snippet && <p className="mt-0.5 line-clamp-2 text-[12px] text-slate-400">“{i.snippet}”</p>}
+                {i.snippet && <p className="mt-0.5 line-clamp-2 text-[14px] text-slate-400">“{i.snippet}”</p>}
                 <div className="mt-1.5 flex gap-1.5">
-                  {i.contact && <a href={`/leads?open=${encodeURIComponent(i.contact.contact_id)}`} className="min-h-[28px] rounded-md border border-white/10 px-2 text-[11px] leading-[28px] text-slate-300 hover:border-[var(--accent)]/50">Open lead</a>}
+                  {i.contact && <a href={`/leads?open=${encodeURIComponent(i.contact.contact_id)}`} className="min-h-[28px] rounded-md border border-white/10 px-2 text-[13px] leading-[28px] text-slate-300 hover:border-[var(--accent)]/50">Open lead</a>}
                   {i.suggested !== "suppress_opt_out" && (
                     <button
                       onClick={() => askNova(`Draft a short, human reply to ${who} for me to review. Don't send it. They wrote: "${i.snippet || i.subject}". Suggested handling: ${i.reason}.`)}
-                      className="min-h-[28px] rounded-md bg-[var(--accent)] px-2 text-[11px] font-medium text-black hover:bg-[var(--accent-bright)]"
+                      className="min-h-[28px] rounded-md bg-[var(--accent)] px-2 text-[13px] font-medium text-black hover:bg-[var(--accent-bright)]"
                     >
                       Ask NOVA to draft
                     </button>

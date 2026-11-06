@@ -30,10 +30,10 @@ export function NotificationsPanel() {
     <div className="mt-6 border-t border-white/10 pt-5" data-testid="notifications-panel">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Discord pings</p>
-          <p className="text-[12px] text-slate-400">{discord ? "Posts to your Discord webhook. Each one fires at most once per day (or once per reply)." : "DISCORD_WEBHOOK_URL isn't set, so pings can't be delivered."}</p>
+          <p className="font-mono text-[13px] uppercase tracking-[0.2em] text-slate-500">Discord pings</p>
+          <p className="text-[14px] text-slate-400">{discord ? "Posts to your Discord webhook. Each one fires at most once per day (or once per reply)." : "DISCORD_WEBHOOK_URL isn't set, so pings can't be delivered."}</p>
         </div>
-        <button onClick={() => post("test", { test: true })} disabled={!!busy || !discord} data-testid="notify-test" className="min-h-[44px] rounded-md border border-white/10 px-3 text-[12px] text-slate-200 hover:border-[var(--accent)]/50 disabled:opacity-40 lg:min-h-[36px]">
+        <button onClick={() => post("test", { test: true })} disabled={!!busy || !discord} data-testid="notify-test" className="min-h-[44px] rounded-md border border-white/10 px-3 text-[14px] text-slate-200 hover:border-[var(--accent)]/50 disabled:opacity-40 lg:min-h-[36px]">
           {busy === "test" ? "Sending…" : "Send test ping"}
         </button>
       </div>
@@ -42,7 +42,7 @@ export function NotificationsPanel() {
           <label key={n.id} data-testid={`notify-${n.id}`} className="flex min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-black/30 px-3 py-2">
             <span className="min-w-0">
               <span className="block text-sm text-slate-100">{n.label}</span>
-              <span className="block text-[12px] text-slate-500">{n.when}</span>
+              <span className="block text-[14px] text-slate-500">{n.when}</span>
             </span>
             <input type="checkbox" checked={n.on} onChange={(e) => {
               const on = e.target.checked;
@@ -52,7 +52,7 @@ export function NotificationsPanel() {
           </label>
         ))}
       </div>
-      {msg && <p className="mt-2 text-[12px] text-slate-300" data-testid="notify-msg">{msg}</p>}
+      {msg && <p className="mt-2 text-[14px] text-slate-300" data-testid="notify-msg">{msg}</p>}
     </div>
   );
 }

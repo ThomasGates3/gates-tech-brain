@@ -11,8 +11,8 @@
   /* Text */
   --ink:           #eaf7ff;
   --ink-hover:     #f4fbff;
-  --body:          #b7d0e6;
-  --mute:          #7a93ad;
+  --body:          #d3e3f2;
+  --mute:          #a9bdd2;
 
   /* Hairline */
   --hairline:      #16263d;
@@ -44,6 +44,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Readable by default: small text is 12px or larger, and these greys stay bright on the dark canvas. */
+@theme {
+  --color-slate-600: #9db2c7;
+  --color-slate-500: #aec1d4;
+  --color-slate-400: #c2d2e1;
+  --color-slate-300: #d6e2ec;
+  --color-slate-200: #e4edf4;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+}
+
 @theme inline {
   --color-background: var(--canvas);
   --color-foreground: var(--ink);
@@ -61,8 +72,7 @@ html, body {
   font-family: var(--font-sans), Inter, system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-weight: 500;
 }
 
 /* ─── Scrollbars ─── */
@@ -82,7 +92,8 @@ html, body {
 /* ─── Mono Eyebrow ─── */
 .eyebrow {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--mute);
@@ -375,7 +386,7 @@ tr[data-kbd-active="true"] { box-shadow: inset 2px 0 0 var(--accent); background
 }
 .tabbar-item {
   display: flex; height: 100%; min-height: 44px; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  color: #7a93ad; font-size: 11px; line-height: 1;
+  color: var(--mute); font-size: 12px; font-weight: 600; line-height: 1;
   transition: color .2s ease, transform .2s ease;
   -webkit-tap-highlight-color: transparent;
 }

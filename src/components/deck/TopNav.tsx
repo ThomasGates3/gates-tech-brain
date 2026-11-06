@@ -18,7 +18,7 @@ function Clock() {
     return () => { clearTimeout(first); clearInterval(t); };
   }, []);
   if (!now) return null;
-  return <span className="hidden font-mono text-[11px] text-slate-500 xl:inline">{now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>;
+  return <span className="hidden font-mono text-[13px] text-slate-500 xl:inline">{now.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })} · {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>;
 }
 
 /**
@@ -52,8 +52,8 @@ export function TopNav() {
       <div className="flex h-14 w-full items-center gap-3 px-4 lg:px-6">
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Gates Tech Brain home">
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" style={{ boxShadow: "0 0 10px var(--accent)" }} />
-          <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-slate-300">Gates Brain</span>
-          <span className="hidden text-[12px] text-[var(--accent)] md:inline">NOVA online</span>
+          <span className="font-mono text-[13px] uppercase tracking-[0.3em] text-slate-300">Gates Brain</span>
+          <span className="hidden text-[14px] text-[var(--accent)] md:inline">NOVA online</span>
         </Link>
         {/* Phones use the bottom tab bar instead of this row. */}
         <div ref={row} className="relative hidden min-w-0 flex-1 self-stretch lg:flex lg:justify-center">
@@ -72,7 +72,7 @@ export function TopNav() {
                 href={n.href}
                 data-testid={`nav-${n.label.toLowerCase()}`}
                 aria-current={active(n.href) ? "page" : undefined}
-                className={`relative shrink-0 rounded-full px-3 py-1.5 text-[13px] transition-colors duration-200 ${active(n.href) ? "font-medium text-[var(--accent-bright)] [text-shadow:0_0_12px_var(--accent-glow)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
+                className={`relative shrink-0 rounded-full px-3 py-1.5 text-[15px] transition-colors duration-200 ${active(n.href) ? "font-medium text-[var(--accent-bright)] [text-shadow:0_0_12px_var(--accent-glow)]" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"}`}
               >
                 {n.label}
               </Link>
@@ -84,7 +84,7 @@ export function TopNav() {
           <button onClick={mute} aria-label="Mute voice" title="Mute the spoken briefing" className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 text-slate-400 hover:text-slate-200">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="m23 9-6 6M17 9l6 6" /></svg>
           </button>
-          <a href="/api/auth/logout" className="hidden rounded-lg px-2 py-1.5 text-[12px] text-slate-500 hover:text-slate-200 md:inline">Sign out</a>
+          <a href="/api/auth/logout" className="hidden rounded-lg px-2 py-1.5 text-[14px] text-slate-500 hover:text-slate-200 md:inline">Sign out</a>
         </div>
       </div>
     </nav>

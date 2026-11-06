@@ -20,13 +20,13 @@ export function QuickLinks({ ops, pass, drafted }: { ops: Stat[]; pass?: number;
     <div data-testid="quick-links" className="deck-card rounded-2xl p-3 backdrop-blur">
       <div className="mb-2 flex items-center gap-2">
         <span className="h-1 w-4 bg-[var(--accent)]" />
-        <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Go to</span>
+        <span className="font-mono text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)]">Go to</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {links.map((l) => (
           <Link key={l.label} href={l.href} data-testid={`ql-${l.label.toLowerCase().replace(/\s+/g, "-")}`} className={`rounded-lg border px-2.5 py-1.5 transition-colors hover:border-[var(--accent)]/50 ${l.hot ? "border-[var(--accent)]/50 bg-[var(--accent)]/10" : "border-white/[0.06] bg-black/30"}`}>
-            <p className="text-[13px] text-slate-100">{l.label}</p>
-            <p className={`text-[11px] ${l.hot ? "text-[var(--accent-soft)]" : "text-slate-500"}`}>{l.sub}</p>
+            <p className="text-[15px] text-slate-100">{l.label}</p>
+            <p className={`text-[13px] ${l.hot ? "text-[var(--accent-soft)]" : "text-slate-500"}`}>{l.sub}</p>
           </Link>
         ))}
       </div>

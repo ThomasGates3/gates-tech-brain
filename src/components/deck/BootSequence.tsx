@@ -32,7 +32,7 @@ export function BootSequence({ name, accent, onDone }: { name: string; accent: s
     >
       <div className="pointer-events-none fixed inset-0" style={{ background: `radial-gradient(600px 400px at 50% 45%, ${accent}20, transparent 70%)` }} />
       <CoreOrb state="thinking" className="h-40 w-40" />
-      <div className="mt-10 h-24 w-[280px] font-mono text-[12px] uppercase tracking-[0.2em]">
+      <div className="mt-10 h-24 w-[280px] font-mono text-[14px] uppercase tracking-[0.2em]">
         {LINES.slice(0, step).map((l, i) => (
           <p key={i} className="leading-6" style={{ color: i === step - 1 ? accent : "#5a5a5a" }}>
             <span className="text-slate-700">›</span> {l.replace("{name}", name)}

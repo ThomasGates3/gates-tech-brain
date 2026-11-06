@@ -7,7 +7,7 @@ export const metadata = { title: "Money roadmap · Gates Tech Brain" };
 
 const STATUS_STYLE = { done: "bg-emerald-400/10 text-emerald-300", now: "bg-[var(--accent)] text-black", later: "bg-white/5 text-slate-400" };
 
-const TAB = "min-h-[36px] inline-flex items-center rounded-full px-3.5 text-[12px]";
+const TAB = "min-h-[36px] inline-flex items-center rounded-full px-3.5 text-[14px]";
 
 export default async function RoadmapPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await connection();
@@ -23,16 +23,16 @@ export default async function RoadmapPage({ searchParams }: { searchParams: Prom
     return (
       <PageShell title="Money roadmap" subtitle="What shipped in the Brain, newest first.">
         {tabs}
-        {items.length === 0 ? <p className="text-[13px] text-slate-500">Nothing logged yet.</p> : (
+        {items.length === 0 ? <p className="text-[15px] text-slate-500">Nothing logged yet.</p> : (
           <ul className="max-w-4xl space-y-2" data-testid="whats-new">
             {items.map((w, i) => (
               <li key={i} data-testid="whats-new-row" className="rounded-xl border border-white/[0.06] bg-[var(--panel)]/60 p-3">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-mono text-[11px] text-slate-500">{w.date}</span>
-                  <span className="text-[14px] font-medium text-slate-100">{w.title}</span>
-                  <span className="ml-auto font-mono text-[10px] text-slate-500">{w.by.charAt(0).toUpperCase() + w.by.slice(1)}</span>
+                  <span className="font-mono text-[13px] text-slate-500">{w.date}</span>
+                  <span className="text-[15px] font-medium text-slate-100">{w.title}</span>
+                  <span className="ml-auto font-mono text-[13px] text-slate-500">{w.by.charAt(0).toUpperCase() + w.by.slice(1)}</span>
                 </div>
-                <p className="mt-1 text-[13px] text-slate-300">{w.note}</p>
+                <p className="mt-1 text-[15px] text-slate-300">{w.note}</p>
               </li>
             ))}
           </ul>
@@ -56,16 +56,16 @@ export default async function RoadmapPage({ searchParams }: { searchParams: Prom
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2" data-testid="roadmap-numbers">
           {tiles.map(([label, value, href, hot]) => (
             <a key={label} href={href} data-testid={`rm-num-${label.split(/[ ,]/)[0].toLowerCase()}`} className={`min-h-[44px] rounded-lg border p-2.5 hover:border-[var(--accent)]/60 ${hot ? "border-[var(--accent)]/50 bg-[var(--accent)]/10" : "border-white/[0.06] bg-black/30"}`}>
-              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
+              <p className="font-mono text-[12px] uppercase tracking-[0.18em] text-slate-500">{label}</p>
               <p className={`mt-1 font-mono text-[20px] leading-none ${hot ? "text-[var(--accent)]" : "text-slate-100"}`}>{value}</p>
             </a>
           ))}
         </div>
         {(
           <div data-testid="roadmap-history" className="rounded-xl border border-white/[0.06] bg-black/30 p-3">
-            <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">Changes</p>
-            {r.history.length === 0 && <p className="text-[12px] text-slate-500">No changes yet. Bots and Brain events show here.</p>}
-            <ul className="space-y-1 text-[12px] text-slate-400">
+            <p className="mb-1.5 font-mono text-[13px] uppercase tracking-[0.2em] text-slate-500">Changes</p>
+            {r.history.length === 0 && <p className="text-[14px] text-slate-500">No changes yet. Bots and Brain events show here.</p>}
+            <ul className="space-y-1 text-[14px] text-slate-400">
               {r.history.map((h, i) => <li key={i}>{h.at} · {h.agent} · {r.steps.find((x) => x.id === h.step)?.name} is {h.status}{h.note ? ` · ${h.note}` : ""}</li>)}
             </ul>
           </div>
@@ -78,13 +78,13 @@ export default async function RoadmapPage({ searchParams }: { searchParams: Prom
               <li key={s.id} data-testid={`rm-step-${s.id}`} data-status={s.status}
                 className={`rounded-xl border p-3 ${now ? "border-[var(--accent)]/60 bg-[var(--accent)]/[0.07]" : "border-white/[0.06] bg-[var(--panel)]/60"} ${s.status === "done" ? "opacity-60" : ""}`}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-[11px] text-slate-500">{i + 1}.</span>
-                  <span className={`text-[14px] font-medium ${now ? "text-[var(--accent)]" : "text-slate-100"}`}>{s.name}</span>
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] uppercase ${STATUS_STYLE[s.status]}`}>{s.status}</span>
-                  <span className="ml-auto font-mono text-[10px] text-slate-500">{s.owner}{s.done_at ? ` · done ${s.done_at}` : ""}</span>
+                  <span className="font-mono text-[13px] text-slate-500">{i + 1}.</span>
+                  <span className={`text-[15px] font-medium ${now ? "text-[var(--accent)]" : "text-slate-100"}`}>{s.name}</span>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[13px] uppercase ${STATUS_STYLE[s.status]}`}>{s.status}</span>
+                  <span className="ml-auto font-mono text-[13px] text-slate-500">{s.owner}{s.done_at ? ` · done ${s.done_at}` : ""}</span>
                 </div>
-                <p className="mt-1 text-[13px] text-slate-300">{s.done_means}</p>
-                {s.note && <p className="mt-1 text-[12px] text-slate-500">{s.note}</p>}
+                <p className="mt-1 text-[15px] text-slate-300">{s.done_means}</p>
+                {s.note && <p className="mt-1 text-[14px] text-slate-500">{s.note}</p>}
               </li>
             );
           })}

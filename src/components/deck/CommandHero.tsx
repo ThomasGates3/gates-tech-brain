@@ -35,7 +35,7 @@ export function CommandHero({ deck, orbState, name }: { deck: HeroDeck | null; o
           <CoreOrb state={orbState} className="relative h-14 w-14 xl:h-20 xl:w-20" />
         </div>
         <div className="min-w-[220px] flex-1">
-          <p className="text-[13px] text-[var(--body)]">{getGreeting()}, Thomas · <span className="text-[var(--accent-soft)]">{name} online</span></p>
+          <p className="text-[15px] text-[var(--body)]">{getGreeting()}, Thomas · <span className="text-[var(--accent-soft)]">{name} online</span></p>
           {deck ? (
             <p className="mt-1 flex items-baseline gap-3" data-testid="hero-count">
               <span className="hero-number font-mono text-[44px] xl:text-[56px] font-medium leading-none"><Ticker value={pass} /></span>
@@ -44,12 +44,12 @@ export function CommandHero({ deck, orbState, name }: { deck: HeroDeck | null; o
           ) : (
             <span className="skeleton mt-2 block h-12 w-72 rounded-lg" />
           )}
-          <p className="mt-2 truncate text-[14px] text-[var(--accent-soft)]" data-testid="briefing-lead">{next[0] ? `→ ${next[0]}` : deck ? "Field is clear. Nothing waiting on you." : ""}</p>
-          {next[1] && <p className="truncate text-[13px] text-[var(--mute)]">· {next[1]}</p>}
+          <p className="mt-2 truncate text-[15px] text-[var(--accent-soft)]" data-testid="briefing-lead">{next[0] ? `→ ${next[0]}` : deck ? "Field is clear. Nothing waiting on you." : ""}</p>
+          {next[1] && <p className="truncate text-[15px] text-[var(--mute)]">· {next[1]}</p>}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href="/leads?status=PASS" className="btn-primary min-h-[38px] px-4 text-[13px]" data-testid="hero-approve">{pass ? `Review ${pass}` : "Open leads"}</Link>
-            {ready > 0 && <Link href="/leads?status=approved" className="btn-ghost min-h-[38px] px-4 text-[13px]">{ready} ready to send</Link>}
-            <Link href="/m" className="btn-ghost hidden min-h-[38px] px-4 text-[13px] xl:inline-flex">Phone view</Link>
+            <Link href="/leads?status=PASS" className="btn-primary min-h-[38px] px-4 text-[15px]" data-testid="hero-approve">{pass ? `Review ${pass}` : "Open leads"}</Link>
+            {ready > 0 && <Link href="/leads?status=approved" className="btn-ghost min-h-[38px] px-4 text-[15px]">{ready} ready to send</Link>}
+            <Link href="/m" className="btn-ghost hidden min-h-[38px] px-4 text-[15px] xl:inline-flex">Phone view</Link>
           </div>
         </div>
         <div className="flex shrink-0 gap-5">

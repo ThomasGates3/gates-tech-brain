@@ -8,9 +8,9 @@ colors:
   on-primary: "#050914"
   ink: "#eaf7ff"
   ink-hover: "#f4fbff"
-  body: "#b7d0e6"
-  body-mid: "#7a93ad"
-  mute: "#7a93ad"
+  body: "#d3e3f2"
+  body-mid: "#a9bdd2"
+  mute: "#a9bdd2"
   hairline: "#16263d"
   canvas: "#050914"
   canvas-soft: "#0e1a2e"
@@ -467,3 +467,7 @@ The brand uses no shadows. Hairline borders carry all elevation cues.
 - Don't use filled buttons broadly. The brand uses outline pills almost exclusively; one Sign Up white-filled pill is the rare exception.
 - Don't drop a drop-shadow on cards. Hairline borders carry elevation.
 - Don't substitute Universal Sans with a generic geometric sans without adjusting letter-spacing. The negative tracking is part of the brand.
+
+## Readability
+
+Thomas could not read thin, small text in the app (2026-11-06). Body text is weight 500 with no font smoothing override. No text under 12px, no `font-light` or `font-thin`. Secondary greys stay bright on the dark canvas. The mono font is JetBrains Mono, so "i" and "1" stay distinct. `src/lib/readable-text.test.ts` guards the size and weight rules.

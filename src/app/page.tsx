@@ -35,8 +35,8 @@ function PipelineCard() {
   return (
     <section className="deck-card shrink-0 rounded-2xl px-4 pb-3 pt-3" data-testid="pipeline-card">
       <div className="mb-3 flex items-center justify-between">
-        <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--accent-soft)]"><span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s pipeline</span>
-        <span className="font-mono text-[10px] text-[var(--mute)]">{data ? `${data.leads.length} leads · ${data.date}` : "…"}</span>
+        <span className="flex items-center gap-2 font-mono text-[13px] uppercase tracking-[0.28em] text-[var(--accent-soft)]"><span className="h-1 w-4 bg-[var(--accent)]" />Today&apos;s pipeline</span>
+        <span className="font-mono text-[13px] text-[var(--mute)]">{data ? `${data.leads.length} leads · ${data.date}` : "…"}</span>
       </div>
       <PipelineFlow leads={data?.leads ?? []} sentToday={data?.sentToday ?? 0} loading={!data} />
     </section>

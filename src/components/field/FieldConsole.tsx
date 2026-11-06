@@ -23,7 +23,7 @@ function StatusBar({ config }: { config: ConsoleConfig }) {
   return (
     <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl border border-white/10 bg-[#08101f] px-4 py-3" data-testid="status-bar">
       {items.map((i) => (
-        <div key={i.label} className="flex items-center gap-2 text-[12px]">
+        <div key={i.label} className="flex items-center gap-2 text-[14px]">
           <Dot ok={i.ok} warn={i.warn} />
           <span className="text-slate-300">{i.label}</span>
           <span className="text-slate-500">{i.detail}</span>
@@ -124,7 +124,7 @@ export function FieldConsole() {
             <p className="mt-1 text-sm text-slate-500">Email 1 · morning pack → draft → Nick PASS → Thomas approve → AgentMail → log</p>
           </div>
           <div className="flex items-center gap-2">
-            {operatorLabel && <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300" data-testid="operator">{operatorLabel}</span>}
+            {operatorLabel && <span className="rounded-full border border-white/15 px-3 py-1 font-mono text-[13px] uppercase tracking-[0.18em] text-slate-300" data-testid="operator">{operatorLabel}</span>}
             <Button
               variant="quiet"
               onClick={async () => {
@@ -147,7 +147,7 @@ export function FieldConsole() {
               aria-selected={tab === t}
               onClick={() => setTab(t)}
               data-testid={`tab-${t}`}
-              className={cx("min-h-[44px] rounded-xl px-4 font-mono text-[11px] uppercase tracking-[0.2em]", tab === t ? "bg-white/10 text-slate-100" : "text-slate-500 hover:text-slate-300")}
+              className={cx("min-h-[44px] rounded-xl px-4 font-mono text-[13px] uppercase tracking-[0.2em]", tab === t ? "bg-white/10 text-slate-100" : "text-slate-500 hover:text-slate-300")}
             >
               {t}
             </button>
@@ -155,7 +155,7 @@ export function FieldConsole() {
         </nav>
 
         {err && (
-          <p className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[13px] text-red-300" role="alert" data-testid="console-error">
+          <p className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[15px] text-red-300" role="alert" data-testid="console-error">
             {err}
           </p>
         )}
@@ -188,10 +188,10 @@ export function FieldConsole() {
                   CSV
                 </Button>
               </div>
-              {notice && <p className="mb-3 text-[12px] text-slate-400" role="status">{notice}</p>}
+              {notice && <p className="mb-3 text-[14px] text-slate-400" role="status">{notice}</p>}
 
               {data && (
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500" data-testid="queue-counts">
+                <p className="mb-2 font-mono text-[13px] uppercase tracking-[0.16em] text-slate-500" data-testid="queue-counts">
                   {counts.sendable} High+Med · {counts.awaitingNick} at Nick · {counts.readyForThomas} PASS → Thomas · {counts.approved} approved · {counts.sent} sent
                 </p>
               )}
@@ -214,19 +214,19 @@ export function FieldConsole() {
                       <span className="min-w-0 flex-1">
                         <span className="flex min-w-0 items-center gap-1.5 text-sm text-slate-100">
                           <span className="truncate">{c.name}</span>
-                          {c.lane === "website" && <span data-testid="lane-website" className="shrink-0 rounded bg-[var(--accent)]/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[var(--accent-soft)]">web</span>}
+                          {c.lane === "website" && <span data-testid="lane-website" className="shrink-0 rounded bg-[var(--accent)]/15 px-1.5 py-0.5 font-mono text-[12px] uppercase tracking-wider text-[var(--accent-soft)]">web</span>}
                         </span>
-                        <span className="block truncate text-[12px] text-slate-500">{c.batch || c.city || c.email}</span>
+                        <span className="block truncate text-[14px] text-slate-500">{c.batch || c.city || c.email}</span>
                       </span>
-                      {c.suppressed && c.stage !== "sent" && <span className="font-mono text-[10px] text-red-400">SUPP</span>}
-                      {c.nickVerdict === "PASS" && c.stage === "nick" && <span className="font-mono text-[10px] text-emerald-300">PASS</span>}
+                      {c.suppressed && c.stage !== "sent" && <span className="font-mono text-[13px] text-red-400">SUPP</span>}
+                      {c.nickVerdict === "PASS" && c.stage === "nick" && <span className="font-mono text-[13px] text-emerald-300">PASS</span>}
                       <StageBadge stage={c.stage} />
                     </button>
                   </li>
                 ))}
               </ul>
               {counts.held > 0 && (
-                <button onClick={() => setShowClosed((s) => !s)} className="mt-2 min-h-[44px] px-1 text-[12px] text-slate-500 hover:text-slate-300" data-testid="toggle-held">
+                <button onClick={() => setShowClosed((s) => !s)} className="mt-2 min-h-[44px] px-1 text-[14px] text-slate-500 hover:text-slate-300" data-testid="toggle-held">
                   {showClosed ? "Hide" : "Show"} {counts.held} Soft (Hold-only) / killed
                 </button>
               )}
@@ -251,7 +251,7 @@ export function FieldConsole() {
 
       {csvOpen && (
         <Modal title="CSV fallback · paste pack" onClose={() => setCsvOpen(false)} data-testid="csv-modal">
-          <p className="mb-2 text-[13px] text-slate-400">
+          <p className="mb-2 text-[15px] text-slate-400">
             Columns like the Notion DB: <span className="font-mono text-slate-300">Name, To, Priority, City, Gap, Batch</span> (optional Subject, Body, Status). Loads into {date}. Soft rows land on Hold.
           </p>
           <textarea
@@ -260,13 +260,13 @@ export function FieldConsole() {
             rows={10}
             data-testid="csv-input"
             placeholder={"Name,To,Priority,City,Gap,Batch\nPele Aesthetics,info@spapele.com,High,Marietta,Closed Sundays...,ATL med spa"}
-            className="w-full rounded-xl border border-white/10 bg-black/50 p-3 font-mono text-[12px] text-slate-200 outline-none focus:border-[#00e5ff]/60"
+            className="w-full rounded-xl border border-white/10 bg-black/50 p-3 font-mono text-[14px] text-slate-200 outline-none focus:border-[#00e5ff]/60"
           />
-          <label className="mt-2 inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] text-slate-400">
+          <label className="mt-2 inline-flex min-h-[44px] cursor-pointer items-center gap-2 text-[15px] text-slate-400">
             <input
               type="file"
               accept=".csv,text/csv"
-              className="text-[12px]"
+              className="text-[14px]"
               onChange={async (e) => {
                 const f = e.target.files?.[0];
                 if (f) setCsv(await f.text());
