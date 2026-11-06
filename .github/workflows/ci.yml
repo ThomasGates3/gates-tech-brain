@@ -7,7 +7,8 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56 doesn't support the newer Ubuntu that ubuntu-latest points to.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     # Stand-in values only. The app is built and run with no real database, keys or webhooks.
     env:
