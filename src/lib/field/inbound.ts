@@ -6,7 +6,7 @@
  */
 import { listThreads } from "./agentmail";
 import { fieldEnv } from "./config";
-import { addSuppression, contactsByEmail, markReplied } from "./store";
+import { addSuppression, contactsByEmail, contactsByThread, markReplied } from "./store";
 import { notifyOnce } from "@/lib/notify";
 import { getSetting, setSetting } from "@/lib/settings";
 import { advance, isWarmupSeed } from "@/lib/roadmap";
@@ -79,6 +79,7 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
   const senderOf = (t: (typeof threads)[number]) => t.senders.find((s) => s && s !== inbox) ?? t.lastFrom;
   const contacts = await contactsByEmail(threads.map(senderOf));
   const byEmail = new Map(contacts.map((c) => [c.email.toLowerCase(), c]));
+  const byThread = await contactsByThread(threads.map((t) => t.threadId));
   const dismissed = await dismissedMap();
 
   const matched: InboundItem[] = [];
@@ -88,7 +89,8 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
     const { action, reason } = classifyReply(t.lastFrom === inbox ? t.preview : t.lastText, from);
     const item: InboundItem = { thread_id: t.threadId, from, subject: t.subject, snippet: firstWords(t.lastText || t.preview).slice(0, 280), last_at: t.lastAt, unanswered: t.lastFrom !== inbox, suggested: action, reason };
     if (isDismissed(dismissed, t.threadId, t.lastAt)) Object.assign(item, { dismissed: true, unanswered: false });
-    const c = byEmail.get(from);
+    // Same thread from another address counts as their reply, unless it's only us or a bounce/auto-reply.
+    const c = byEmail.get(from) ?? (from !== inbox && action !== "ignore" ? byThread.get(t.threadId) : undefined);
     if (c) {
       item.contact = { contact_id: c.id, name: c.name, lane: c.lane, stage: c.stage };
       await markReplied(c.id, t.lastAt); // ends the sequence for this contact
@@ -96,7 +98,7 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
     // A real prospect reply moves "First reply" to now; Lisa or Thomas marks it done.
     if (c && action === "reply_handoff_lisa" && !isWarmupSeed(from)) await advance("first_reply", "now", "brain", `reply ${t.threadId}`);
     if (item.unanswered && action === "reply_handoff_lisa")
-      void notifyOnce("hot_reply", t.threadId, `Reply from ${c?.name ?? from}`, `${item.snippet || t.subject}\nSuggested: hand to Lisa for a short answer.`);
+      await notifyOnce("hot_reply", t.threadId, `Reply from ${c?.name ?? from}`, `${item.snippet || t.subject}\nSuggested: hand to Lisa for a short answer.`);
     if (opts.confirmSuppress && action === "suppress_opt_out") {
       await addSuppression(from, "opt_out", opts.by);
       item.suppressed = true;
@@ -105,6 +107,16 @@ export async function fetchInbound(opts: { inbox?: string; limit?: number; confi
   }
   const all = [...matched, ...unmatched];
   return { inbox, matched, unmatched, unanswered: all.filter((i) => i.unanswered).length, suppressed: all.filter((i) => i.suppressed).length };
+}
+
+export const REPLY_CHECK_KEY = "reply_check_at";
+
+/** Cron pass: records replies so sequences stop even if nobody opens the dashboard. Reads wider than the dashboard. */
+export async function checkReplies() {
+  if (!fieldEnv.agentmailKey() || !fieldEnv.agentmailInbox()) return "skipped" as const;
+  const r = await fetchInbound({ limit: 100, confirmSuppress: false, by: "cron" });
+  await setSetting(REPLY_CHECK_KEY, new Date().toISOString());
+  return { matched: r.matched.length, unanswered: r.unanswered };
 }
 
 /** Unanswered inbound count for the Control Center (cached 2 min; null if AgentMail is unavailable). */

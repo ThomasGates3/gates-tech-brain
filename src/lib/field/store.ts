@@ -279,6 +279,13 @@ export async function contactsByEmail(emails: string[]): Promise<FieldContact[]>
   return list.length ? (await db.select().from(fieldContacts).where(inArray(sql`lower(${fieldContacts.email})`, list))).map(toContact) : [];
 }
 
+/** threadId → contact, from our own send log. Catches a reply sent from a different address than the one we emailed. */
+export async function contactsByThread(threadIds: string[]): Promise<Map<string, FieldContact>> {
+  if (!threadIds.length) return new Map();
+  const rows = await db.select({ threadId: fieldSendLog.agentmailThreadId, contact: fieldContacts }).from(fieldSendLog).innerJoin(fieldContacts, eq(fieldContacts.id, fieldSendLog.contactId)).where(inArray(fieldSendLog.agentmailThreadId, threadIds));
+  return new Map(rows.map((r) => [r.threadId as string, toContact(r.contact)]));
+}
+
 /** Contacts whose Email 1 went out (sequence candidates). */
 export async function sequenceContacts(): Promise<FieldContact[]> {
   return (await db.select().from(fieldContacts).where(eq(fieldContacts.stage, "sent"))).map(toContact);

@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "test:e2e": "playwright test",
     "brief:sync": "cp ../gates-outreach/OUTREACH-BRIEF.md docs/outreach-brief.md && node scripts/gen-brief.mjs",
     "website:sync": "node scripts/gen-brief.mjs"
   },
@@ -27,6 +28,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

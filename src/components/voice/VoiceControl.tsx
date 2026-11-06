@@ -117,6 +117,12 @@ export function VoiceControl({
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // New text to speak switches to "speaking" during render; the effect below does the speaking.
+  const [startedText, setStartedText] = useState<string | undefined>(undefined);
+  if (speakText !== startedText) {
+    setStartedText(speakText);
+    if (speakText) setState("speaking");
+  }
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,7 +137,6 @@ export function VoiceControl({
   // Speak when speakText changes
   useEffect(() => {
     if (!speakText) return;
-    setState("speaking");
     ttsAdapter.speak(speakText, voiceId).then(() => {
       setState("idle");
     });

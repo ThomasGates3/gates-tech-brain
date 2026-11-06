@@ -9,11 +9,15 @@ export function ApprovalsPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const [failed, setFailed] = useState(false);
+
   const load = () =>
     fetch("/api/approvals")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setList(d?.approvals ?? null))
-      .catch(() => {});
+      .then(async (r) => {
+        setFailed(!r.ok && r.status !== 403); // 403 is the team login, which just doesn't see this panel
+        setList(r.ok ? (await r.json()).approvals : null);
+      })
+      .catch(() => setFailed(true));
 
   useEffect(() => { void load(); }, []);
 
@@ -33,6 +37,8 @@ export function ApprovalsPanel() {
     }
   };
 
+  // An outage must not look the same as "nothing waiting".
+  if (failed) return <p className="mb-6 rounded-xl border border-[#ff3b30]/40 bg-black/30 p-4 text-sm text-slate-300" data-testid="approvals-error">Couldn&apos;t load approvals. Anything waiting is still saved. Reload to try again.</p>;
   if (!list) return null;
 
   return (

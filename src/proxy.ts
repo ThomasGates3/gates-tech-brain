@@ -15,7 +15,7 @@ const VIEW_COOKIE = "brain_view";
 // /api/cron is protected by CRON_SECRET (not the password gate) so Vercel Cron can reach it.
 // /api/mcp checks its own auth (API key or OAuth) and must answer 401 + WWW-Authenticate itself.
 // OAuth discovery, client registration and token exchange are public by design (lib/oauth).
-const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/v1/openapi.json", "/api/mcp", "/.well-known", "/api/oauth/register", "/api/oauth/token", "/manifest.webmanifest"];
+const PUBLIC_PATHS = ["/sign-in", "/api/auth", "/api/cron", "/api/health", "/api/v1/openapi.json", "/api/mcp", "/.well-known", "/api/oauth/register", "/api/oauth/token", "/manifest.webmanifest"];
 // Machine APIs: a Bearer request is passed to the route, which verifies the key (env or DB) itself.
 const KEY_PATHS = ["/api/field/", "/api/v1/"];
 const isPublic = (p: string) => PUBLIC_PATHS.some((x) => p === x || p.startsWith(x + "/"));
@@ -28,9 +28,9 @@ export default async function proxy(req: NextRequest) {
     return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
   }
 
-  // Rate limit by IP.
+  // Rate limit APIs by IP. Pages stay out: moving between them and link prefetching would use up the budget.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!apiRateLimiter.check(ip)) {
+  if (pathname.startsWith("/api/") && !apiRateLimiter.check(ip)) {
     return new NextResponse("Too Many Requests", { status: 429, headers: { "Retry-After": "60", ...securityHeaders } });
   }
 
