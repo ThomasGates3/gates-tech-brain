@@ -8,8 +8,8 @@
  * FIELD_ACE_PASSWORD     → operator "ace" (Field Console ops, browser sign-in)
  * API keys (FIELD_ACE_API_KEY or DB keys, lib/api-keys) are verified per route on
  *                          /api/field/*, /api/mcp, /api/v1/* (bots need no cookie)
- * The gate turns on when any of them is set. Cookies are signed with AUTH_SECRET.
- * With none set, the gate is OFF (open) — fine for local dev only.
+ * Cookies are signed with AUTH_SECRET. The gate is always on in production; locally
+ * it turns on when any of them is set.
  */
 import type { Operator } from "@/lib/field/types";
 
@@ -37,15 +37,16 @@ const PASSWORDS: [Operator, string][] = [
   ["team", "ACCESS_PASSWORD"],
 ];
 
+/** Always on in production, so a missing env var locks the app instead of opening it. */
 export function gateEnabled(): boolean {
+  if (process.env.NODE_ENV === "production") return true;
   return [...PASSWORDS.map(([, env]) => env), "FIELD_ACE_API_KEY"].some((env) => Boolean(process.env[env]));
 }
 
-/** Constant-ish time compare to avoid trivially leaking length/prefix. */
-function sameString(input: string, expected: string): boolean {
+/** Compare time depends only on `expected`, so neither the length nor a prefix leaks. */
+export function sameString(input: string, expected: string): boolean {
   if (!expected) return false;
-  if (input.length !== expected.length) return false;
-  let diff = 0;
+  let diff = input.length ^ expected.length;
   for (let i = 0; i < expected.length; i++) diff |= input.charCodeAt(i) ^ expected.charCodeAt(i);
   return diff === 0;
 }
@@ -56,15 +57,18 @@ export function operatorForPassword(input: string): Operator | null {
   return null;
 }
 
-function secret(): string {
-  return process.env.AUTH_SECRET || "insecure-dev-secret-set-AUTH_SECRET";
+/** Signing key for sessions and OAuth. Production refuses to run on the dev fallback. */
+export function authSecret(): string {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV === "production") throw new Error("AUTH_SECRET must be set in production");
+  return "insecure-dev-secret-set-AUTH_SECRET";
 }
 
 const OPERATORS: Operator[] = ["thomas", "ace", "team"];
 
 export async function issueToken(operator: Operator = "team"): Promise<string> {
   const payload = `v2.${operator}.${Date.now() + TTL_MS}`;
-  return `${payload}.${await hmac(secret(), payload)}`;
+  return `${payload}.${await hmac(authSecret(), payload)}`;
 }
 
 /** Verify a session cookie and return who it belongs to (v1 cookies → "team"). */
@@ -87,7 +91,7 @@ export async function readSession(token: string | undefined): Promise<{ operator
     return null;
   }
   if (!exp || Number(exp) < Date.now()) return null;
-  if (sig !== (await hmac(secret(), payload))) return null;
+  if (!sameString(sig, await hmac(authSecret(), payload))) return null;
   return { operator };
 }
 

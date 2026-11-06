@@ -171,27 +171,13 @@ export interface ApprovalResolution {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Autonomous jobs — scheduler + triggers (F5)
+// Automation triggers
 // ─────────────────────────────────────────────────────────────────────────
 
 export type JobTrigger =
   | { kind: "cron"; expression: string }
   | { kind: "webhook"; secretRef: string }
   | { kind: "manual" };
-
-export type JobStatus = "idle" | "queued" | "running" | "success" | "failed";
-
-export interface Job {
-  id: string;
-  name: string;
-  prompt: string; // task handed to the Conductor
-  trigger: JobTrigger;
-  status: JobStatus;
-  vertical?: Vertical;
-  lastRunAt?: string;
-  nextRunAt?: string;
-  report?: { summary: string; deliverTo?: ("deck" | "slack" | "email")[] };
-}
 
 // ─────────────────────────────────────────────────────────────────────────
 // Audit — every action recorded (Security, F6)

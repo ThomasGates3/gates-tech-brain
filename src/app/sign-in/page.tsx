@@ -23,7 +23,8 @@ function SignInForm() {
       const data = await res.json();
       if (data.ok) {
         const home = data.operator === "thomas" || data.operator === "ace" ? "/field" : "/";
-        router.replace(params.get("callbackUrl") || home);
+        const next = params.get("callbackUrl");
+        router.replace(next && /^\/(?![/\\])/.test(next) ? next : home);
         router.refresh();
       } else {
         setError(data.error || "Incorrect password");

@@ -15,6 +15,7 @@
  * listed in OAUTH_REDIRECT_HOSTS.
  */
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { authSecret } from "@/lib/gate";
 import type { Operator } from "@/lib/field/types";
 
 export const ACCESS_TTL_S = 60 * 60; // 1 hour
@@ -30,8 +31,7 @@ const CODE_PREFIX = "gtk_";
 type Kind = "access" | "refresh" | "code" | "client" | "secret";
 
 function key(): string {
-  const base = process.env.AUTH_SECRET || "insecure-dev-secret-set-AUTH_SECRET";
-  return `oauth.v1.${process.env.OAUTH_TOKEN_GENERATION ?? "1"}.${base}`;
+  return `oauth.v1.${process.env.OAUTH_TOKEN_GENERATION ?? "1"}.${authSecret()}`;
 }
 
 const b64 = (s: string) => Buffer.from(s).toString("base64url");
