@@ -67,13 +67,28 @@ export interface InboundThread {
 
 const addr = (s: string) => (s.match(/<([^>]+)>/)?.[1] ?? s).trim().toLowerCase();
 
+/** When someone other than the inbox last wrote in this thread, or null. Throws if AgentMail can't answer. */
+export async function lastReplyAt(inbox: string, threadId: string): Promise<string | null> {
+  const key = fieldEnv.agentmailKey();
+  if (!key) throw new Error("AGENTMAIL_API_KEY is not set.");
+  const res = await fetch(`${fieldEnv.agentmailBase()}/v0/inboxes/${encodeURIComponent(inbox)}/threads/${encodeURIComponent(threadId)}`, { headers: { Authorization: `Bearer ${key}` }, cache: "no-store" });
+  if (!res.ok) throw new Error(`AgentMail ${res.status} reading thread`);
+  const { messages } = (await res.json()) as { messages?: { from?: string; timestamp: string }[] };
+  if (!Array.isArray(messages)) throw new Error("AgentMail returned a thread with no messages.");
+  const replies = messages.filter((m) => m.from && addr(m.from) !== inbox.toLowerCase()).map((m) => m.timestamp).sort();
+  return replies.at(-1) ?? null;
+}
+
 /** Recent threads in an inbox with the last message's sender + text (read-only). */
 export async function listThreads(inbox: string, limit = 25): Promise<InboundThread[]> {
   const key = fieldEnv.agentmailKey();
   if (!key) throw new Error("AGENTMAIL_API_KEY is not set.");
   const base = `${fieldEnv.agentmailBase()}/v0/inboxes/${encodeURIComponent(inbox)}`;
   const h = { Authorization: `Bearer ${key}` };
-  const list = (await (await fetch(`${base}/threads?limit=${limit}`, { headers: h, cache: "no-store" })).json()) as { threads?: { thread_id: string; subject?: string; preview?: string; senders?: string[]; labels?: string[]; message_count?: number; timestamp: string }[] };
+  const res = await fetch(`${base}/threads?limit=${limit}`, { headers: h, cache: "no-store" });
+  // A rejected call must not look like "no replies": that would let a sequence keep running.
+  if (!res.ok) throw new Error(`AgentMail ${res.status} listing threads`);
+  const list = (await res.json()) as { threads?: { thread_id: string; subject?: string; preview?: string; senders?: string[]; labels?: string[]; message_count?: number; timestamp: string }[] };
   return Promise.all(
     (list.threads ?? []).map(async (t) => {
       const full = (await (await fetch(`${base}/threads/${t.thread_id}`, { headers: h, cache: "no-store" })).json().catch(() => ({}))) as { messages?: { from?: string; timestamp: string; extracted_text?: string; text?: string; preview?: string }[] };

@@ -14,11 +14,11 @@ import { lintDraft, websiteEmail1Lint, coreEmail1Lint, hasConcreteHours, type Li
 import { PLAYBOOK_SYSTEM, playbookPrompt, templateDraft, followupTemplate, canSpamFooter, composeOutgoing, cleanGap, type Draft } from "./playbook";
 import { fetchPack } from "./notion";
 import { csvToRows } from "./csv";
-import { replyEmail, sendEmail } from "./agentmail";
+import { lastReplyAt, replyEmail, sendEmail } from "./agentmail";
 import { getGates } from "./gates";
 import { pingCapReached, pingIfDayDone, pingSendFailed } from "./pings";
 import { dueDate } from "./sequence";
-import { addSuppression, blockingSuppression, claimForSend, getContact, getStep, importRows, lastSent, patchContact, patchStep, recordSend, releaseSend, sentSince } from "./store";
+import { addSuppression, blockingSuppression, claimForSend, getContact, getStep, importRows, lastSent, markReplied, patchContact, patchStep, recordSend, releaseSend, sentSince } from "./store";
 import { apply, sendError, type Action } from "./workflow";
 import type { EmailN, FieldContact, Operator, SendLogEntry } from "./types";
 import { claude, DRAFT, HARD_DRAFT, LIGHT } from "@/lib/models";
@@ -216,6 +216,21 @@ export async function sendContact(id: string, draftHash: string, operator: Opera
   const sv = await stepView(id, n);
   if (!sv.ok) return sv;
   const { contact, view } = sv.data;
+  if (n > 1) {
+    // Ask AgentMail right before a follow-up: a reply since the last check must still stop it.
+    const prev = await lastSent(id);
+    if (prev?.agentmailThreadId) {
+      try {
+        const repliedAt = await lastReplyAt(prev.inbox, prev.agentmailThreadId);
+        if (repliedAt) {
+          await markReplied(id, repliedAt);
+          return fail(409, "They replied, so the sequence has ended. Hand off to Lisa.");
+        }
+      } catch (e) {
+        return fail(502, `Couldn't check for a reply, so nothing was sent: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+  }
   const suppressed = Boolean(await blockingSuppression(contact.email, contact.id));
   const gate = sendError(view, { operator, aceCanSend: fieldEnv.aceCanSend(), suppressed, now: new Date().toISOString(), extraLint: n === 1 ? (contact.lane === "website" ? websiteEmail1Lint(view.body) : coreEmail1Lint(view.body)) : [] });
   if (gate) return fail(gate.status, gate.error);

@@ -53,10 +53,15 @@ function useIsDesktop(): boolean | null {
   );
 }
 
+const noSubscribe = () => () => {};
+
 export default function Home() {
   const isDesktop = useIsDesktop();
   const [orbState, setOrbState] = useState<OrbState>("idle");
-  const [booting, setBooting] = useState(true);
+  // Boot sequence once per session.
+  const bootedEarlier = useSyncExternalStore(noSubscribe, () => sessionStorage.getItem("booted") === "1", () => false);
+  const [bootDone, setBootDone] = useState(false);
+  const booting = !bootedEarlier && !bootDone;
   const [deck, setDeck] = useState<DeckState | null>(null);
   const preset = getPreset("agency"); // Gates Brain persona (NOVA)
   const spoken = useMemo(
@@ -72,11 +77,7 @@ export default function Home() {
     return () => { clearTimeout(first); clearInterval(t); };
   }, []);
 
-  // Boot sequence once per session.
-  useEffect(() => {
-    if (sessionStorage.getItem("booted")) { setBooting(false); return; }
-  }, []);
-  const finishBoot = () => { sessionStorage.setItem("booted", "1"); setBooting(false); };
+  const finishBoot = () => { sessionStorage.setItem("booted", "1"); setBootDone(true); };
 
   useEffect(() => {
     document.documentElement.style.setProperty("--accent", preset.accent);

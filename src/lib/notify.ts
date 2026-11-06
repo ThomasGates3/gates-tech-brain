@@ -3,11 +3,13 @@
  * notifyOnce() fires only when the ping is on and only once per key
  * (e.g. once per day for "all emails are out"). Every ping is logged to Activity.
  */
+import { createHash } from "node:crypto";
 import { getSetting, setSetting } from "@/lib/settings";
 import { deliver } from "@/lib/automations/deliver";
 import { recordActivity } from "@/lib/activity";
 
 export const NOTIFICATIONS = [
+  { id: "app_error", label: "Something broke", when: "Right away, once a day per distinct error: a crashed page or API call, or a daily job that failed.", default: true },
   { id: "approval_waiting", label: "An action needs your approval", when: "Right away, when an agent wants to do something that changes data outside the Brain.", default: true },
   { id: "emails_done", label: "All of today's emails are out", when: "Right after the last approved email of the day sends.", default: true },
   { id: "cap_reached", label: "Daily send cap hit", when: "When the cap stops sends while approved emails are still waiting.", default: false },
@@ -44,5 +46,33 @@ export async function notifyOnce(id: NotifyId, key: string, title: string, body:
     return true;
   } catch {
     return false;
+  }
+}
+
+const reportedHere = new Set<string>();
+/** A failed query's real cause, never its SQL or parameters: those can hold contact data. */
+function errorText(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  if (err.cause instanceof Error) return err.cause.message;
+  return err.message.startsWith("Failed query:") ? "Database query failed" : err.message;
+}
+const hideSecrets = (s: string) => s.replace(/\b[a-z]+:\/\/[^\s/:]+:[^\s@]+@\S+/gi, "[connection string]").replace(/\bBearer\s+\S+/gi, "Bearer [hidden]");
+
+/**
+ * Ping Discord that something broke, once a day per distinct error. Never throws.
+ * The in-memory check matters when Neon is down: the saved "already pinged" mark can't be written then,
+ * and the alert still has to go out without repeating on every request.
+ */
+export async function reportError(where: string, err: unknown): Promise<void> {
+  try {
+    const message = hideSecrets(errorText(err)).slice(0, 500);
+    // Digits (ids, times) don't make it a new error, or every request would ping again.
+    const key = `${new Date().toISOString().slice(0, 10)}_${createHash("sha256").update(`${where}|${message.replace(/\d+/g, "#")}`).digest("hex").slice(0, 12)}`;
+    if (reportedHere.has(key)) return;
+    if (reportedHere.size > 200) reportedHere.clear();
+    reportedHere.add(key);
+    await notifyOnce("app_error", key, `Something broke: ${where}`, message);
+  } catch {
+    /* reporting must never cause a second failure */
   }
 }
